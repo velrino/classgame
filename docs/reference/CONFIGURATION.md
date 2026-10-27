@@ -12,6 +12,7 @@ The runnable templates are [api/.env.example](../../api/.env.example) and [web/.
 | Identity | `AUTH_TEACHER_PROVIDERS`, `AUTH_STUDENT_PROVIDERS`; supported provider policy is enforced separately from classroom authorization |
 | Redis | `REDIS_URL`, ping timeout; credentials stay server-side |
 | GenAI | `GENAI_ENABLED`, backend, model, project/location or API key, credentials, request timeout, output-token budget |
+| Shared AI budget | `GENAI_SHARED_BUDGET_SCOPE`, `GENAI_SHARED_CONCURRENT`, `GENAI_SHARED_REQUESTS_PER_MINUTE`, `GENAI_SHARED_OUTPUT_TOKENS_PER_MINUTE`, `GENAI_SHARED_LEASE_SECONDS`; [shared limits and recovery](../operations/AI-BUDGETS.md) |
 | Tasks | `TASKS_ENABLED=false` by default; dedicated `TASKS_REDIS_URL`, `TASKS_QUEUE`, `TASKS_CONCURRENCY` (1–32 per worker); [broker/recovery rules](../operations/QUEUES.md) |
 | Learning | `STUDENT_ABANDONMENT_SECONDS`; scheduled delivery requires a configured task worker |
 | Telemetry | `POSTHOG_ENABLED`, project token, host; keep disabled for ordinary local development |
@@ -33,3 +34,5 @@ Model availability and permissions depend on the configured provider. Restart th
 Every `NEXT_PUBLIC_*` value is browser-visible. Never place service-account credentials, Redis credentials, private upload keys, or privileged tokens there. Public configuration is typically embedded during the web build.
 
 For local commands see [setup](../development/LOCAL-SETUP.md); for deployed identities and workers see [operations](../operations/CLOUD-RUN.md).
+
+Production also requires `AUTH_TEACHER_EMAIL_ALLOWLIST` with exact verified teacher emails. The historical Cloud Run template leaves it empty so an operator must choose it. `TRUSTED_PROXY_CIDRS` is empty by default; forwarded headers are ignored until the actual proxy path is configured. Bootstrap is off by default. See [enrollment and access](../operations/ENROLLMENT-AND-ACCESS.md).

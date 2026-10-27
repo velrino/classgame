@@ -34,12 +34,15 @@ type GameHudProps = {
   readonly tutorPod: PodId;
   readonly tutorLine: string;
   readonly nearSeat: boolean;
+  readonly walkingToDesk: boolean;
   readonly avatarPresetId: string;
   readonly musicEnabled: boolean;
   readonly musicWaitingForGesture: boolean;
   readonly onSelectAvatar: (presetId: string) => void;
   readonly onToggleMusic: (enabled: boolean) => void;
   readonly onSelectMission: (missionID: string) => Promise<boolean>;
+  readonly onCancelMissionStart: () => void;
+  readonly onWalkToDesk: () => void;
   readonly onEndSession: () => void;
 };
 
@@ -100,12 +103,15 @@ export function GameHud({
   tutorPod,
   tutorLine,
   nearSeat,
+  walkingToDesk,
   avatarPresetId,
   musicEnabled,
   musicWaitingForGesture,
   onSelectAvatar,
   onToggleMusic,
   onSelectMission,
+  onCancelMissionStart,
+  onWalkToDesk,
   onEndSession,
 }: GameHudProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -210,6 +216,16 @@ export function GameHud({
 
       {/* The one action */}
       <div className="absolute inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-20 flex justify-center sm:inset-x-auto sm:right-6 sm:bottom-7 sm:items-end">
+        {!modalOpen && !nearSeat && pendingMissionCount > 0 ? (
+          <button
+            type="button"
+            disabled={!missionsReady || Boolean(startingMissionID) || walkingToDesk}
+            onClick={onWalkToDesk}
+            className={`${pill} glass w-full max-w-[18rem] hover:brightness-110 sm:w-auto sm:max-w-none`}
+          >
+            {walkingToDesk ? "Walking to desk…" : "Go to desk"}
+          </button>
+        ) : null}
         {!modalOpen && nearSeat && pendingMissionCount > 0 ? (
           <button
             type="button"
@@ -229,8 +245,7 @@ export function GameHud({
             Drag here to walk · swipe the room to look around
           </p>
           <p className="font-display animate-fade-out absolute inset-x-0 top-[max(env(safe-area-inset-top),1.25rem)] hidden text-center text-xs font-medium tracking-wide text-white/50 sm:block">
-            WASD to walk · drag to look around · click the glowing desk to go
-            there
+            WASD to walk · drag to look around · choose Go to desk to begin
           </p>
         </>
       ) : null}
@@ -247,7 +262,10 @@ export function GameHud({
         missionsReady={missionsReady}
         startingMissionID={startingMissionID}
         error={missionStartError}
-        onOpenChange={setMissionPickerOpen}
+        onOpenChange={(open) => {
+          if (!open) onCancelMissionStart();
+          setMissionPickerOpen(open);
+        }}
         onSelect={onSelectMission}
       />
     </div>

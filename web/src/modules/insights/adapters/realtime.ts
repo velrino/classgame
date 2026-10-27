@@ -1,39 +1,11 @@
 import { getFirebaseDb } from "@/shared/firebase/client";
-import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
-export function observeDashboardChanges(
-  classId: string,
-  onChange: () => void,
-): () => void {
-  const database = getFirebaseDb();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const invalidation = () => {
-    clearTimeout(timer);
-    timer = setTimeout(onChange, 250);
-  };
-  let initialAttempts = true;
-  let initialSummary = true;
-  const attempts = onSnapshot(
-    query(
-      collection(database, "student_mission_attempts"),
-      where("class_id", "==", classId),
-    ),
-    () => {
-      if (!initialAttempts) invalidation();
-      initialAttempts = false;
-    },
-    () => undefined,
-  );
-  const summary = onSnapshot(
-    doc(database, "class_learning_summaries", classId),
-    () => {
-      if (!initialSummary) invalidation();
-      initialSummary = false;
-    },
-    () => undefined,
-  );
-  return () => {
-    clearTimeout(timer);
-    attempts();
-    summary();
-  };
+import { doc, onSnapshot } from "firebase/firestore";
+
+// One small document invalidates the visible page. Never subscribe to all attempts.
+export function observeDashboardChanges(classId: string, onChange: () => void): () => void {
+  let initial = true;
+  return onSnapshot(doc(getFirebaseDb(), "class_learning_summaries", classId), () => {
+    if (!initial) onChange();
+    initial = false;
+  }, () => undefined);
 }

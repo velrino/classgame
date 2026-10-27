@@ -1,5 +1,5 @@
-// This legacy entrypoint is retained as a read-only audit. It never rewrites
-// attachment URLs or grants public storage access.
+// This legacy entrypoint audits by default. Explicit reviewed manifests may
+// remove public access; it never rewrites URLs or grants public storage access.
 package main
 
 import (
@@ -22,7 +22,12 @@ func main() {
 	_ = godotenv.Load()
 	project := flag.String("project", os.Getenv("FIREBASE_PROJECT_ID"), "Firebase project to audit (read only)")
 	credentials := flag.String("credentials-file", os.Getenv("FIREBASE_CREDENTIALS_FILE"), "Local Google credentials file")
-	inspectACL := flag.Bool("inspect-acl", false, "Read object ACLs and bucket IAM policies; never modify them")
+	inspectACL := flag.Bool("inspect-acl", false, "Read object ACLs and bucket IAM policies")
+	manifestOut := flag.String("manifest-out", "", "Write a private generation-pinned review manifest; no remote writes")
+	applyManifest := flag.String("apply-manifest", "", "Apply only the public-reader removals in this reviewed manifest")
+	revokePublic := flag.Bool("revoke-public", false, "Explicitly allow reviewed public-reader removal; never delete objects")
+	confirmProject := flag.String("confirm-project", "", "Required exact project confirmation for access changes")
+	bucket := flag.String("bucket", os.Getenv("FIREBASE_STORAGE_BUCKET"), "Only this explicit application bucket may appear in a manifest")
 	flag.Parse()
 	if strings.TrimSpace(*project) == "" {
 		log.Fatal("project is required")
@@ -32,6 +37,23 @@ func main() {
 	options := []option.ClientOption{}
 	if *credentials != "" {
 		options = append(options, option.WithCredentialsFile(*credentials))
+	}
+	if *applyManifest != "" {
+		if !*revokePublic || *confirmProject != *project || *bucket == "" || *manifestOut != "" {
+			log.Fatal("apply requires --revoke-public, --confirm-project and the application --bucket")
+		}
+		storageClient, err := storage.NewClient(ctx, options...)
+		if err != nil {
+			log.Fatal("initialize private access client: ", err)
+		}
+		defer storageClient.Close()
+		if err := applyAccessManifest(ctx, storageClient, *applyManifest, *project, *bucket); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if *revokePublic {
+		log.Fatal("--revoke-public requires a reviewed --apply-manifest")
 	}
 	client, err := firestore.NewClient(ctx, *project, options...)
 	if err != nil {
@@ -79,6 +101,20 @@ func main() {
 		count += len(paths)
 	}
 	fmt.Printf("Read-only audit: documents=%d stored_objects=%d legacy_public_url_references=%d\n", documents, count, legacyURLs)
+	if *manifestOut != "" {
+		if *bucket == "" {
+			log.Fatal("manifest requires the explicit application --bucket")
+		}
+		storageClient, err := storage.NewClient(ctx, options...)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer storageClient.Close()
+		if err := writeAccessManifest(ctx, storageClient, objects, *project, *bucket, *manifestOut); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if !*inspectACL {
 		fmt.Println("ACL/IAM was not inspected. Use --inspect-acl for a read-only access audit.")
 		return

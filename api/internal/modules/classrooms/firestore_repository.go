@@ -100,7 +100,9 @@ func (repository *FirestoreRepository) Upsert(
 	ref := repository.client.Collection(CollectionName).Doc(input.ClassID)
 
 	var teacherClass TeacherClassDocument
+	requestedEnrollment := input.Enrollment
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		input.Enrollment = requestedEnrollment
 		createdAt := input.Timestamp
 		missionCount := int64(0)
 		activeMissionID := ""
@@ -114,6 +116,9 @@ func (repository *FirestoreRepository) Upsert(
 				return fmt.Errorf("decode teacher class: %w", err)
 			}
 			hydrateTeacherClassTenantScope(&existing)
+			if input.Enrollment == nil {
+				input.Enrollment = existing.Enrollment
+			}
 			if existing.TeacherID != "" && existing.TeacherID != input.Teacher.ProviderUserID {
 				return ErrClassOwnedByAnotherTeacher
 			}
@@ -129,6 +134,9 @@ func (repository *FirestoreRepository) Upsert(
 			})
 		case status.Code(err) != codes.NotFound:
 			return fmt.Errorf("read teacher class: %w", err)
+		}
+		if status.Code(err) == codes.NotFound && input.Enrollment == nil {
+			input.Enrollment = DefaultEnrollment(input.Timestamp)
 		}
 
 		input.Scope = scope
@@ -147,6 +155,9 @@ func (repository *FirestoreRepository) Create(
 	ctx context.Context,
 	input UpsertTeacherClassInput,
 ) (TeacherClassDocument, error) {
+	if input.Enrollment == nil {
+		input.Enrollment = DefaultEnrollment(input.Timestamp)
+	}
 	ref := repository.client.Collection(CollectionName).Doc(input.ClassID)
 	teacherClass := newTeacherClassDocument(input, input.Timestamp, "", 0)
 
@@ -210,6 +221,7 @@ func (repository *FirestoreRepository) SetActiveMission(
 
 func (teacherClass TeacherClassDocument) firestoreMap() map[string]any {
 	return map[string]any{
+		"enrollment":        teacherClass.Enrollment,
 		"id":                teacherClass.ID,
 		"organization_id":   teacherClass.OrganizationID,
 		"district_id":       teacherClass.DistrictID,
@@ -238,6 +250,7 @@ func newTeacherClassDocument(
 	scope := tenancy.NormalizeScope(input.Scope)
 
 	return TeacherClassDocument{
+		Enrollment:      input.Enrollment,
 		ID:              input.ClassID,
 		OrganizationID:  scope.OrganizationID,
 		DistrictID:      scope.DistrictID,

@@ -43,3 +43,11 @@ Tutor turns use ordinary JSON responses. Keep student-facing teaching fields sep
 The server bounds request bodies and attachment downloads, applies authentication and operation-specific quotas, and returns structured errors. A class code is an enrollment mechanism, not teacher authorization. Health confirms dependencies, not a complete generation or learning journey.
 
 See [configuration](CONFIGURATION.md), [data ownership](DATA-MODEL.md), and [validation](../development/VALIDATION.md).
+
+## Teacher history pages
+
+Use `GET /dashboard/overview/page?class_id=...&limit=25&cursor=...`. The response keeps existing overview fields and adds `page`: a class-scoped `next_cursor`, `read_at`, and explicit `metrics_scope=student_page` / `history_scope=latest_attempt_summary`. A page describes its visible students and their latest attempt. It is not a whole-class total.
+
+Use `GET /dashboard/students/{student_id}/attempts?class_id=...&limit=5&cursor=...` for full history. Ownership is checked before reading. The default is 5 attempts, maximum 10, newest activity first with document ID as a tie break. Cursors are scoped to the route, class, and student.
+
+The old `/dashboard/overview` route preserves full-result meaning for up to 100 student rows and 100 attempts. Larger classes get `409 pagination_required` and must use pages. There is no silent history truncation. See [query limits and rollout](../operations/QUERY-SCALE.md).

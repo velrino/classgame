@@ -1,5 +1,7 @@
 import {
   normalizeStudentMemory,
+  normalizeSessionCheckpoint,
+  repairUnansweredCompletion,
   type StudentMemory,
   type StudentRecovery,
   type StudentSessionCheckpoint,
@@ -26,8 +28,10 @@ export function loadStudentRecovery(
 
     return parsed.version === 2
       ? {
-          memory: normalizeStudentMemory(parsed, mission),
-          checkpoint: parsed.checkpoint ?? null,
+          memory: repairUnansweredCompletion(
+            normalizeStudentMemory(parsed, mission), mission,
+          ),
+          checkpoint: normalizeSessionCheckpoint(parsed.checkpoint),
           revision: Math.max(0, parsed.snapshotRevision ?? 0),
         }
       : null;

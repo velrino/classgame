@@ -35,10 +35,11 @@ type Options struct {
 func New(options Options) *echo.Echo {
 	server := echo.New()
 	server.HTTPErrorHandler = httpErrorHandler
-	if options.Config.AppEnv == "production" {
-		server.IPExtractor = echo.ExtractIPFromXFFHeader()
-	} else {
-		server.IPExtractor = echo.ExtractIPDirect()
+	// Config validates this before startup. Invalid programmatic options fail
+	// closed to the direct peer address, never to trusted forwarded headers.
+	server.IPExtractor = echo.ExtractIPDirect()
+	if extractor, err := ClientIP(options.Config.TrustedProxyCIDRs); err == nil {
+		server.IPExtractor = extractor
 	}
 	server.Use(requestMetadataMiddleware)
 

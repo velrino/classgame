@@ -95,7 +95,15 @@ export function ClassFormModal({
     ),
   }));
 
-  const canSubmit = form.subject.trim().length >= 2 && !saving;
+  const [enrollmentOpen, setEnrollmentOpen] = useState(teacherClass?.enrollment?.open ?? true);
+  const [enrollmentExpiry, setEnrollmentExpiry] = useState(() => {
+    const date = teacherClass?.enrollment?.expires_at ? new Date(teacherClass.enrollment.expires_at) : new Date(Date.now() + 30 * 86400000);
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  });
+  const [formOpenedAt] = useState(() => Date.now());
+  const expiry = new Date(enrollmentExpiry + "T23:59:59").getTime();
+  const validEnrollment = !enrollmentOpen || Number.isFinite(expiry) && expiry > formOpenedAt && expiry <= formOpenedAt + 90 * 86400000;
+  const canSubmit = form.subject.trim().length >= 2 && validEnrollment && !saving;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -106,6 +114,7 @@ export function ClassFormModal({
 
     await onSubmit({
       ...(teacherClass ? { class_id: teacherClass.class_id } : {}),
+      enrollment: {open: enrollmentOpen, expires_at: Number.isFinite(expiry) ? new Date(expiry).toISOString() : new Date().toISOString()},
       class_name: limitInput(form.class_name.trim(), INPUT_LIMITS.className),
       grade_level: limitInput(form.grade_level.trim(), INPUT_LIMITS.gradeLevel),
       subject: limitInput(form.subject.trim(), INPUT_LIMITS.subject),
@@ -188,6 +197,19 @@ export function ClassFormModal({
                 disabled={saving}
               />
             </FieldRow>
+
+            <fieldset className="space-y-2 rounded-md border p-3">
+              <legend className="px-1 text-sm font-medium">Student joins</legend>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={enrollmentOpen} disabled={saving} onChange={(event) => setEnrollmentOpen(event.target.checked)} />
+                Allow new students to join
+              </label>
+              <label className="block text-sm">
+                Join code expires on
+                <Input type="date" value={enrollmentExpiry} disabled={saving || !enrollmentOpen} onChange={(event) => setEnrollmentExpiry(event.target.value)} />
+              </label>
+              <p className="text-xs text-muted-foreground">Existing students keep access. Choose a future date within 90 days to open joins again.</p>
+            </fieldset>
 
             {error ? (
               <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">

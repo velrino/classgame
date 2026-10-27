@@ -16,7 +16,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATASET = ROOT / "evals/platform/ai-policy/cases.json"
-KINDS = {"tutor", "auth", "projection", "learning", "scope", "memory", "object_path", "evidence", "tutor_event", "finalization"}
+KINDS = {"tutor", "auth", "projection", "learning", "scope", "memory", "object_path", "evidence", "tutor_event", "finalization", "security"}
 OPERATORS = {"equals", "contains", "not_contains", "absent"}
 MISSING = object()
 
@@ -46,7 +46,7 @@ def load_dataset(path):
         allowed |= {"tutor_context", "mission"}
     if not isinstance(data, dict) or set(data) != allowed:
         raise ValueError("dataset requires exactly: " + ", ".join(sorted(allowed)))
-    if type(data["schema_version"]) is not int or data["schema_version"] != 1 or not isinstance(suite, str) or suite not in {"ai-policy", "offline-evidence"} or data["synthetic"] is not True:
+    if type(data["schema_version"]) is not int or data["schema_version"] != 1 or not isinstance(suite, str) or suite not in {"ai-policy", "offline-evidence", "frontend-recovery"} or data["synthetic"] is not True:
         raise ValueError("requires schema 1, a supported suite, and synthetic=true")
     if not isinstance(data["version"], str) or not data["version"].strip():
         raise ValueError("dataset version is required")
@@ -65,7 +65,7 @@ def load_dataset(path):
         if case_id in seen:
             raise ValueError("duplicate case ID: " + case_id)
         seen.add(case_id)
-        if not isinstance(kind, str) or kind not in (KINDS if suite == "ai-policy" else {"browser"}) or set(case) != {"id", "kind", kind, "expected"}:
+        if not isinstance(kind, str) or kind not in (KINDS if suite == "ai-policy" else {"recovery"} if suite == "frontend-recovery" else {"browser"}) or set(case) != {"id", "kind", kind, "expected"}:
             raise ValueError("unknown case kind or fields: " + case_id)
         if not isinstance(case[kind], dict):
             raise ValueError("case input must be an object: " + case_id)
@@ -105,9 +105,9 @@ def select_cases(cases, selection):
 
 
 def invoke_bridge(data, cases):
-    if data["suite"] == "offline-evidence":
+    if data["suite"] in {"offline-evidence", "frontend-recovery"}:
         payload = {"cases": [{key: value for key, value in case.items() if key != "expected"} for case in cases]}
-        run = subprocess.run(["node", str(ROOT / "evals/platform/offline-evidence/bridge.mjs")],
+        run = subprocess.run(["node", str(ROOT / ("evals/platform/" + data["suite"] + "/bridge.mjs"))],
                              input=json.dumps(payload), text=True, capture_output=True,
                              env={"PATH": os.environ.get("PATH", os.defpath), "TZ": "UTC"}, timeout=30)
         if run.returncode:

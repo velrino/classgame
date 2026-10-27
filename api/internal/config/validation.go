@@ -7,11 +7,28 @@ import (
 	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+
+	"classgame-api/internal/platform/firebase/emulator"
 )
 
 func (config Config) Validate() error {
+	if config.FirebaseEmulatorsEnabled && (config.GenAIEnabled || config.PostHogEnabled) {
+		return fmt.Errorf("Firebase emulator mode requires GENAI_ENABLED=false and POSTHOG_ENABLED=false")
+	}
+	if err := (emulator.Options{
+		Enabled:               config.FirebaseEmulatorsEnabled,
+		Environment:           config.AppEnv,
+		ProjectID:             config.FirebaseProjectID,
+		AuthHost:              config.FirebaseAuthEmulatorHost,
+		FirestoreHost:         config.FirestoreEmulatorHost,
+		CredentialsConfigured: config.FirebaseCredentialsFile != "" || config.FirebaseCredentialsJSON != "",
+	}).Validate(); err != nil {
+		return err
+	}
 	return validation.Errors{
-		"CORS_ALLOWED_ORIGINS": validation.Validate(config.CORSAllowedOrigins, validation.Required, validation.By(validateCORSOrigins(config.AppEnv))),
+		"TRUSTED_PROXY_CIDRS":          validation.Validate(config.TrustedProxyCIDRs, validation.By(validateProxyNetworks)),
+		"AUTH_TEACHER_EMAIL_ALLOWLIST": validation.Validate(config.AuthTeacherEmailAllowlist, validation.By(validateTeacherEmails(config.AppEnv))),
+		"CORS_ALLOWED_ORIGINS":         validation.Validate(config.CORSAllowedOrigins, validation.Required, validation.By(validateCORSOrigins(config.AppEnv))),
 		"HOST": validation.Validate(config.Host,
 			validation.Required,
 		),
@@ -31,10 +48,10 @@ func (config Config) Validate() error {
 			validation.Required,
 		),
 		"FIREBASE_CREDENTIALS_FILE": validation.Validate(config.FirebaseCredentialsFile,
-			validation.By(validateFirebaseCredentials(config.FirebaseCredentialsJSON)),
+			validation.When(!config.FirebaseEmulatorsEnabled, validation.By(validateFirebaseCredentials(config.FirebaseCredentialsJSON))),
 		),
 		"FIREBASE_CREDENTIALS_JSON": validation.Validate(config.FirebaseCredentialsJSON,
-			validation.By(validateFirebaseCredentials(config.FirebaseCredentialsFile)),
+			validation.When(!config.FirebaseEmulatorsEnabled, validation.By(validateFirebaseCredentials(config.FirebaseCredentialsFile))),
 		),
 		"FIREBASE_PING_TIMEOUT_SECONDS": validation.Validate(config.FirebasePingTimeoutSeconds,
 			validation.Required,
@@ -101,8 +118,13 @@ func (config Config) Validate() error {
 		),
 		"GENAI_REQUEST_TIMEOUT_SECONDS": validation.Validate(config.GenAIRequestTimeoutSeconds,
 			validation.Required,
-			validation.Min(1),
+			validation.Min(1), validation.Max(120),
 		),
+		"GENAI_SHARED_BUDGET_SCOPE":             validation.Validate(config.GenAISharedBudgetScope, validation.Required, validation.Length(1, 120)),
+		"GENAI_SHARED_CONCURRENT":               validation.Validate(config.GenAISharedConcurrent, validation.Min(1), validation.Max(1000)),
+		"GENAI_SHARED_REQUESTS_PER_MINUTE":      validation.Validate(config.GenAISharedRequestsPerMinute, validation.Min(1), validation.Max(1000000)),
+		"GENAI_SHARED_OUTPUT_TOKENS_PER_MINUTE": validation.Validate(config.GenAISharedOutputPerMinute, validation.Min(config.GenAIMaxOutputTokens), validation.Max(1000000000)),
+		"GENAI_SHARED_LEASE_SECONDS":            validation.Validate(config.GenAISharedLeaseSeconds, validation.Min(config.GenAIRequestTimeoutSeconds+5), validation.Max(300)),
 		"GENAI_MAX_OUTPUT_TOKENS": validation.Validate(config.GenAIMaxOutputTokens,
 			validation.Required,
 			validation.Min(256),

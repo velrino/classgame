@@ -3,6 +3,7 @@ package classrooms
 import "time"
 
 type TeacherClassResponse struct {
+	Enrollment      *Enrollment     `json:"enrollment,omitempty"`
 	ID              string          `json:"id"`
 	OrganizationID  string          `json:"organization_id"`
 	DistrictID      string          `json:"district_id"`
@@ -30,6 +31,7 @@ type TeacherResponse struct {
 
 func ToResponse(teacherClass TeacherClassDocument) TeacherClassResponse {
 	return TeacherClassResponse{
+		Enrollment:      teacherClass.Enrollment,
 		ID:              teacherClass.ID,
 		OrganizationID:  teacherClass.OrganizationID,
 		DistrictID:      teacherClass.DistrictID,

@@ -54,10 +54,11 @@ type Handler struct {
 }
 
 type UpsertTeacherClassRequest struct {
-	ClassID    string `json:"class_id"`
-	ClassName  string `json:"class_name"`
-	Subject    string `json:"subject"`
-	GradeLevel string `json:"grade_level"`
+	Enrollment *Enrollment `json:"enrollment,omitempty"`
+	ClassID    string      `json:"class_id"`
+	ClassName  string      `json:"class_name"`
+	Subject    string      `json:"subject"`
+	GradeLevel string      `json:"grade_level"`
 }
 
 type ErrorResponse = httpx.ErrorResponse
@@ -129,6 +130,7 @@ func (handler *Handler) PostTeacherClass(ctx *echo.Context) error {
 	}
 
 	teacherClass, err := handler.teacherClassService.Upsert(requestContext, identity, UpsertTeacherClassInput{
+		Enrollment: request.Enrollment,
 		ClassID:    request.ClassID,
 		ClassName:  request.ClassName,
 		Subject:    request.Subject,
@@ -204,6 +206,9 @@ func (handler *Handler) serviceError(ctx *echo.Context, err error) error {
 }
 
 func (request UpsertTeacherClassRequest) Validate() error {
+	if err := ValidateEnrollment(request.Enrollment, time.Now()); err != nil {
+		return err
+	}
 	if strings.TrimSpace(request.ClassID) != "" {
 		if err := validateClassID(request.ClassID); err != nil {
 			return err

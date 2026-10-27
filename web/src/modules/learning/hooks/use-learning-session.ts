@@ -52,6 +52,7 @@ export function useLearningSession() {
 
   const handlers = useMemo(
     () => ({
+      walk: () => dispatch({ type: "walk" }),
       sit: () => dispatch({ type: "sit" }),
       stand: () => dispatch({ type: "stand" }),
       choose: (index: number) => {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"classgame-api/internal/pagination"
+
 	"classgame-api/internal/modules/students"
 )
 
@@ -14,14 +16,9 @@ type InsightStore interface {
 		identity TeacherIdentity,
 		timestamp time.Time,
 	) (TeacherSummary, error)
-	ListStudentsByClassID(
-		ctx context.Context,
-		classID string,
-	) ([]studentUserDocument, error)
-	ListLearningAttemptsByClassID(
-		ctx context.Context,
-		classID string,
-	) ([]students.StudentMissionAttemptDocument, error)
+	ListStudentPage(context.Context, string, pagination.Params) (StudentPage, error)
+	ListAttemptPage(context.Context, string, string, pagination.Params, bool) (AttemptPage, error)
+	ListLatestAttempts(context.Context, string, []string) ([]students.StudentMissionAttemptDocument, error)
 	GetClassLearningSynthesis(
 		ctx context.Context,
 		classID string,

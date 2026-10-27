@@ -53,7 +53,7 @@ func run() error {
 		}
 		defer queue.Close()
 	}
-	connection, err := firebase.Connect(ctx, firebase.Options{ProjectID: *project, CredentialsFile: *credentials, CredentialsJSON: os.Getenv("FIREBASE_CREDENTIALS_JSON")})
+	connection, err := firebase.Connect(ctx, firebase.Options{ProjectID: *project, CredentialsFile: *credentials, CredentialsJSON: os.Getenv("FIREBASE_CREDENTIALS_JSON"), EmulatorEnabled: os.Getenv("FIREBASE_EMULATORS_ENABLED") == "true", Environment: os.Getenv("APP_ENV"), AuthEmulatorHost: os.Getenv("FIREBASE_AUTH_EMULATOR_HOST"), FirestoreEmulatorHost: os.Getenv("FIRESTORE_EMULATOR_HOST")})
 	if err != nil {
 		return err
 	}

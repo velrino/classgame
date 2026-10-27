@@ -42,6 +42,7 @@ var (
 )
 
 type Options struct {
+	Admission       ProviderAdmission
 	Enabled         bool
 	Backend         string
 	Model           string
@@ -93,6 +94,9 @@ func Connect(ctx context.Context, input Options) (*Client, error) {
 	options := resolveOptions(input)
 	if !options.Enabled {
 		return &Client{options: options}, nil
+	}
+	if options.Admission == nil {
+		return nil, errors.New("enabled genai requires shared provider admission")
 	}
 
 	clientConfig := &googlegenai.ClientConfig{
@@ -304,12 +308,12 @@ func (client *Client) generate(ctx context.Context, request StructuredRequest) (
 		ThinkingConfig:    thinkingConfigForModel(model),
 	}
 
-	response, err := client.client.Models.GenerateContent(
-		ctx,
-		model,
-		buildUserContents(request),
-		config,
-	)
+	var response *googlegenai.GenerateContentResponse
+	err = RunAdmitted(ctx, client.options.Admission, request.MaxOutputTokens, func() error {
+		var providerErr error
+		response, providerErr = client.client.Models.GenerateContent(ctx, model, buildUserContents(request), config)
+		return providerErr
+	})
 	if err != nil {
 		return StructuredResult{}, fmt.Errorf("generate content: %w", err)
 	}

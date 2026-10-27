@@ -28,6 +28,7 @@ import (
 	"classgame-api/internal/platform/analytics"
 	"classgame-api/internal/platform/firebase"
 	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/platform/genai/redisbudget"
 	"classgame-api/internal/platform/objectstorage"
 	rateredis "classgame-api/internal/platform/ratelimit/redis"
 	"classgame-api/internal/platform/redis"
@@ -82,10 +83,14 @@ func run() (runErr error) {
 	startedAt := time.Now()
 
 	firebaseConnection, err := firebase.Connect(context.Background(), firebase.Options{
-		ProjectID:       cfg.FirebaseProjectID,
-		CredentialsFile: cfg.FirebaseCredentialsFile,
-		CredentialsJSON: cfg.FirebaseCredentialsJSON,
-		PingTimeout:     time.Duration(cfg.FirebasePingTimeoutSeconds) * time.Second,
+		EmulatorEnabled:       cfg.FirebaseEmulatorsEnabled,
+		Environment:           cfg.AppEnv,
+		AuthEmulatorHost:      cfg.FirebaseAuthEmulatorHost,
+		FirestoreEmulatorHost: cfg.FirestoreEmulatorHost,
+		ProjectID:             cfg.FirebaseProjectID,
+		CredentialsFile:       cfg.FirebaseCredentialsFile,
+		CredentialsJSON:       cfg.FirebaseCredentialsJSON,
+		PingTimeout:           time.Duration(cfg.FirebasePingTimeoutSeconds) * time.Second,
 	})
 	if err != nil {
 		return fmt.Errorf("initialize firebase: %w", err)
@@ -146,7 +151,17 @@ func run() (runErr error) {
 	}()
 
 	usersRepository := students.NewFirestoreRepository(firebaseConnection.FirestoreClient())
+	providerBudget, err := redisbudget.New(redisConnection.Client(), redisbudget.Options{
+		Scope: cfg.GenAISharedBudgetScope, Concurrent: int64(cfg.GenAISharedConcurrent),
+		RequestsPerWindow: int64(cfg.GenAISharedRequestsPerMinute), OutputTokensPerWindow: int64(cfg.GenAISharedOutputPerMinute),
+		Window: time.Minute, Lease: time.Duration(cfg.GenAISharedLeaseSeconds) * time.Second,
+	})
+	if err != nil {
+		return fmt.Errorf("initialize shared provider budget: %w", err)
+	}
+	defer providerBudget.Close()
 	genAIClient, err := genai.Connect(context.Background(), genai.Options{
+		Admission:       providerBudget,
 		Enabled:         cfg.GenAIEnabled,
 		Backend:         cfg.GenAIBackend,
 		Model:           cfg.GenAIModel,
@@ -162,14 +177,18 @@ func run() (runErr error) {
 		return fmt.Errorf("initialize genai: %w", err)
 	}
 
-	storageConnection, err := objectstorage.Connect(context.Background(), objectstorage.Options{
-		BucketName:      cfg.FirebaseStorageBucket,
-		CredentialsFile: cfg.FirebaseCredentialsFile,
-		CredentialsJSON: cfg.FirebaseCredentialsJSON,
-	})
-	if err != nil {
-		return fmt.Errorf("initialize mission attachment storage: %w", err)
+	var storageConnection *objectstorage.Connection
+	if !cfg.FirebaseEmulatorsEnabled {
+		storageConnection, err = objectstorage.Connect(context.Background(), objectstorage.Options{
+			BucketName:      cfg.FirebaseStorageBucket,
+			CredentialsFile: cfg.FirebaseCredentialsFile,
+			CredentialsJSON: cfg.FirebaseCredentialsJSON,
+		})
+		if err != nil {
+			return fmt.Errorf("initialize mission attachment storage: %w", err)
+		}
 	}
+
 	defer func() {
 		if err := storageConnection.Close(); err != nil {
 			slog.Error("mission attachment storage disconnect failed", "error", err)
@@ -335,6 +354,10 @@ func run() (runErr error) {
 		return fmt.Errorf("initialize teacher authentication: %w", err)
 	}
 	studentAuthenticator, err := auth.RestrictProviders(authenticator, cfg.AuthStudentProviders)
+	teacherAuthenticator, teacherPolicyErr := auth.TeacherEmailPolicy(teacherAuthenticator, cfg.AuthTeacherEmailAllowlist)
+	if teacherPolicyErr != nil {
+		return fmt.Errorf("initialize teacher eligibility: %w", teacherPolicyErr)
+	}
 	if err != nil {
 		return fmt.Errorf("initialize student authentication: %w", err)
 	}
@@ -389,6 +412,15 @@ func run() (runErr error) {
 			UsersService: usersService,
 		},
 	})
+
+	if cfg.FirebaseEmulatorsEnabled {
+		server.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(ctx *echo.Context) error {
+				ctx.Response().Header().Set("X-ClassGame-Emulator-Project", cfg.FirebaseProjectID)
+				return next(ctx)
+			}
+		})
+	}
 
 	slog.Info("server started",
 		"host", cfg.Host,

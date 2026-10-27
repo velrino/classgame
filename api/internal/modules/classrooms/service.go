@@ -82,6 +82,9 @@ func (service *Service) Upsert(
 	input.Subject = normalizeText(input.Subject)
 	input.GradeLevel = normalizeText(input.GradeLevel)
 	input.Timestamp = time.Now()
+	if err := ValidateEnrollment(input.Enrollment, input.Timestamp); err != nil {
+		return TeacherClassDocument{}, err
+	}
 
 	if input.ClassID == "" {
 		return service.createWithGeneratedCode(ctx, input)

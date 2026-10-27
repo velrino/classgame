@@ -1,6 +1,6 @@
 import type { StudentClassMission } from "@/modules/classrooms/adapters/types/student-catalog";
 import { getStudentFirebaseDb } from "@/shared/firebase/client";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 
 export function studentMissionRevisionKey(
   missionID: string,
@@ -83,11 +83,14 @@ export function observeStudentCompletions(
   onCompletions: (keys: Set<string>) => void,
 ) {
   return onSnapshot(
-    collection(
-      getStudentFirebaseDb(),
-      "student_mission_completions",
-      studentId,
-      "missions",
+    query(
+      collection(
+        getStudentFirebaseDb(),
+        "student_mission_completions",
+        studentId,
+        "missions",
+      ),
+      where("student_id", "==", studentId),
     ),
     (snapshot) => {
       const keys = new Set<string>();

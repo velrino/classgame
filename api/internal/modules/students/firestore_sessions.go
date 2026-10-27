@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/tenancy"
 )
 
@@ -29,6 +30,7 @@ func (repository *FirestoreRepository) UpsertStudent(
 		}
 		currentGame := StudentGameSession{}
 		learningMemory := StudentLearningMemory{}
+		existingMember := false
 
 		snapshot, err := tx.Get(ref)
 		switch {
@@ -48,12 +50,29 @@ func (repository *FirestoreRepository) UpsertStudent(
 			if input.IncrementLogin {
 				loginCount++
 			}
-			if existing.Student.ClassID == input.ClassID {
+			existingMember = existing.Student.ClassID == input.ClassID && tenancy.NormalizeScope(tenancy.Scope{OrganizationID: existing.Student.OrganizationID, DistrictID: existing.Student.DistrictID, SchoolID: existing.Student.SchoolID}) == tenancy.NormalizeScope(input.Scope)
+			if existingMember {
 				currentGame = existing.Activity.CurrentGame
 				learningMemory = existing.Student.LearningMemory
 			}
 		case status.Code(err) != codes.NotFound:
 			return fmt.Errorf("read user: %w", err)
+		}
+		// This read participates in the membership write transaction. Closing
+		// enrollment concurrently cannot admit a new student using a stale read.
+		classSnapshot, err := tx.Get(repository.client.Collection(classrooms.CollectionName).Doc(input.ClassID))
+		if status.Code(err) == codes.NotFound {
+			return ErrClassCodeNotFound
+		}
+		if err != nil {
+			return fmt.Errorf("read enrollment policy: %w", err)
+		}
+		var class classrooms.TeacherClassDocument
+		if err := classSnapshot.DataTo(&class); err != nil {
+			return err
+		}
+		if class.ClassCode != input.ClassCode || !classrooms.MayEnroll(class, existingMember, classSnapshot.ReadTime) || tenancy.NormalizeScope(tenancy.Scope{OrganizationID: class.OrganizationID, DistrictID: class.DistrictID, SchoolID: class.SchoolID}) != tenancy.NormalizeScope(input.Scope) {
+			return ErrClassCodeNotFound
 		}
 		if loginCount <= 0 {
 			loginCount = 1

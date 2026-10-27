@@ -11,10 +11,15 @@ import (
 )
 
 type Config struct {
+	TrustedProxyCIDRs               string
+	AuthTeacherEmailAllowlist       string
 	CORSAllowedOrigins              string
 	Host                            string
 	Port                            string
 	AppEnv                          string
+	FirebaseEmulatorsEnabled        bool
+	FirebaseAuthEmulatorHost        string
+	FirestoreEmulatorHost           string
 	FirebaseBootstrapEnabled        bool
 	FirebaseBootstrapTimeoutSeconds int
 	FirebaseProjectID               string
@@ -43,6 +48,11 @@ type Config struct {
 	GenAICredentialsJSON            string
 	GenAIRequestTimeoutSeconds      int
 	GenAIMaxOutputTokens            int
+	GenAISharedBudgetScope          string
+	GenAISharedConcurrent           int
+	GenAISharedRequestsPerMinute    int
+	GenAISharedOutputPerMinute      int
+	GenAISharedLeaseSeconds         int
 	PostHogEnabled                  bool
 	PostHogProjectToken             string
 	PostHogHost                     string
@@ -67,11 +77,16 @@ func Load() (Config, error) {
 		corsDefault = ""
 	}
 	config := Config{
+		TrustedProxyCIDRs:               reader.getString("TRUSTED_PROXY_CIDRS", ""),
+		AuthTeacherEmailAllowlist:       reader.getString("AUTH_TEACHER_EMAIL_ALLOWLIST", ""),
 		CORSAllowedOrigins:              reader.getString("CORS_ALLOWED_ORIGINS", corsDefault),
 		Host:                            reader.getString("HOST", "0.0.0.0"),
 		Port:                            reader.getString("PORT", "4004"),
 		AppEnv:                          reader.getString("APP_ENV", "development"),
-		FirebaseBootstrapEnabled:        reader.getBool("FIREBASE_BOOTSTRAP_ENABLED", true),
+		FirebaseEmulatorsEnabled:        reader.getBool("FIREBASE_EMULATORS_ENABLED", false),
+		FirebaseAuthEmulatorHost:        reader.getString("FIREBASE_AUTH_EMULATOR_HOST", ""),
+		FirestoreEmulatorHost:           reader.getString("FIRESTORE_EMULATOR_HOST", ""),
+		FirebaseBootstrapEnabled:        reader.getBool("FIREBASE_BOOTSTRAP_ENABLED", false),
 		FirebaseBootstrapTimeoutSeconds: reader.getInt("FIREBASE_BOOTSTRAP_TIMEOUT_SECONDS", 30),
 		FirebaseProjectID:               firebaseProjectID,
 		FirebaseCredentialsFile:         reader.getString("FIREBASE_CREDENTIALS_FILE", ""),
@@ -99,6 +114,11 @@ func Load() (Config, error) {
 		GenAICredentialsJSON:            reader.getString("GENAI_CREDENTIALS_JSON", ""),
 		GenAIRequestTimeoutSeconds:      reader.getInt("GENAI_REQUEST_TIMEOUT_SECONDS", 30),
 		GenAIMaxOutputTokens:            reader.getInt("GENAI_MAX_OUTPUT_TOKENS", 4096),
+		GenAISharedBudgetScope:          reader.getString("GENAI_SHARED_BUDGET_SCOPE", "classgame-provider"),
+		GenAISharedConcurrent:           reader.getInt("GENAI_SHARED_CONCURRENT", 4),
+		GenAISharedRequestsPerMinute:    reader.getInt("GENAI_SHARED_REQUESTS_PER_MINUTE", 60),
+		GenAISharedOutputPerMinute:      reader.getInt("GENAI_SHARED_OUTPUT_TOKENS_PER_MINUTE", 65536),
+		GenAISharedLeaseSeconds:         reader.getInt("GENAI_SHARED_LEASE_SECONDS", 150),
 		PostHogEnabled:                  reader.getBool("POSTHOG_ENABLED", false),
 		PostHogProjectToken:             reader.getString("POSTHOG_PROJECT_TOKEN", ""),
 		PostHogHost:                     reader.getString("POSTHOG_HOST", "https://us.i.posthog.com"),

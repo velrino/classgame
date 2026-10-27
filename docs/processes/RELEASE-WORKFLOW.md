@@ -1,6 +1,6 @@
 # Release workflow
 
-Integrate authorized work in this order: **feature branch → release branch → `master`**. The modular refactor uses `release/modular-architecture`; feature PRs target that branch, not `master`.
+Integrate authorized work in this order: **feature branch → release branch → `master`**. Use the active `release/*` branch named in the parent issue and release PR. Feature PRs target that branch.
 
 ## Prepare a feature
 

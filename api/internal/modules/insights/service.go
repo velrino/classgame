@@ -16,6 +16,7 @@ import (
 	"classgame-api/internal/modules/missions"
 	studentsmodule "classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
+	"classgame-api/internal/pagination"
 )
 
 var ErrTeacherAuthRequired = errors.New("dashboard requires a configured teacher sign-in provider")
@@ -48,17 +49,24 @@ func NewService(
 	}
 }
 
-func (service *Service) GetOverview(
-	ctx context.Context,
-	identity auth.Identity,
-	classID string,
-) (DashboardOverview, error) {
+func (service *Service) GetOverview(ctx context.Context, identity auth.Identity, classID string) (DashboardOverview, error) {
+	return service.getOverview(ctx, identity, classID, pagination.Params{Limit: 100}, true)
+}
+
+func (service *Service) GetOverviewPage(ctx context.Context, identity auth.Identity, classID string, page pagination.Params) (DashboardOverview, error) {
+	return service.getOverview(ctx, identity, classID, page, false)
+}
+
+func (service *Service) getOverview(ctx context.Context, identity auth.Identity, classID string, page pagination.Params, legacy bool) (DashboardOverview, error) {
 	teacher, err := service.teacher(ctx, identity)
 	if err != nil {
 		return DashboardOverview{}, err
 	}
 
 	normalizedClassID := normalizeClassID(classID)
+	if normalizedClassID != "" && service.teacherClassReader == nil {
+		return DashboardOverview{}, errors.New("class access reader is required")
+	}
 	scope := tenancy.DefaultScope()
 	if normalizedClassID == "" {
 		return DashboardOverview{
@@ -102,6 +110,7 @@ func (service *Service) GetOverview(
 
 	var activeMission *missions.MissionDocument
 	var studentDocuments []studentUserDocument
+	var studentPage StudentPage
 	var attempts []studentsmodule.StudentMissionAttemptDocument
 	var synthesis studentsmodule.ClassLearningSynthesisDocument
 	var synthesisExists bool
@@ -121,12 +130,30 @@ func (service *Service) GetOverview(
 	}
 	group.Go(func() error {
 		var err error
-		studentDocuments, err = service.repository.ListStudentsByClassID(groupContext, normalizedClassID)
-		return err
-	})
-	group.Go(func() error {
-		var err error
-		attempts, err = service.repository.ListLearningAttemptsByClassID(groupContext, normalizedClassID)
+		studentPage, err = service.repository.ListStudentPage(groupContext, normalizedClassID, page)
+		if err != nil {
+			return err
+		}
+		if legacy && studentPage.NextCursor != "" {
+			return ErrPaginationRequired
+		}
+		studentDocuments = studentPage.Students
+		if legacy {
+			history, err := service.repository.ListAttemptPage(groupContext, normalizedClassID, "", pagination.Params{Limit: 100}, false)
+			if err != nil {
+				return err
+			}
+			if history.NextCursor != "" {
+				return ErrPaginationRequired
+			}
+			attempts = history.Attempts
+			return nil
+		}
+		ids := make([]string, 0, len(studentDocuments))
+		for _, student := range studentDocuments {
+			ids = append(ids, student.ID)
+		}
+		attempts, err = service.repository.ListLatestAttempts(groupContext, normalizedClassID, ids)
 		return err
 	})
 	group.Go(func() error {
@@ -138,9 +165,24 @@ func (service *Service) GetOverview(
 		return DashboardOverview{}, err
 	}
 
-	students := buildStudentDashboardItems(studentDocuments, attempts, activeMission, time.Now())
+	if teacherClass != nil {
+		studentDocuments, attempts = filterTenantEvidence(studentDocuments, attempts, *teacherClass)
+	}
+	readAt := time.Now()
+	students := buildStudentDashboardItems(studentDocuments, attempts, activeMission, readAt)
+	var metadata *OverviewPageMetadata
+	if !legacy {
+		for index := range students {
+			for a := range students[index].Attempts {
+				students[index].Attempts[a].Snapshot.Notes = nil
+			}
+		}
+	}
+	if !legacy {
+		metadata = &OverviewPageMetadata{Limit: page.Limit, Returned: len(students), NextCursor: studentPage.NextCursor, ReadAt: readAt.UTC().Format(time.RFC3339Nano), MetricsScope: "student_page", HistoryScope: "latest_attempt_summary"}
+	}
 	classLearning := buildClassLearningSummary(students)
-	if synthesisExists {
+	if synthesisExists && legacy {
 		classLearning = applySemanticClassLearningSynthesis(classLearning, synthesis.Synthesis, students)
 	}
 
@@ -159,6 +201,7 @@ func (service *Service) GetOverview(
 	}
 
 	return DashboardOverview{
+		Page:            metadata,
 		OrganizationID:  scope.OrganizationID,
 		DistrictID:      scope.DistrictID,
 		SchoolID:        scope.SchoolID,
