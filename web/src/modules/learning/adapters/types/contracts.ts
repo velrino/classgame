@@ -8,8 +8,13 @@ export type StudentLearningStatus =
   | "paused"
   | "completed";
 
-export interface StudentLearningSnapshotRequest {
+export interface StudentAttemptScope {
   mission_id: string;
+  published_revision?: number;
+  attempt_id?: string;
+}
+
+export interface StudentLearningSnapshotRequest extends StudentAttemptScope {
   status: StudentLearningStatus;
   snapshot: StudentLearningSnapshotDto;
 }
@@ -127,8 +132,7 @@ export interface StudentLearningResumeAttemptDto {
   last_activity_at: string;
 }
 
-export interface StudentTutorTurnRequest {
-  mission_id: string;
+export interface StudentTutorTurnRequest extends StudentAttemptScope {
   event_id: string;
   type: "answer" | "reasoning" | "feedback" | "resume";
   stage_id: string;

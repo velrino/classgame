@@ -9,6 +9,6 @@ Former URLs are historical:
 - `https://classgame-web-2057331207.us-east1.run.app`
 - `https://classgame-api-2057331207.us-east1.run.app`
 
-The original [architecture diagram](../../assets/diagrams/architecture/architecture-graphviz.svg), [pitch](../pitch/pitch.md), and [submission draft](../pitch/devpost-submission-draft.md) document the submitted system. Historical screenshots and links do not establish that a deployment is currently available.
+The original [architecture diagram](../../assets/diagrams/architecture/architecture-graphviz.svg), [pitch](../pitch/PITCH.md), and [submission draft](../pitch/DEVPOST-SUBMISSION-DRAFT.md) document the submitted system. Historical screenshots and links do not establish that a deployment is currently available.
 
-Use [local setup](../development/local-setup.md) to run the applications. A future deployment requires reviewing and provisioning its own [runtime requirements](cloud-run.md).
+Use [local setup](../development/LOCAL-SETUP.md) to run the applications. A future deployment requires reviewing and provisioning its own [runtime requirements](CLOUD-RUN.md).

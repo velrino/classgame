@@ -4,10 +4,9 @@ Coding-agent work and application AI quality. Repository assistance and Mia's ru
 
 | Guide | Purpose |
 | --- | --- |
-| [Agent workspaces](agent-workspaces.md) | Current execution model, ownership, and secure handoff |
+| [Agent workspaces](AGENT-WORKSPACES.md) | Current execution model, ownership, and secure handoff |
 | [Agent contract](../../agents/AGENTS.md) | Scoped worktrees and conditions for future standalone automation |
-| [Tutor evidence and private context](../architecture/ai-quality.md) | Runtime retrieval, context boundaries, and known limits |
+| [Tutor evidence and private context](../architecture/AI-QUALITY.md) | Runtime retrieval, context boundaries, and known limits |
+| [Evaluations](EVALUATIONS.md) | Python runner, production Go rules, and offline scope |
 
 The [root router](../../AGENTS.md) and package guides select context. This index does not register agents, configure tools, deploy workers, or grant external write permissions.
-
-- [AI quality and evidence](../architecture/ai-quality.md): retrieval, private context, and manual quality checks.

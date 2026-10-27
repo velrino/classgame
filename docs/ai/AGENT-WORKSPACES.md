@@ -20,4 +20,4 @@ Future standalone automation follows the [host/sandbox credential contract](../.
 
 Return the branch/SHA, owned paths, resulting behavior, validation commands/results, unresolved risks, and processes left running. A build is not a tested user journey; a merged PR is not a deployed release.
 
-The coordinator owns integration through the [release workflow](../processes/release-workflow.md). Save durable guidance under `docs/`; do not turn transient task assignments into claims about permanent agents.
+The coordinator owns integration through the [release workflow](../processes/RELEASE-WORKFLOW.md). Save durable guidance under `docs/`; do not turn transient task assignments into claims about permanent agents.

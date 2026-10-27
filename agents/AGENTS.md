@@ -1,13 +1,13 @@
 # Agent execution contract
 
-This directory defines contribution and isolation rules. It currently contains no deployed bot, scheduler, VM service, or model runner. Mia's application workflows live in the [system architecture](../docs/architecture/system.md).
+This directory defines contribution and isolation rules. It currently contains no deployed bot, scheduler, VM service, or model runner. Mia's application workflows live in the [system architecture](../docs/architecture/SYSTEM.md).
 
-Read the [root rules](../AGENTS.md), the relevant package guide, and [workspace guidance](../docs/ai/agent-workspaces.md).
+Read the [root rules](../AGENTS.md), the relevant package guide, and [workspace guidance](../docs/ai/AGENT-WORKSPACES.md).
 
 - Give each parallel task a separate Git worktree and branch, explicit owned paths, and a handoff target.
 - A worktree prevents checkout collisions; it does not isolate processes, credentials, the network, or the filesystem.
 - Do not alter another task's files, environment, ports, or running processes. Record processes you start; stop only those you own.
-- Return actual changes, checks, limitations, commit SHA, and branch. The coordinator integrates the authorized result through the [release workflow](../docs/processes/release-workflow.md).
+- Return actual changes, checks, limitations, commit SHA, and branch. The coordinator integrates the authorized result through the [release workflow](../docs/processes/RELEASE-WORKFLOW.md).
 
 ## If standalone automation is added
 

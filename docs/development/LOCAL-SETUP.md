@@ -83,10 +83,10 @@ Open [teacher login](http://localhost:3000/login) or the [student game](http://l
 
 ## Optional services
 
-`GENAI_ENABLED=false` selects deterministic fallbacks. For live generation, configure a supported backend and model using the [configuration reference](../reference/configuration.md); restart the API after changing its environment.
+`GENAI_ENABLED=false` selects deterministic fallbacks. For live generation, configure a supported backend and model using the [configuration reference](../reference/CONFIGURATION.md); restart the API after changing its environment.
 
 With Cloud Tasks disabled, completion finalization can fall back to synchronous work. Background copies and scheduled abandonment processing need their configured worker infrastructure; disabling the queue does not reproduce scheduled delivery.
 
 For a new Firebase project, deploy the reviewed [Firestore rules](../../firestore.rules) explicitly to that project. This changes remote access rules and is separate from starting local processes.
 
-Next: [validation](validation.md), [API contracts](../reference/api.md), and [configuration](../reference/configuration.md).
+Next: [validation](VALIDATION.md), [API contracts](../reference/API.md), and [configuration](../reference/CONFIGURATION.md).

@@ -4,13 +4,13 @@
 
 A teacher describes today's lesson. Mia creates a short review mission; students play in a 3D classroom, receive adaptive help, and leave observable learning evidence for the teacher.
 
-[Watch the demo](https://www.youtube.com/watch?v=mvsbSKlGfyE) · [Run locally](docs/development/local-setup.md) · [Documentation](docs/README.md) · [API reference](docs/reference/api.md)
+[Watch the demo](https://www.youtube.com/watch?v=mvsbSKlGfyE) · [Run locally](docs/development/LOCAL-SETUP.md) · [Documentation](docs/README.md) · [API reference](docs/reference/API.md)
 
-The previous hosted deployment is offline. See [hosting history](docs/operations/hosting-history.md) for its dated shutdown record.
+The previous hosted deployment is offline. See [hosting history](docs/operations/HOSTING-HISTORY.md) for its dated shutdown record.
 
 ## Architecture
 
-One Next.js application, one Go API, and Firebase-backed learning state. Read the [system overview](docs/architecture/system.md) and [module boundaries](docs/architecture/modules.md).
+One Next.js application, one Go API, and Firebase-backed learning state. Read the [system overview](docs/architecture/SYSTEM.md) and [module boundaries](docs/architecture/MODULES.md).
 
 <p align="center">
   <img src="assets/diagrams/architecture/architecture-graphviz.svg" alt="ClassGame production architecture" width="100%" />
@@ -34,19 +34,19 @@ Every screen below is from the working product. Select any image to open it at f
 
 ## Reproducible setup and testing
 
-Use the canonical [local setup](docs/development/local-setup.md), [configuration](docs/reference/configuration.md), and [validation](docs/development/validation.md) guides.
+Use the canonical [local setup](docs/development/LOCAL-SETUP.md), [configuration](docs/reference/CONFIGURATION.md), and [validation](docs/development/VALIDATION.md) guides.
 
 ### Path B — spin up from a clean clone
 
 <a id="path-b--spin-up-from-a-clean-clone"></a>
 
-Clone [velrino/classgame](https://github.com/velrino/classgame), configure Firebase and Redis, then start `api/` and `web/` as described in [local setup](docs/development/local-setup.md). Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home).
+Clone [velrino/classgame](https://github.com/velrino/classgame), configure Firebase and Redis, then start `api/` and `web/` as described in [local setup](docs/development/LOCAL-SETUP.md). Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home).
 
 ### Path A — test the hosted production build
 
 <a id="path-a--test-the-hosted-production-build"></a>
 
-The former deployment is offline. The [demo](https://www.youtube.com/watch?v=mvsbSKlGfyE) and [historical pitch](docs/pitch/pitch.md) preserve the submitted walkthrough.
+The former deployment is offline. The [demo](https://www.youtube.com/watch?v=mvsbSKlGfyE) and [historical pitch](docs/pitch/PITCH.md) preserve the submitted walkthrough.
 
 ## Documentation
 
@@ -56,7 +56,7 @@ Coding assistance starts at the [root router](AGENTS.md) and scoped package guid
 
 ## Deployment
 
-See [Cloud Run operations](docs/operations/cloud-run.md). Local execution does not recreate deleted hosted resources.
+See [Cloud Run operations](docs/operations/CLOUD-RUN.md). Local execution does not recreate deleted hosted resources.
 
 ## Repository layout
 
@@ -71,7 +71,7 @@ scripts/   Operational and asset commands
 
 ## Demo script (video)
 
-See the [pitch and screenshot index](docs/pitch/pitch.md) and [submission draft](docs/pitch/devpost-submission-draft.md).
+See the [pitch and screenshot index](docs/pitch/PITCH.md) and [submission draft](docs/pitch/DEVPOST-SUBMISSION-DRAFT.md).
 
 ## Credits
 
@@ -94,4 +94,4 @@ See the [pitch and screenshot index](docs/pitch/pitch.md) and [submission draft]
 <a id="known-limits-and-whats-next"></a>
 <a id="short-pitch"></a>
 
-Product and agent details moved to [architecture](docs/architecture/system.md); storage and routes to [reference](docs/README.md); historical hosted material to [pitch](docs/pitch/pitch.md) and [operations](docs/operations/hosting-history.md).
+Product and agent details moved to [architecture](docs/architecture/SYSTEM.md); storage and routes to [reference](docs/README.md); historical hosted material to [pitch](docs/pitch/PITCH.md) and [operations](docs/operations/HOSTING-HISTORY.md).

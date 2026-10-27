@@ -3,6 +3,7 @@ import { apiError } from "@/shared/http/errors";
 import { HttpMethod } from "@/shared/http/types";
 
 import type {
+  StudentAttemptScope,
   StudentLearningResponse,
   StudentLearningSnapshotRequest,
   StudentTutorTurnRequest,
@@ -12,10 +13,11 @@ export const learningApi = {
   async studentLearning(
     accessToken: string,
     mission_id: string,
+    scope?: Omit<StudentAttemptScope, "mission_id">,
   ): Promise<StudentLearningResponse> {
     const res = await httpClient.request({
       accessToken,
-      data: { mission_id },
+      data: { ...scope, mission_id },
       method: HttpMethod.GET,
       path: "/users/student-learning",
     });

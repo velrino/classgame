@@ -18,7 +18,8 @@ import (
 
 	"classgame-api/internal/auth"
 	analyticsmodule "classgame-api/internal/platform/analytics"
-	"classgame-api/internal/ratelimit"
+	"classgame-api/internal/platform/ratelimit"
+	ratehttp "classgame-api/internal/platform/ratelimit/http"
 	"classgame-api/internal/transport/httpx"
 )
 
@@ -623,7 +624,7 @@ func (handler *Handler) limitTutorGeneration(
 		return false, nil
 	}
 
-	httpx.SetRateLimitHeaders(echoCtx.Response().Header(), policy.Decision)
+	ratehttp.SetRateLimitHeaders(echoCtx.Response().Header(), policy.Decision)
 	if !policy.Decision.Allowed {
 		return true, httpx.JSONError(echoCtx, http.StatusTooManyRequests, "tutor_rate_limited", "Too many tutor requests. Wait a moment and try again.")
 	}

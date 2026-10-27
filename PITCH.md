@@ -1,5 +1,5 @@
 # Pitch
 
-The canonical historical document is [in docs/pitch](docs/pitch/pitch.md).
+The canonical historical document is [in docs/pitch](docs/pitch/PITCH.md).
 
-For current execution, use [local setup](docs/development/local-setup.md).
+For current execution, use [local setup](docs/development/LOCAL-SETUP.md).
