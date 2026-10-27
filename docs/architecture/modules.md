@@ -32,6 +32,8 @@ Create subpackages when they enforce useful boundaries. A small capability can r
 
 Share a package only when consumers share its meaning and an owner is clear. Prefer focused names such as `ratelimit`, `contentpolicy`, or `timeutil`; keep provider packages separate from business policy. Technical shared packages must not import business modules.
 
+The technical [rate-limit capability](RATE-LIMITING.md) lives under `internal/platform/ratelimit`, with standard-library core policy and separate `redis/` and `http/` adapters. Business quota rules stay outside that technical package.
+
 Keep application-only packages under `internal/`; `pkg/` has no special export behavior. Do not create extra `go.mod` files, universal repositories, service locators, or wrappers around every standard-library call. Map distinct domain models rather than forcing them into a large shared object.
 
 ## Frontend
