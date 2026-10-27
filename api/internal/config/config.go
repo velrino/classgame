@@ -11,6 +11,8 @@ import (
 )
 
 type Config struct {
+	TrustedProxyCIDRs               string
+	AuthTeacherEmailAllowlist       string
 	CORSAllowedOrigins              string
 	Host                            string
 	Port                            string
@@ -67,11 +69,13 @@ func Load() (Config, error) {
 		corsDefault = ""
 	}
 	config := Config{
+		TrustedProxyCIDRs:               reader.getString("TRUSTED_PROXY_CIDRS", ""),
+		AuthTeacherEmailAllowlist:       reader.getString("AUTH_TEACHER_EMAIL_ALLOWLIST", ""),
 		CORSAllowedOrigins:              reader.getString("CORS_ALLOWED_ORIGINS", corsDefault),
 		Host:                            reader.getString("HOST", "0.0.0.0"),
 		Port:                            reader.getString("PORT", "4004"),
 		AppEnv:                          reader.getString("APP_ENV", "development"),
-		FirebaseBootstrapEnabled:        reader.getBool("FIREBASE_BOOTSTRAP_ENABLED", true),
+		FirebaseBootstrapEnabled:        reader.getBool("FIREBASE_BOOTSTRAP_ENABLED", false),
 		FirebaseBootstrapTimeoutSeconds: reader.getInt("FIREBASE_BOOTSTRAP_TIMEOUT_SECONDS", 30),
 		FirebaseProjectID:               firebaseProjectID,
 		FirebaseCredentialsFile:         reader.getString("FIREBASE_CREDENTIALS_FILE", ""),

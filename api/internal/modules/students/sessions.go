@@ -50,7 +50,10 @@ func (service *Service) ValidateStudentClassCode(
 	ctx context.Context,
 	classCode string,
 ) error {
-	_, err := service.classByCode(ctx, classCode)
+	class, err := service.classByCode(ctx, classCode)
+	if err == nil && !classrooms.MayEnroll(class, false, time.Now()) {
+		return ErrClassCodeNotFound
+	}
 	return err
 }
 
