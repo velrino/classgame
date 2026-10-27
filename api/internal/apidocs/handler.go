@@ -7,13 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/modules/dashboard"
-	healthcheck "classgame-api/internal/modules/health-check"
-	"classgame-api/internal/modules/mission"
-	"classgame-api/internal/modules/missionattachment"
-	teacherclass "classgame-api/internal/modules/teacher-class"
-	"classgame-api/internal/modules/users"
 	"github.com/labstack/echo/v5"
+
+	"classgame-api/internal/modules/attachments"
+	"classgame-api/internal/modules/classrooms"
+	healthmodule "classgame-api/internal/modules/health"
+	"classgame-api/internal/modules/insights"
+	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/modules/students"
 )
 
 const referenceHTML = `<!doctype html>
@@ -118,7 +119,7 @@ func record(properties object) object { return object{"type": "object", "propert
 // routes. Runtime credentials and real classroom data are never embedded.
 func OpenAPI() object {
 	builder := schemaBuilder{definitions: object{}}
-	errorSchema := builder.of(users.ErrorResponse{})
+	errorSchema := builder.of(students.ErrorResponse{})
 	paths := object{}
 	add := func(path, method, id, summary, role string, request any, result object) object {
 		operation := object{"operationId": id, "summary": summary, "tags": []string{role}, "responses": object{"200": response("Success", result), "400": response("Invalid JSON, parameters or request validation", errorSchema), "429": response("Rate limit exceeded; observe Retry-After", errorSchema), "500": response("Internal error", errorSchema), "503": response("Required dependency unavailable", errorSchema)}}
@@ -155,33 +156,33 @@ func OpenAPI() object {
 	}
 	integer := object{"type": "integer", "minimum": 1, "maximum": 100}
 	pagination := []any{query("limit", "Optional page size (1–100). Omit pagination parameters for the existing response shape.", false, integer), query("cursor", "Opaque cursor returned by next_cursor; scoped to the authenticated actor and query.", false, object{"type": "string"})}
-	health := add("/", "get", "getHealth", "Cached Firebase and Redis dependency health", "public", nil, builder.of(healthcheck.HealthCheckResponse{}))
-	health["responses"].(object)["503"] = response("One or more dependencies are unavailable", builder.of(healthcheck.HealthCheckResponse{}))
+	health := add("/", "get", "getHealth", "Cached Firebase and Redis dependency health", "public", nil, builder.of(healthmodule.HealthCheckResponse{}))
+	health["responses"].(object)["503"] = response("One or more dependencies are unavailable", builder.of(healthmodule.HealthCheckResponse{}))
 	add("/docs", "get", "getApiReference", "Scalar API reference (HTML)", "documentation", nil, object{"type": "string"})["responses"] = object{"200": object{"description": "Pinned Scalar reference, same-origin requests, no auth persistence or public proxy", "content": object{"text/html": object{"schema": object{"type": "string"}}}}}
 	add("/openapi.json", "get", "getOpenAPI", "OpenAPI 3.1 contract", "documentation", nil, object{"type": "object"})
-	add("/users/student-session/validate", "post", "validateClassCode", "Validate an active six-digit class code before anonymous sign-in", "public", users.StudentClassCodeRequest{}, builder.of(users.StudentClassCodeResponse{}))["responses"].(object)["404"] = response("Active class code not found", errorSchema)
-	add("/users/student-session", "post", "joinStudentClass", "Join a class using an anonymous Firebase session", "students", users.StudentSessionRequest{}, builder.of(users.StudentSessionResponse{}))
-	add("/users/student-class", "get", "getStudentClass", "Minimal class projection for the authenticated student's joined class", "students", nil, record(object{"class": builder.of(users.StudentClassView{})}))["responses"].(object)["404"] = response("Student session or active joined class not found", errorSchema)
-	add("/users/student-mission", "post", "startStudentMission", "Start or resume a published mission pinned to its immutable revision", "students", users.StudentMissionRequest{}, builder.of(users.StudentSessionResponse{}))
-	add("/users/student-presence", "post", "saveStudentPresence", "Record bounded presence metadata; it never awards completion", "students", users.StudentPresenceRequest{}, builder.of(users.StudentSessionResponse{}))
-	learning := add("/users/student-learning", "get", "getStudentLearning", "Restore the safe learning checkpoint for the current attempt", "students", nil, builder.of(users.StudentLearningResponse{}))
+	add("/users/student-session/validate", "post", "validateClassCode", "Validate an active six-digit class code before anonymous sign-in", "public", students.StudentClassCodeRequest{}, builder.of(students.StudentClassCodeResponse{}))["responses"].(object)["404"] = response("Active class code not found", errorSchema)
+	add("/users/student-session", "post", "joinStudentClass", "Join a class using an anonymous Firebase session", "students", students.StudentSessionRequest{}, builder.of(students.StudentSessionResponse{}))
+	add("/users/student-class", "get", "getStudentClass", "Minimal class projection for the authenticated student's joined class", "students", nil, record(object{"class": builder.of(students.StudentClassView{})}))["responses"].(object)["404"] = response("Student session or active joined class not found", errorSchema)
+	add("/users/student-mission", "post", "startStudentMission", "Start or resume a published mission pinned to its immutable revision", "students", students.StudentMissionRequest{}, builder.of(students.StudentSessionResponse{}))
+	add("/users/student-presence", "post", "saveStudentPresence", "Record bounded presence metadata; it never awards completion", "students", students.StudentPresenceRequest{}, builder.of(students.StudentSessionResponse{}))
+	learning := add("/users/student-learning", "get", "getStudentLearning", "Restore the safe learning checkpoint for the current attempt", "students", nil, builder.of(students.StudentLearningResponse{}))
 	appendParams(learning, query("mission_id", "Current joined mission ID", true, object{"type": "string"}))
-	save := add("/users/student-learning", "post", "saveStudentLearning", "Save a UI checkpoint; assessment comes from verified tutor turns", "students", users.StudentLearningSnapshotRequest{}, builder.of(users.StudentLearningResponse{}))
+	save := add("/users/student-learning", "post", "saveStudentLearning", "Save a UI checkpoint; assessment comes from verified tutor turns", "students", students.StudentLearningSnapshotRequest{}, builder.of(students.StudentLearningResponse{}))
 	save["description"] = "Client progress, counts and evidence events are not authoritative. The server derives them from persisted answer/reasoning/feedback turns against the pinned question set. Completion is accepted only after the required distinct correct answers per stage; premature completed requests return learning. Await answer-turn requests before sending the final checkpoint. UI checkpoint and preferences remain recoverable presentation state."
-	add("/users/student-tutor-turn", "post", "saveStudentTutorTurn", "Submit an idempotent observable tutor interaction", "students", users.StudentTutorTurnRequest{}, builder.of(users.StudentTutorTurnAPIResponse{}))["description"] = "event_id is the retry key within an attempt. The server resolves prompt, stage, expected_answer and outcome from the pinned published question. Client-supplied expected_answer/outcome cannot award credit."
-	overview := add("/dashboard/overview", "get", "getDashboardOverview", "Teacher-owned classroom overview and learning evidence", "teachers", nil, builder.of(dashboard.OverviewResponse{}))
+	add("/users/student-tutor-turn", "post", "saveStudentTutorTurn", "Submit an idempotent observable tutor interaction", "students", students.StudentTutorTurnRequest{}, builder.of(students.StudentTutorTurnAPIResponse{}))["description"] = "event_id is the retry key within an attempt. The server resolves prompt, stage, expected_answer and outcome from the pinned published question. Client-supplied expected_answer/outcome cannot award credit."
+	overview := add("/dashboard/overview", "get", "getDashboardOverview", "Teacher-owned classroom overview and learning evidence", "teachers", nil, builder.of(insights.OverviewResponse{}))
 	appendParams(overview, query("class_id", "Optional teacher-owned class ID", false, object{"type": "string"}))
-	classes := add("/teacher-classes", "get", "listTeacherClasses", "List the authenticated teacher's classes", "teachers", nil, record(object{"teacher_classes": object{"type": "array", "items": builder.of(teacherclass.TeacherClassResponse{})}, "next_cursor": object{"type": "string"}}))
+	classes := add("/teacher-classes", "get", "listTeacherClasses", "List the authenticated teacher's classes", "teachers", nil, record(object{"teacher_classes": object{"type": "array", "items": builder.of(classrooms.TeacherClassResponse{})}, "next_cursor": object{"type": "string"}}))
 	appendParams(classes, pagination...)
-	add("/teacher-classes", "post", "upsertTeacherClass", "Create a class or update a teacher-owned class", "teachers", teacherclass.UpsertTeacherClassRequest{}, record(object{"teacher_class": builder.of(teacherclass.TeacherClassResponse{})}))
-	add("/teacher-classes/{class_id}", "get", "getTeacherClass", "Read one teacher-owned class", "teachers", nil, record(object{"teacher_class": builder.of(teacherclass.TeacherClassResponse{})}))
-	list := add("/teacher-classes/{class_id}/missions", "get", "listMissions", "List missions in a teacher-owned class", "teachers", nil, record(object{"missions": object{"type": "array", "items": builder.of(mission.MissionResponse{})}, "next_cursor": object{"type": "string"}}))
+	add("/teacher-classes", "post", "upsertTeacherClass", "Create a class or update a teacher-owned class", "teachers", classrooms.UpsertTeacherClassRequest{}, record(object{"teacher_class": builder.of(classrooms.TeacherClassResponse{})}))
+	add("/teacher-classes/{class_id}", "get", "getTeacherClass", "Read one teacher-owned class", "teachers", nil, record(object{"teacher_class": builder.of(classrooms.TeacherClassResponse{})}))
+	list := add("/teacher-classes/{class_id}/missions", "get", "listMissions", "List missions in a teacher-owned class", "teachers", nil, record(object{"missions": object{"type": "array", "items": builder.of(missions.MissionResponse{})}, "next_cursor": object{"type": "string"}}))
 	appendParams(list, pagination...)
-	add("/teacher-classes/{class_id}/missions/preview", "post", "previewMission", "Generate or revise a mission draft with optimistic revision checks", "teachers", mission.CreateMissionRequest{}, record(object{"mission": builder.of(mission.MissionResponse{})}))["responses"].(object)["409"] = response("expected_draft_revision conflicts with the current draft", errorSchema)
-	stream := add("/teacher-classes/{class_id}/missions/preview/stream", "post", "streamMissionPreview", "Generate a draft with progress, done and error SSE events", "teachers", mission.CreateMissionRequest{}, object{"type": "string"})
+	add("/teacher-classes/{class_id}/missions/preview", "post", "previewMission", "Generate or revise a mission draft with optimistic revision checks", "teachers", missions.CreateMissionRequest{}, record(object{"mission": builder.of(missions.MissionResponse{})}))["responses"].(object)["409"] = response("expected_draft_revision conflicts with the current draft", errorSchema)
+	stream := add("/teacher-classes/{class_id}/missions/preview/stream", "post", "streamMissionPreview", "Generate a draft with progress, done and error SSE events", "teachers", missions.CreateMissionRequest{}, object{"type": "string"})
 	stream["description"] = "Authenticate and rate-limit before HTTP 200. Content-Type is text/event-stream. Event progress contains stage/message/percent; done contains mission; error contains the JSON error envelope. After stream headers are committed, failures are sent as error events. Respect cancellation and the generation deadline."
 	stream["responses"].(object)["200"] = object{"description": "SSE progress followed by done or error", "content": object{"text/event-stream": object{"schema": object{"type": "string"}, "example": "event: progress\ndata: {\"stage\":\"queued\",\"message\":\"Starting mission preview.\",\"percent\":1}\n\nevent: done\ndata: {\"mission\":{\"id\":\"mission-id\"}}\n\n"}}}
-	approve := add("/teacher-classes/{class_id}/missions/{mission_id}/approve", "post", "approveMission", "Publish the expected draft revision atomically", "teachers", mission.ApproveMissionRequest{}, record(object{"mission": builder.of(mission.MissionResponse{})}))
+	approve := add("/teacher-classes/{class_id}/missions/{mission_id}/approve", "post", "approveMission", "Publish the expected draft revision atomically", "teachers", missions.ApproveMissionRequest{}, record(object{"mission": builder.of(missions.MissionResponse{})}))
 	approve["responses"].(object)["409"] = response("Stale expected draft revision", errorSchema)
 	approve["responses"].(object)["422"] = response("Education guardrail prevents publication", errorSchema)
 	deletion := add("/teacher-classes/{class_id}/missions/{mission_id}", "delete", "deleteMission", "Soft-delete a mission while retaining published history", "teachers", nil, object{})
@@ -194,7 +195,7 @@ func OpenAPI() object {
 	for _, worker := range []struct {
 		path, id, summary string
 		request           any
-	}{{"/internal/tasks/mission-attachments", "processMissionAttachments", "Retry-safe private attachment copy for an immutable revision", missionattachment.Job{}}, {"/internal/tasks/student-learning", "processStudentLearning", "Idempotent learning finalization or inactivity watchdog", users.LearningJob{}}} {
+	}{{"/internal/tasks/mission-attachments", "processMissionAttachments", "Retry-safe private attachment copy for an immutable revision", attachments.Job{}}, {"/internal/tasks/student-learning", "processStudentLearning", "Idempotent learning finalization or inactivity watchdog", students.LearningJob{}}} {
 		operation := add(worker.path, "post", worker.id, worker.summary, "workers", worker.request, object{})
 		operation["description"] = "Registered only when CLOUD_TASKS_ENABLED=true. Requires a valid Google-signed OIDC token with the configured audience and service account, plus the Cloud Tasks task-name header. Permanent/obsolete jobs are acknowledged; retryable failures return 503."
 		operation["parameters"] = []any{object{"name": "X-CloudTasks-TaskName", "in": "header", "required": true, "schema": object{"type": "string"}}}
@@ -206,17 +207,17 @@ func OpenAPI() object {
 		value    any
 		required []string
 	}{
-		{users.StudentClassCodeRequest{}, []string{"class_code"}},
-		{users.StudentSessionRequest{}, []string{"class_code", "student_name"}},
-		{users.StudentMissionRequest{}, []string{"class_code", "mission_id", "student_name"}},
-		{users.StudentPresenceRequest{}, []string{"mission_id", "status"}},
-		{users.StudentLearningSnapshotRequest{}, []string{"mission_id", "status", "snapshot"}},
-		{users.StudentTutorTurnRequest{}, []string{"mission_id", "event_id", "type"}},
-		{teacherclass.UpsertTeacherClassRequest{}, []string{"subject"}},
-		{mission.CreateMissionRequest{}, []string{"learning_goal", "teacher_prompt"}},
-		{mission.ApproveMissionRequest{}, []string{"expected_draft_revision"}},
-		{missionattachment.Job{}, []string{"class_id", "mission_id", "revision"}},
-		{users.LearningJob{}, []string{"kind", "student_id", "attempt_id"}},
+		{students.StudentClassCodeRequest{}, []string{"class_code"}},
+		{students.StudentSessionRequest{}, []string{"class_code", "student_name"}},
+		{students.StudentMissionRequest{}, []string{"class_code", "mission_id", "student_name"}},
+		{students.StudentPresenceRequest{}, []string{"mission_id", "status"}},
+		{students.StudentLearningSnapshotRequest{}, []string{"mission_id", "status", "snapshot"}},
+		{students.StudentTutorTurnRequest{}, []string{"mission_id", "event_id", "type"}},
+		{classrooms.UpsertTeacherClassRequest{}, []string{"subject"}},
+		{missions.CreateMissionRequest{}, []string{"learning_goal", "teacher_prompt"}},
+		{missions.ApproveMissionRequest{}, []string{"expected_draft_revision"}},
+		{attachments.Job{}, []string{"class_id", "mission_id", "revision"}},
+		{students.LearningJob{}, []string{"kind", "student_id", "attempt_id"}},
 	} {
 		ref := builder.of(contract.value)["$ref"].(string)
 		definition := builder.definitions[strings.TrimPrefix(ref, "#/components/schemas/")].(object)

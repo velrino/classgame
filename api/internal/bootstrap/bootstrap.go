@@ -9,15 +9,15 @@ import (
 	"cloud.google.com/go/firestore"
 	firebaseauth "firebase.google.com/go/v4/auth"
 
-	"classgame-api/internal/modules/tenant"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	"classgame-api/internal/modules/tenancy"
+	"classgame-api/internal/platform/firebase"
 )
 
 type Options struct {
 	TeacherEmail       string
 	TeacherPassword    string
 	TeacherDisplayName string
-	Hierarchy          tenant.Hierarchy
+	Hierarchy          tenancy.Hierarchy
 }
 
 type Result struct {
@@ -41,7 +41,7 @@ func Ensure(
 		return Result{}, errors.New("firebase bootstrap clients are not configured")
 	}
 
-	hierarchyResult, err := tenant.NewRepository(firestoreClient).EnsureHierarchy(
+	hierarchyResult, err := tenancy.NewFirestoreRepository(firestoreClient).EnsureHierarchy(
 		ctx,
 		options.Hierarchy,
 		time.Now().UTC(),
@@ -50,10 +50,10 @@ func Ensure(
 		return Result{}, fmt.Errorf("ensure tenant hierarchy: %w", err)
 	}
 
-	teacherResult, err := sharedfirebase.EnsureEmailPasswordUser(
+	teacherResult, err := firebase.EnsureEmailPasswordUser(
 		ctx,
 		authClient,
-		sharedfirebase.EmailPasswordUserInput{
+		firebase.EmailPasswordUserInput{
 			Email:         options.TeacherEmail,
 			Password:      options.TeacherPassword,
 			DisplayName:   options.TeacherDisplayName,
