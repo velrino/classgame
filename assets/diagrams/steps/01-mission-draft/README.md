@@ -2,9 +2,9 @@
 
 [Open the full PNG](diagram.png) · [Mermaid source](SEQUENCE.txt)
 
-The teacher uploads optional material to Uploadcare. The API checks access, downloads supported files, requests short LLM summaries, generates the mission, and saves the draft in Firestore. Action 13 returns the preview for teacher review.
+The teacher uploads **optional material** to Uploadcare. The API **checks access**, downloads supported files, requests short LLM summaries, generates the mission, and **saves the draft in Firestore**. **Action 13** returns the preview for teacher review.
 
-All participants use normal boxes, white labels, and a blue-to-purple palette on a white background. Boxes appear at first use. The `create participant` commands control this static layout; the services already exist. Without attachments, the API skips file summaries and still generates a draft.
+All participants use normal boxes, white labels, and a blue-to-purple palette on a white background. Boxes appear at first use. The `create participant` commands control this static layout; the services already exist. **Without attachments**, the API skips file summaries and still generates a draft.
 
 ## Regenerate
 
