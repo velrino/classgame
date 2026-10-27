@@ -308,6 +308,9 @@ func run() (runErr error) {
 		stopRecovery := app.StartBackgroundRecovery(ctx, func(ctx context.Context, after string, limit int) (string, error) {
 			report, err := usersService.RecoverPendingFinalizations(ctx, after, limit)
 			slog.InfoContext(ctx, "background recovery page", "scanned", report.Scanned, "candidates", report.Candidates, "enqueued", report.Enqueued, "failed", report.Failed)
+			if err != nil && report.Scanned == 0 {
+				return after, err
+			}
 			return report.NextCursor, err
 		})
 		defer stopRecovery()

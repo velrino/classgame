@@ -133,6 +133,9 @@ func (destination *Destination) Enqueue(ctx context.Context, message taskqueue.M
 	if !errors.Is(err, asynq.ErrTaskIDConflict) {
 		return err
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	existing, readErr := destination.client.inspector.GetTaskInfo(destination.client.queue, message.ID)
 	if readErr != nil {
 		return errors.New("cannot verify existing background job")

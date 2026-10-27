@@ -24,7 +24,7 @@ go run ./cmd/learning-recovery --limit 25
 # Pass the returned next_cursor to --after for the next page.
 ```
 
-`RecoverPendingFinalizations` retries stable IDs through the configured queue. The runtime must schedule these bounded sweeps; the listing command does not start a worker. `RedrivePendingFinalizations` is an explicit operator action for exhausted/archived deliveries: it advances the dispatch generation atomically, skips active leases and then enqueues. Normal sweeps do not change dispatch generations.
+Worker roles scan one page of 50 documents per minute, with a 30-second deadline. A cursor advances even when a page has no candidates; the next scan starts again after the last page. Replicas may scan the same records, so stable job IDs and domain claims remain required. `RecoverPendingFinalizations` retries stable IDs through the configured queue. The default listing command does not start a worker. `RedrivePendingFinalizations` is an explicit operator action for exhausted/archived deliveries: it advances the dispatch generation atomically, skips active leases and then enqueues. Normal sweeps do not change dispatch generations.
 
 ## Legacy limits
 
@@ -33,3 +33,14 @@ Closed pre-upgrade completed records are historical and are not automatically re
 New event documents stay private for the attempt's retention lifetime. A retention change must account for replay guarantees and data deletion requirements.
 
 This code change does not run recovery against shared data or deploy database rules. See the release validation record for emulator and offline checks; local builds alone do not prove a hosted workflow.
+
+After reviewing the same page, explicit actions are available with the dedicated broker configured:
+
+```sh
+# Enqueue pending work with existing IDs; no model runs in this command.
+go run ./cmd/learning-recovery --limit 25 --enqueue
+# Only after reviewing archived/exhausted work; changes dispatch generations.
+go run ./cmd/learning-recovery --limit 25 --redrive
+```
+
+Both actions require the same project/cursor settings as the reviewed listing. They can affect every eligible record in that bounded page. Stop or coordinate concurrent operator runs. Workers may process the newly queued jobs immediately; these commands are operational writes, never part of the offline evaluation suite.

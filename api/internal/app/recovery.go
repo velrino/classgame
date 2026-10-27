@@ -27,9 +27,9 @@ func StartBackgroundRecovery(ctx context.Context, sweep func(context.Context, st
 			stop()
 			if err != nil {
 				slog.WarnContext(ctx, "background recovery page failed")
-			} else {
-				after = next
 			}
+			// A failed enqueue must not let one archived job block later pages.
+			after = next
 			timer.Reset(time.Minute)
 		}
 	}()

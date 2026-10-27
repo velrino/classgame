@@ -24,3 +24,7 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 Exit `0` means every selected policy case passed, `1` means assertions failed, and `2` means invalid input/build/bridge/output failure. Unknown flags/IDs, duplicate IDs, malformed cases, and unsupported modes fail before case execution. `--mode=live` is deliberately unavailable; no paid run occurs.
 
 These are offline policy and contract evaluations, including a scripted timeout result. Passing them does not establish teaching quality, live robustness, deployed permissions, or a safe release. See [evaluation scope](../docs/ai/EVALUATIONS.md) and [release safety](../docs/operations/RELEASE-SAFETY.md).
+
+## Optional queue transport check
+
+`python3 evals/platform/queue-smoke/run.py` starts a temporary localhost Redis on a free non-default port and runs synthetic Go handlers through the real queue adapter. It checks completion, replay/conflict, delay, retry, archive and correlation; it then terminates its own broker. Go and `redis-server` are required. Each run has a new ignored manifest/report directory under `evals/output/`. It makes zero database or real provider calls and does not run production domain workers. It is separate from the default offline policy suite, and does not establish production persistence, failover or teaching quality.

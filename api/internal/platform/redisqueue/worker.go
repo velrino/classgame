@@ -59,6 +59,9 @@ func (client *Client) Worker(options WorkerOptions) (*Worker, error) {
 			return nil, errors.New("worker handler is invalid")
 		}
 		mux.HandleFunc(kind, func(ctx context.Context, task *asynq.Task) error {
+			if len(task.Payload()) > maxPayload+2048 {
+				return terminal(errors.New("background envelope is too large"))
+			}
 			var stored envelope
 			decoder := json.NewDecoder(bytes.NewReader(task.Payload()))
 			decoder.DisallowUnknownFields()

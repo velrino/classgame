@@ -38,7 +38,7 @@ go run ./cmd/jobs --retry JOB_ID
 
 Fix dependency/configuration failures before retrying. Invalid jobs remain archived for review. A terminal archive is not a successful domain result. A changed body under the same ID returns a conflict instead of silently accepting different work.
 
-Learning pending markers are scanned in bounded pages by worker recovery. Active claims and current scope/version checks remain authoritative. After exhausted retries, use the learning recovery command's explicit redrive action to advance the dispatch generation; normal scans must retain the stable ID.
+Learning pending markers are scanned in bounded pages by worker recovery. Active claims and current scope/version checks remain authoritative. After exhausted retries, use `go run ./cmd/learning-recovery --limit 25 --redrive` after reviewing the same read-only page to advance the dispatch generation; normal scans must retain the stable ID.
 
 Attachment transfer markers live in immutable mission revisions. Automatic attachment scans are not installed. After broker loss, inspect the stored `attachment_transfer_status`, class, mission and revision, then explicitly re-enqueue the known revision:
 

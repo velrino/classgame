@@ -118,5 +118,5 @@ func run() error {
 	if counts["nop"] != 1 || counts["retry"] != 2 || counts["terminal"] != 1 || !correlation || processed["delayed"].Before(delayUntil.Add(-time.Second)) {
 		return fmt.Errorf("unexpected execution counts/correlation/delay: %v", counts)
 	}
-	return json.NewEncoder(os.Stdout).Encode(map[string]any{"status": "passed", "checks": []string{"completion", "canonical replay", "changed payload conflict", "scheduled delivery", "retry", "terminal archive", "request and trace correlation", "archived replay rejected"}, "handler_calls": counts, "real_provider_calls": 0, "database_calls": 0})
+	return json.NewEncoder(os.Stdout).Encode(map[string]any{"status": "passed", "checks": []string{"completion", "canonical-replay", "changed-payload-conflict", "scheduled-delivery", "retry", "terminal-archive", "request-trace-correlation", "archived-replay-rejected"}, "handler_calls": counts, "real_provider_calls": 0, "database_calls": 0})
 }
