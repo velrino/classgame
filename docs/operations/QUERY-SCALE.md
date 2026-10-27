@@ -13,7 +13,7 @@ The teacher app reads one student page and loads full history only when a teache
 | Old `/dashboard/overview` | Full response only within 100 student rows and 100 attempts; otherwise 409 `pagination_required` |
 | Class AI context | At most 100 latest evidence students; normal reads validate at most twice that number of rows |
 
-The overview response labels its counts and patterns `student_page`. It includes `read_at` and a next cursor. The UI shows that scope on every tab, provides Previous/Next controls, and refreshes the visible page every 15 seconds. History pages show their read time and have their own refresh button. Older attempts remain reachable.
+The overview response labels its counts and patterns `student_page`. It includes `read_at` and a next cursor. The UI shows that scope on every tab, provides Previous/Next controls, and refreshes the visible page every 15 seconds. History pages show their read time and have their own refresh button. Older attempts remain reachable. If new indexes are not ready, the web app can use the complete capped compatibility view for small classes, including their embedded full history. It never treats a truncated sample as that fallback. Large classes retain the clear index error until the approved rollout is ready. The compatibility route uses its existing class/document-ID indexes and sorts only a complete capped result; it does not need the new per-student time indexes.
 
 Roster cursors use document IDs. History cursors use last activity and document ID, and are bound to the class, student, and route. Ties cannot skip duplicate timestamps. Each request is a fresh database read; active records can move as new work arrives. This is not a consistent export of the entire class.
 

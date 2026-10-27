@@ -287,6 +287,40 @@ func run() error {
 		}
 		return nil
 	})
+	check("small-legacy-overview-keeps-complete-response-v1", func() error {
+		classID, uid := prefix+"SM", prefix+"compat-student"
+		classRef := client.Collection("teacher_classes").Doc(classID)
+		userRef := client.Collection("users").Doc(uid)
+		owned = append(owned, classRef, userRef)
+		smallClass := class
+		smallClass.ID = classID
+		smallClass.ClassID = classID
+		if _, err := classRef.Set(ctx, smallClass); err != nil {
+			return err
+		}
+		if _, err := userRef.Set(ctx, map[string]any{"roles": []string{"student"}, "student": map[string]any{"class_id": classID, "student_name": "Synthetic compatibility student"}}); err != nil {
+			return err
+		}
+		for index := 0; index < 2; index++ {
+			attempt := first
+			attempt.ID = fmt.Sprintf("%s-compat-%d", prefix, index)
+			attempt.StudentID = uid
+			attempt.ClassID = classID
+			ref := client.Collection("student_mission_attempts").Doc(attempt.ID)
+			owned = append(owned, ref)
+			if _, err := ref.Set(ctx, attempt); err != nil {
+				return err
+			}
+		}
+		page, err := service.GetOverview(ctx, identity, classID)
+		if err != nil {
+			return err
+		}
+		if page.Page != nil || len(page.Students) != 1 || len(page.Students[0].Attempts) != 2 {
+			return errors.New("small legacy response changed meaning")
+		}
+		return nil
+	})
 	check("history-owner-and-cursor-scope-v1", func() error {
 		other := identity
 		other.ProviderUserID = "synthetic-other-owner"

@@ -39,16 +39,18 @@ import {
 
 type StudentLearningDetailProps = {
   readonly open: boolean;
+  readonly completeHistory?: boolean;
   readonly student: DashboardStudentDto | null;
   readonly onOpenChange: (open: boolean) => void;
 };
 
 export function StudentLearningDetail({
   open,
+  completeHistory = false,
   student,
   onOpenChange,
 }: StudentLearningDetailProps) {
-  const history = useStudentHistory(student, open);
+  const history = useStudentHistory(student, open, completeHistory);
   const [selectedAttemptId, setSelectedAttemptId] = useState(
     safeList(student?.attempts)[0]?.id ?? "",
   );
@@ -75,8 +77,8 @@ export function StudentLearningDetail({
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" disabled={history.loading || !history.canGoBack} onClick={history.previous}>Newer history</Button>
           <Button variant="outline" size="sm" disabled={history.loading || !history.page.next_cursor} onClick={history.next}>Older history</Button>
-          <Button variant="ghost" size="sm" disabled={history.loading} onClick={history.refresh}>Refresh</Button>
-          <span className="text-xs text-muted-foreground">{history.loading ? "Loading history…" : `${attempts.length} attempts on this page`}</span>
+          {!completeHistory ? <Button variant="ghost" size="sm" disabled={history.loading} onClick={history.refresh}>Refresh</Button> : null}
+          <span className="text-xs text-muted-foreground">{history.loading ? "Loading history…" : `${attempts.length} ${completeHistory ? "recorded attempts" : "attempts on this page"}`}</span>
         </div>
         {history.page.read_at ? <p className="mt-1 text-xs text-muted-foreground">History snapshot read at {new Date(history.page.read_at).toLocaleTimeString()}. Refresh for new work.</p> : null}
         {history.error ? <p role="alert" className="mt-2 text-destructive">{history.error}</p> : null}

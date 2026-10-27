@@ -114,18 +114,25 @@ func (repository *FirestoreRepository) ListAttemptPage(ctx context.Context, clas
 		return result, err
 	}
 	query := repository.client.Collection("student_mission_attempts").Where("class_id", "==", classID)
-	if studentID != "" {
-		query = query.Where("student_id", "==", studentID)
+	if studentID == "" {
+		// The bounded legacy route returns every row only when the cap fits.
+		// Sorting happens in the existing presenter, so it needs no new time index.
+		query = query.OrderBy(firestore.DocumentID, firestore.Asc)
+		if cursor.ID != "" {
+			query = query.StartAfter(cursor.ID)
+		}
+	} else {
+		query = query.Where("student_id", "==", studentID).OrderBy("last_activity_at", firestore.Desc).OrderBy(firestore.DocumentID, firestore.Asc)
+		if cursor.ID != "" {
+			if cursor.ActivityAt.IsZero() {
+				return result, ErrInvalidPage
+			}
+			query = query.StartAfter(cursor.ActivityAt, cursor.ID)
+		}
 	}
-	query = query.OrderBy("last_activity_at", firestore.Desc).OrderBy(firestore.DocumentID, firestore.Asc).Limit(page.Limit + 1)
+	query = query.Limit(page.Limit + 1)
 	if summary {
 		query = query.Limit(page.Limit).Select(attemptSummaryFields...)
-	}
-	if cursor.ID != "" {
-		if cursor.ActivityAt.IsZero() {
-			return result, ErrInvalidPage
-		}
-		query = query.StartAfter(cursor.ActivityAt, cursor.ID)
 	}
 	rows, err := query.Documents(ctx).GetAll()
 	if err != nil {

@@ -25,7 +25,15 @@ export const insightsApi = {
     });
 
     if (!res.ok) {
-      throw await apiError(res, "DASHBOARD_OVERVIEW_FAILED");
+      const error = await apiError(res, "DASHBOARD_OVERVIEW_FAILED");
+      if (error.code !== "query_index_required") throw error;
+      // A complete capped response keeps small classes usable during index rollout.
+      const legacy = await httpClient.request({accessToken, data: {class_id: data?.class_id}, method: HttpMethod.GET, path: "/dashboard/overview"});
+      if (!legacy.ok) {
+        const legacyError = await apiError(legacy, "DASHBOARD_OVERVIEW_FAILED");
+        throw legacyError.code === "pagination_required" ? error : legacyError;
+      }
+      return await legacy.json() as DashboardOverviewResponse;
     }
 
     return (await res.json()) as DashboardOverviewResponse;

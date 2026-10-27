@@ -9,24 +9,6 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "last_activity_at",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "student_mission_attempts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "class_id",
-          "order": "ASCENDING"
-        },
-        {
           "fieldPath": "student_id",
           "order": "ASCENDING"
         },

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { insightsApi } from "../http";
 import type { DashboardStudentDto, StudentHistoryResponse } from "../types/contracts";
 
-export function useStudentHistory(student: DashboardStudentDto | null, open: boolean) {
+export function useStudentHistory(student: DashboardStudentDto | null, open: boolean, completeHistory = false) {
   const auth = useTeacherAuth();
   const generation = useRef(0);
   const busy = useRef(false);
@@ -34,10 +34,10 @@ export function useStudentHistory(student: DashboardStudentDto | null, open: boo
   }, [user, classId, studentId]);
   useEffect(() => {
     const ticket = ++generation.current; busy.current = false;
-    if (open) void Promise.resolve().then(() => { if (ticket === generation.current) void load("", []); });
+    if (open && !completeHistory) void Promise.resolve().then(() => { if (ticket === generation.current) void load("", []); });
     return () => { generation.current += 1; busy.current = false; };
-  }, [load, open]);
-  return {page, loading, error, canGoBack: trail.length > 0,
+  }, [load, open, completeHistory]);
+  return {page: completeHistory ? {attempts: student?.attempts ?? [], next_cursor: "", read_at: ""} : page, loading: completeHistory ? false : loading, error: completeHistory ? null : error, canGoBack: !completeHistory && trail.length > 0,
     previous: () => { if (trail.length) void load(trail.at(-1)!, trail.slice(0,-1)); },
     next: () => { if (page.next_cursor) void load(page.next_cursor, [...trail, cursor]); },
     refresh: () => { void load(cursor, trail); },

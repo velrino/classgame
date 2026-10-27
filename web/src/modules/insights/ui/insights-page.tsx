@@ -367,6 +367,7 @@ export function DashboardPage({
         <StudentLearningDetail
           key={selectedStudent ? `${selectedStudent.class_id}:${selectedStudent.id}` : "no-student"}
           open={selectedStudent !== null}
+          completeHistory={overview?.page === undefined}
           student={selectedStudent}
           onOpenChange={(open) => {
             if (!open) {
