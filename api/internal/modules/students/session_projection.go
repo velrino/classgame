@@ -2,7 +2,6 @@ package students
 
 import (
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 )
 
@@ -17,15 +16,7 @@ func studentSessionMissionFromDocument(document missions.MissionDocument) Studen
 		GradeLevel:        document.GradeLevel,
 		LearningGoal:      document.LearningGoal,
 		Stages:            document.Stages,
-		PreviewQuestions: generation.PlayablePreviewQuestions(generation.BuildMissionInput{
-			ClassID:       document.ClassID,
-			ClassName:     document.ClassName,
-			MissionName:   document.MissionName,
-			Subject:       document.Subject,
-			GradeLevel:    document.GradeLevel,
-			LearningGoal:  document.LearningGoal,
-			TeacherPrompt: document.TeacherPrompt,
-		}, document.PreviewQuestions),
+		PreviewQuestions:  playableMissionQuestions(document),
 	}
 }
 
