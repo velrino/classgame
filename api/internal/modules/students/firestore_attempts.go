@@ -71,6 +71,7 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 		finalizeRequestedAt := time.Time{}
 		tutorTurns := []StudentTutorTurn{}
 
+		evidence := StudentMissionAttemptDocument{EvidenceSchemaVersion: assessmentEvidenceSchemaVersion}
 		existingSnapshot, err := tx.Get(attemptRef)
 		switch {
 		case err == nil:
@@ -100,12 +101,13 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 			tutorTurns = existing.TutorTurns
 			if existing.Status == "completed" {
 				attempt = existing
-				return tx.Set(
-					repository.studentMissionCompletionRef(user.ID, existing.ID),
-					studentMissionCompletionMap(existing),
-					firestore.MergeAll,
-				)
+				return nil
 			}
+			evidence = EffectiveTutorEvidence(existing)
+			if existing.EvidenceSchemaVersion == 0 {
+				evidence.AcceptedAnswers = acceptedAnswerFacts(input.Mission, existing.TutorTurns)
+			}
+
 			if existing.Snapshot.Revision >= input.Snapshot.Revision {
 				if input.Status != "completed" {
 					attempt = existing
@@ -126,7 +128,7 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 			return fmt.Errorf("read learning attempt: %w", err)
 		}
 
-		input.Snapshot, input.Status = AssessLearningSnapshot(input.Mission, input.Snapshot, tutorTurns, input.Status)
+		input.Snapshot, input.Status = AssessLearningSnapshotWithEvidence(input.Mission, input.Snapshot, tutorTurns, evidence.AcceptedAnswers, input.Status)
 		liveInput := toLearningTraceInput(input.Mission, input.Snapshot, "in_progress", StudentLearningMemory{})
 		trace = generation.BuildObservedLearningTrace(liveInput, "")
 		trace.Finalized = false
@@ -147,6 +149,8 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 			SchoolID:       user.Student.SchoolID,
 		})
 		attempt = StudentMissionAttemptDocument{
+			EvidenceSchemaVersion: evidence.EvidenceSchemaVersion, AcceptedAnswers: evidence.AcceptedAnswers, GeneratedTurnCount: evidence.GeneratedTurnCount, TutorEventSequence: evidence.TutorEventSequence, LegacyHistoryIncomplete: evidence.LegacyHistoryIncomplete, EvidenceRevision: evidence.EvidenceRevision + 1, FinalizationDispatchGeneration: evidence.FinalizationDispatchGeneration,
+
 			ID:                  attemptID,
 			OrganizationID:      scope.OrganizationID,
 			DistrictID:          scope.DistrictID,
@@ -370,6 +374,7 @@ func (repository *FirestoreRepository) MarkStudentAttemptAbandoned(
 			return fmt.Errorf("read watchdog student: %w", readErr)
 		}
 
+		attempt.EvidenceRevision++
 		attempt.Status = "abandoned"
 		attempt.AbandonedAt = timestamp
 		attempt.TraceState = "pending"
@@ -377,6 +382,7 @@ func (repository *FirestoreRepository) MarkStudentAttemptAbandoned(
 		attempt.UpdatedAt = timestamp
 		marked = true
 		if err := tx.Set(attemptRef, map[string]any{
+			"evidence_revision": attempt.EvidenceRevision, "finalization_token": "", "finalization_lease_until": time.Time{}, "trace": map[string]any{"finalized": false},
 			"status":                attempt.Status,
 			"abandoned_at":          attempt.AbandonedAt,
 			"trace_state":           attempt.TraceState,
@@ -404,33 +410,15 @@ func (repository *FirestoreRepository) MarkStudentAttemptAbandoned(
 	return attempt, marked, nil
 }
 
-func (repository *FirestoreRepository) SetStudentAttemptTraceState(
-	ctx context.Context,
-	attemptID string,
-	state string,
-	timestamp time.Time,
-) error {
-	_, err := repository.client.Collection(studentAttemptsCollectionName).Doc(attemptID).Set(ctx, map[string]any{
-		"trace_state": state,
-		"updated_at":  timestamp,
-	}, firestore.MergeAll)
-	if err != nil {
-		return fmt.Errorf("set learning trace state: %w", err)
-	}
-
-	return nil
-}
-
 func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 	ctx context.Context,
-	studentID string,
-	attemptID string,
+	fence FinalizationFence,
 	trace generation.LearningTraceBlueprint,
 	memory StudentLearningMemory,
 	timestamp time.Time,
 ) (StudentMissionAttemptDocument, error) {
-	userRef := repository.client.Collection(usersCollectionName).Doc(studentID)
-	attemptRef := repository.client.Collection(studentAttemptsCollectionName).Doc(attemptID)
+	userRef := repository.client.Collection(usersCollectionName).Doc(fence.StudentID)
+	attemptRef := repository.client.Collection(studentAttemptsCollectionName).Doc(fence.AttemptID)
 	var attempt StudentMissionAttemptDocument
 
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
@@ -456,19 +444,33 @@ func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 		if err := attemptSnapshot.DataTo(&attempt); err != nil {
 			return fmt.Errorf("decode learning attempt: %w", err)
 		}
-		if attempt.StudentID != studentID {
+		if attempt.StudentID != fence.StudentID {
 			return ErrStudentMissionMismatch
 		}
 
+		if attempt.ID == "" {
+			attempt.ID = attemptRef.ID
+		}
+		if attempt.Trace.Finalized {
+			return nil
+		}
+		if !MatchesFinalizationFence(attempt, fence) {
+			return ErrStaleFinalization
+		}
+		trace.Finalized = true
+
+		attempt.FinalizationToken = ""
+		attempt.FinalizationLeaseUntil = time.Time{}
 		attempt.Trace = trace
 		attempt.TraceState = "ready"
 		attempt.UpdatedAt = timestamp
 		memory.UpdatedAt = timestamp
 
 		if err := tx.Set(attemptRef, map[string]any{
-			"trace":       trace,
-			"trace_state": "ready",
-			"updated_at":  timestamp,
+			"trace":              trace,
+			"trace_state":        "ready",
+			"finalization_token": "", "finalization_lease_until": time.Time{},
+			"updated_at": timestamp,
 		}, firestore.MergeAll); err != nil {
 			return fmt.Errorf("write learning trace: %w", err)
 		}
@@ -505,6 +507,8 @@ func studentAttemptEvidenceTime(attempt StudentMissionAttemptDocument) time.Time
 
 func learningAttemptFirestoreMap(attempt StudentMissionAttemptDocument) map[string]any {
 	return map[string]any{
+		"evidence_schema_version": attempt.EvidenceSchemaVersion, "accepted_answers": attempt.AcceptedAnswers, "generated_turn_count": attempt.GeneratedTurnCount, "tutor_event_sequence": attempt.TutorEventSequence, "legacy_history_incomplete": attempt.LegacyHistoryIncomplete, "evidence_revision": attempt.EvidenceRevision, "finalization_token": attempt.FinalizationToken, "finalization_lease_until": attempt.FinalizationLeaseUntil, "finalization_dispatch_generation": attempt.FinalizationDispatchGeneration,
+
 		"id":                    attempt.ID,
 		"organization_id":       attempt.OrganizationID,
 		"district_id":           attempt.DistrictID,

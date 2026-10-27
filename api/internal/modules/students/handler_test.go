@@ -277,10 +277,15 @@ type fakeStudentTutorService struct {
 }
 
 func (service *fakeStudentTutorService) SaveStudentTutorTurn(
-	context.Context,
-	auth.Identity,
-	SaveStudentTutorTurnInput,
+	ctx context.Context,
+	_ auth.Identity,
+	input SaveStudentTutorTurnInput,
 ) (StudentTutorTurn, error) {
+	if input.BeforeGeneration != nil {
+		if err := input.BeforeGeneration(ctx); err != nil {
+			return StudentTutorTurn{}, err
+		}
+	}
 	service.called = true
 	return StudentTutorTurn{}, nil
 }

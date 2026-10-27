@@ -22,6 +22,11 @@ const (
 )
 
 type LearningJob struct {
+	ExpectedEvidenceRevision int64  `json:"expected_evidence_revision,omitempty"`
+	ExpectedSnapshotRevision int64  `json:"expected_snapshot_revision,omitempty"`
+	ExpectedStatus           string `json:"expected_status,omitempty"`
+	DispatchGeneration       int64  `json:"dispatch_generation,omitempty"`
+
 	Kind                   string    `json:"kind"`
 	StudentID              string    `json:"student_id"`
 	AttemptID              string    `json:"attempt_id"`
@@ -29,6 +34,12 @@ type LearningJob struct {
 }
 
 func (job LearningJob) Validate() error {
+	if job.ExpectedEvidenceRevision < 0 || job.ExpectedSnapshotRevision < 0 || job.DispatchGeneration < 0 {
+		return errors.New("learning job version cannot be negative")
+	}
+	if job.ExpectedStatus != "" && job.ExpectedStatus != "completed" && job.ExpectedStatus != "abandoned" {
+		return errors.New("learning job expected status is invalid")
+	}
 	if job.Kind != LearningJobFinalize && job.Kind != LearningJobWatchdog {
 		return errors.New("student learning job kind is invalid")
 	}
@@ -81,11 +92,7 @@ func (enqueuer *CloudLearningTaskEnqueuer) EnqueueFinalization(
 	ctx context.Context,
 	attempt StudentMissionAttemptDocument,
 ) error {
-	job := LearningJob{
-		Kind:      LearningJobFinalize,
-		StudentID: attempt.StudentID,
-		AttemptID: attempt.ID,
-	}
+	job := FinalizationJob(attempt)
 
 	return enqueuer.enqueue(ctx, job, enqueuer.now().Add(enqueuer.finalizationDelay))
 }
@@ -132,6 +139,10 @@ func (enqueuer *CloudLearningTaskEnqueuer) enqueue(
 }
 
 func learningTaskID(job LearningJob) string {
+	if job.Kind == LearningJobFinalize {
+		digest := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%s\x00%d\x00%d\x00%s\x00%d", job.Kind, job.StudentID, job.AttemptID, job.ExpectedEvidenceRevision, job.ExpectedSnapshotRevision, job.ExpectedStatus, job.DispatchGeneration)))
+		return "student-learning-" + hex.EncodeToString(digest[:])
+	}
 	activityVersion := int64(0)
 	if job.Kind == LearningJobWatchdog {
 		activityVersion = job.ExpectedLastActivityAt.UTC().UnixNano()

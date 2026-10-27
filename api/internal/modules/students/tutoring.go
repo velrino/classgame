@@ -2,6 +2,8 @@ package students
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
@@ -21,7 +23,7 @@ func (service *Service) SaveStudentTutorTurn(
 	if identity.AuthMethod != auth.AuthMethodAnonymous {
 		return StudentTutorTurn{}, ErrStudentRequiresAnonymousAuth
 	}
-	if service.learning == nil || service.sessions == nil || service.tutorTurnGenerator == nil {
+	if service.learning == nil || service.sessions == nil {
 		return StudentTutorTurn{}, errors.New("student tutor dependencies are not configured")
 	}
 
@@ -44,12 +46,42 @@ func (service *Service) SaveStudentTutorTurn(
 	}
 	input.ExpectedAttemptID = attempt.ID
 	input.ExpectedPublishedRevision = attempt.PublishedRevision
-	if existingTurn, exists := existingStudentTutorTurn(attempt.TutorTurns, input.EventID); exists {
-		return existingTurn, nil
+
+	replay, found, err := service.learning.GetStudentTutorEvent(ctx, identity.ProviderUserID, attempt.ID, input.EventID)
+	if err != nil {
+		return StudentTutorTurn{}, err
 	}
-	if input.Type != "feedback" && studentTutorTurnLimitReached(attempt.TutorTurns) {
-		return StudentTutorTurn{}, ErrStudentTutorTurnLimit
+	if found {
+		turn, complete, err := TutorReplayDecision(replay, input, time.Now())
+		if err != nil {
+			return StudentTutorTurn{}, err
+		}
+		if complete {
+			return turn, nil
+		}
 	}
+	if existing, found := existingStudentTutorTurn(attempt.TutorTurns, input.EventID); found {
+		if fingerprintRecordedTurn(existing, input) != TutorEventFingerprint(input) {
+			return StudentTutorTurn{}, ErrTutorEventConflict
+		}
+		return existing, nil
+	}
+	if attempt.Status == "completed" {
+		return StudentTutorTurn{}, ErrStudentAttemptClosed
+	}
+	attempt = EffectiveTutorEvidence(attempt)
+	if input.Type != "feedback" {
+		if attempt.LegacyHistoryIncomplete {
+			return StudentTutorTurn{}, ErrTutorHistoryIncomplete
+		}
+		if !CanGenerateTutorTurn(attempt) {
+			return StudentTutorTurn{}, ErrStudentTutorTurnLimit
+		}
+		if service.tutorTurnGenerator == nil {
+			return StudentTutorTurn{}, errors.New("student tutor generator is not configured")
+		}
+	}
+
 	missionDocument, err := service.missionForAttempt(
 		ctx,
 		attempt,
@@ -61,6 +93,13 @@ func (service *Service) SaveStudentTutorTurn(
 	if err != nil {
 		return StudentTutorTurn{}, err
 	}
+
+	if input.Type != "feedback" && input.BeforeGeneration != nil {
+		if err := input.BeforeGeneration(ctx); err != nil {
+			return StudentTutorTurn{}, err
+		}
+	}
+	safeSnapshot, _ := AssessLearningSnapshotWithEvidence(missionDocument, attempt.Snapshot, attempt.TutorTurns, attempt.AcceptedAnswers, attempt.Status)
 
 	retrievedChunks := retrieveMissionKnowledge(missionDocument, input, 5)
 	classContext := generation.TutorClassContext{}
@@ -88,9 +127,9 @@ func (service *Service) SaveStudentTutorTurn(
 		ClassContext: classContext,
 		Attempt: generation.TutorAttemptContext{
 			Status:       attempt.Status,
-			Progress:     toTutorProgress(attempt.Snapshot.Progress),
+			Progress:     toTutorProgress(safeSnapshot.Progress),
 			RecentTurns:  toTutorTurnHistory(attempt.TutorTurns),
-			RecentEvents: toTutorEvents(attempt.Snapshot.Events),
+			RecentEvents: toTutorEvents(safeSnapshot.Events),
 		},
 		Turn: generation.TutorTurnEvidence{
 			EventID:           input.EventID,
@@ -112,12 +151,26 @@ func (service *Service) SaveStudentTutorTurn(
 		"Feedback was recorded for the next tutor interaction without generating new AI content.",
 	)
 	if input.Type != "feedback" {
+		ownerBytes := make([]byte, 16)
+		if _, err := rand.Read(ownerBytes); err != nil {
+			return StudentTutorTurn{}, err
+		}
+		input.ReservationOwner = hex.EncodeToString(ownerBytes)
+		now := time.Now()
+		reservation, reserveErr := service.learning.ReserveTutorGeneration(ctx, input, input.ReservationOwner, now, now.Add(tutorEventLeaseDuration))
+		if reserveErr != nil {
+			return StudentTutorTurn{}, reserveErr
+		}
+		if reservation.Completed {
+			return reservation.Turn, nil
+		}
 		tutor, err = service.tutorTurnGenerator.BuildTutorTurn(ctx, turnInput)
 		if err != nil {
+			_ = service.learning.FailTutorGeneration(ctx, input, time.Now())
 			return StudentTutorTurn{}, err
 		}
 	}
-
+	input.Timestamp = time.Now()
 	return service.learning.AppendStudentTutorTurn(ctx, input, tutor)
 }
 

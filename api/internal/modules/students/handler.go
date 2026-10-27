@@ -560,15 +560,21 @@ func (handler *Handler) PostStudentTutorTurn(ctx *echo.Context) error {
 	if err != nil || !ok {
 		return err
 	}
-	limited, err := handler.limitTutorGeneration(requestContext, ctx, identity)
-	if err != nil || limited {
-		return err
-	}
 
 	turn, err := handler.studentTutorService.SaveStudentTutorTurn(
 		requestContext,
 		identity,
 		SaveStudentTutorTurnInput{
+			BeforeGeneration: func(admissionContext context.Context) error {
+				limited, err := handler.limitTutorGeneration(admissionContext, ctx, identity)
+				if err != nil {
+					return err
+				}
+				if limited {
+					return ErrTutorAdmissionHandled
+				}
+				return nil
+			},
 			RequestScope:      AttemptScope{AttemptID: request.AttemptID, PublishedRevision: request.PublishedRevision},
 			MissionID:         request.MissionID,
 			EventID:           request.EventID,
@@ -583,6 +589,9 @@ func (handler *Handler) PostStudentTutorTurn(ctx *echo.Context) error {
 			Feedback:          request.Feedback,
 		},
 	)
+	if errors.Is(err, ErrTutorAdmissionHandled) {
+		return nil
+	}
 	if err != nil {
 		return handler.studentLearningError(ctx, err)
 	}
@@ -606,6 +615,7 @@ func (handler *Handler) limitTutorGeneration(
 		ratelimit.Rule{Limiter: handler.tutorRateLimiters.PerIPHour, Identifier: ipIdentifier},
 	)
 	if err != nil {
+		echoCtx.Response().Header().Set("Retry-After", "5")
 		slog.Error("student tutor rate limiter failed", "error", err)
 		return true, httpx.JSONError(echoCtx, http.StatusServiceUnavailable, "rate_limit_unavailable", "Student tutor is temporarily unavailable.")
 	}
@@ -622,6 +632,15 @@ func (handler *Handler) limitTutorGeneration(
 
 func (handler *Handler) studentLearningError(ctx *echo.Context, err error) error {
 	switch {
+	case errors.Is(err, ErrTutorEventPending):
+		ctx.Response().Header().Set("Retry-After", "5")
+		return httpx.JSONError(ctx, http.StatusServiceUnavailable, "tutor_event_pending", "This interaction is still processing. Retry the same event.")
+	case errors.Is(err, ErrTutorEventConflict):
+		return httpx.JSONError(ctx, http.StatusConflict, "tutor_event_conflict", "This event ID already belongs to different evidence.")
+	case errors.Is(err, ErrStudentAttemptClosed):
+		return httpx.JSONError(ctx, http.StatusConflict, "attempt_closed", "This mission attempt is complete. Select another mission.")
+	case errors.Is(err, ErrTutorHistoryIncomplete):
+		return httpx.JSONError(ctx, http.StatusConflict, "tutor_history_incomplete", "This older attempt has incomplete history. Ask the teacher for a new mission revision.")
 	case errors.Is(err, ErrStudentRequiresAnonymousAuth):
 		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Student learning requires anonymous Firebase auth.")
 	case errors.Is(err, ErrStudentNotFound):
