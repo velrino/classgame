@@ -37,6 +37,6 @@ Keep one Go API and one Next.js app. Use business modules with clear owners. Tra
 
 Run the existing Go and web checks, offline policy evaluations, dependency scans, and affected local flows. Check links, file names, the Product tour, and the original SVG. Use the [release workflow](../processes/RELEASE-WORKFLOW.md); a merge does not deploy the app.
 
-## Work that needs a separate operational step
+## Completed access work and future deployment
 
-The [validation record](../operations/RELEASE-VALIDATION.md) now records measured local queries, browser recovery, shared budgets, retention checks, and separately approved cloud access restrictions. Four old private files still need their existing owner to authorize runtime reads; issue #5 stays open. No app deployment, new permission grant, file deletion, or shared-data bootstrap ran. Future hosted setup follows [release safety](../operations/RELEASE-SAFETY.md).
+The [validation record](../operations/RELEASE-VALIDATION.md) now records measured local queries, browser recovery, shared budgets, retention checks, and separately approved cloud access restrictions. The four old private files now have a read-only exact-path grant for the existing API identity. All 12 private reads pass and anonymous reads remain denied. No app deployment, file deletion, or shared-data bootstrap ran. Future hosted setup follows [release safety](../operations/RELEASE-SAFETY.md).
