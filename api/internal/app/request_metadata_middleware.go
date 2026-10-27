@@ -6,7 +6,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/shared/requestmeta"
+	"classgame-api/internal/platform/requestmeta"
 )
 
 func requestMetadataMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

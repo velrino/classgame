@@ -21,7 +21,7 @@ service cloud.firestore {
     // Browser clients are read-only. All writes, including anonymous student
     // checkpoints, go through the API after server-side validation.
     match /teacher_classes/{classId} {
-      allow read: if ownsClass(classId) || isStudentInClass(classId);
+      allow read: if ownsClass(classId);
       allow write: if false;
     }
 

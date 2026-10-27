@@ -10,28 +10,28 @@ import (
 
 	"classgame-api/internal/apidocs"
 	"classgame-api/internal/config"
-	"classgame-api/internal/modules/dashboard"
-	healthcheck "classgame-api/internal/modules/health-check"
-	mission "classgame-api/internal/modules/mission"
-	teacherclass "classgame-api/internal/modules/teacher-class"
-	"classgame-api/internal/modules/users"
-	sharedanalytics "classgame-api/internal/shared/analytics"
-	"classgame-api/internal/shared/requestmeta"
+	"classgame-api/internal/modules/classrooms"
+	"classgame-api/internal/modules/health"
+	"classgame-api/internal/modules/insights"
+	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/platform/analytics"
+	"classgame-api/internal/platform/requestmeta"
 )
 
 const defaultRequestBodyLimitBytes int64 = 256 * 1024
 
 type Options struct {
-	Analytics           sharedanalytics.Tracker
+	Analytics           analytics.Tracker
 	Config              config.Config
-	Dashboard           dashboard.HandlerOptions
-	HealthChecks        []healthcheck.Check
+	Dashboard           insights.HandlerOptions
+	HealthChecks        []health.Check
 	StartedAt           time.Time
-	TeacherClass        teacherclass.HandlerOptions
-	Mission             mission.HandlerOptions
+	TeacherClass        classrooms.HandlerOptions
+	Mission             missions.HandlerOptions
 	MissionAttachment   http.Handler
 	StudentLearningTask http.Handler
-	Users               users.HandlerOptions
+	Users               students.HandlerOptions
 }
 
 func New(options Options) *echo.Echo {
@@ -83,7 +83,7 @@ func New(options Options) *echo.Echo {
 
 	apidocs.RegisterRoutes(server)
 
-	healthcheck.RegisterRoutes(server, healthcheck.HandlerOptions{
+	health.RegisterRoutes(server, health.HandlerOptions{
 		AppEnv:         options.Config.AppEnv,
 		Checks:         options.HealthChecks,
 		CheckCacheTTL:  time.Minute,
@@ -97,10 +97,10 @@ func New(options Options) *echo.Echo {
 		server.POST("/internal/tasks/student-learning", echo.WrapHandler(options.StudentLearningTask))
 	}
 
-	users.RegisterRoutes(server, options.Users)
-	dashboard.RegisterRoutes(server, options.Dashboard)
-	teacherclass.RegisterRoutes(server, options.TeacherClass)
-	mission.RegisterRoutes(server, options.Mission)
+	students.RegisterRoutes(server, options.Users)
+	insights.RegisterRoutes(server, options.Dashboard)
+	classrooms.RegisterRoutes(server, options.TeacherClass)
+	missions.RegisterRoutes(server, options.Mission)
 
 	return server
 }

@@ -14,25 +14,23 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"classgame-api/internal/app"
+	"classgame-api/internal/auth"
 	"classgame-api/internal/bootstrap"
 	"classgame-api/internal/config"
-	"classgame-api/internal/modules/dashboard"
-	healthcheck "classgame-api/internal/modules/health-check"
-	mission "classgame-api/internal/modules/mission"
-	"classgame-api/internal/modules/missionattachment"
-	"classgame-api/internal/modules/orchestrator"
-	teacherclass "classgame-api/internal/modules/teacher-class"
-	"classgame-api/internal/modules/tenant"
-	"classgame-api/internal/modules/users"
-	sharedanalytics "classgame-api/internal/shared/analytics"
-	sharedauth "classgame-api/internal/shared/auth"
-	"classgame-api/internal/shared/cloudtasksqueue"
-	sharedgoogle "classgame-api/internal/shared/google"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
-	sharedgenai "classgame-api/internal/shared/google/genai"
-	"classgame-api/internal/shared/google/objectstorage"
-	sharedratelimit "classgame-api/internal/shared/ratelimit"
-	sharedredis "classgame-api/internal/shared/redis"
+	"classgame-api/internal/modules/attachments"
+	"classgame-api/internal/modules/classrooms"
+	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/health"
+	"classgame-api/internal/modules/insights"
+	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/modules/tenancy"
+	"classgame-api/internal/platform/analytics"
+	"classgame-api/internal/platform/cloudtasks"
+	"classgame-api/internal/platform/firebase"
+	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/platform/objectstorage"
+	"classgame-api/internal/platform/redis"
 )
 
 const (
@@ -58,7 +56,7 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	analyticsClient, err := sharedanalytics.New(sharedanalytics.Options{
+	analyticsClient, err := analytics.New(analytics.Options{
 		Enabled:      cfg.PostHogEnabled,
 		Environment:  cfg.AppEnv,
 		Host:         cfg.PostHogHost,
@@ -69,7 +67,7 @@ func run() (runErr error) {
 	}
 	defer func() {
 		if runErr != nil {
-			analyticsClient.CaptureException(context.Background(), runErr, sharedanalytics.Properties{
+			analyticsClient.CaptureException(context.Background(), runErr, analytics.Properties{
 				"error_source": "process",
 			})
 		}
@@ -80,7 +78,7 @@ func run() (runErr error) {
 
 	startedAt := time.Now()
 
-	firebaseConnection, err := sharedgoogle.Connect(context.Background(), sharedgoogle.Options{
+	firebaseConnection, err := firebase.Connect(context.Background(), firebase.Options{
 		ProjectID:       cfg.FirebaseProjectID,
 		CredentialsFile: cfg.FirebaseCredentialsFile,
 		CredentialsJSON: cfg.FirebaseCredentialsJSON,
@@ -110,7 +108,7 @@ func run() (runErr error) {
 				TeacherEmail:       cfg.DemoTeacherEmail,
 				TeacherPassword:    cfg.DemoTeacherPassword,
 				TeacherDisplayName: cfg.DemoTeacherDisplayName,
-				Hierarchy:          tenant.DefaultHierarchy(),
+				Hierarchy:          tenancy.DefaultHierarchy(),
 			},
 		)
 		cancel()
@@ -126,7 +124,7 @@ func run() (runErr error) {
 		)
 	}
 
-	redisConnection, err := sharedredis.Connect(context.Background(), sharedredis.Options{
+	redisConnection, err := redis.Connect(context.Background(), redis.Options{
 		URL:         cfg.RedisURL,
 		CACertPath:  cfg.RedisCACertPath,
 		CACertPEM:   cfg.RedisCACertPEM,
@@ -144,8 +142,8 @@ func run() (runErr error) {
 		}
 	}()
 
-	usersRepository := users.NewFirestoreRepository(firebaseConnection.FirestoreClient())
-	genAIClient, err := sharedgenai.Connect(context.Background(), sharedgenai.Options{
+	usersRepository := students.NewFirestoreRepository(firebaseConnection.FirestoreClient())
+	genAIClient, err := genai.Connect(context.Background(), genai.Options{
 		Enabled:         cfg.GenAIEnabled,
 		Backend:         cfg.GenAIBackend,
 		Model:           cfg.GenAIModel,
@@ -175,14 +173,14 @@ func run() (runErr error) {
 		}
 	}()
 
-	orchestratorService := orchestrator.NewService(orchestrator.Dependencies{Client: genAIClient, Attachments: storageConnection})
-	teacherClassRepository := teacherclass.NewFirestoreRepository(firebaseConnection.FirestoreClient())
-	teacherClassService := teacherclass.NewService(teacherClassRepository)
-	missionRepository := mission.NewFirestoreRepository(firebaseConnection.FirestoreClient())
+	orchestratorService := generation.NewService(generation.Dependencies{Client: genAIClient, Attachments: storageConnection})
+	teacherClassRepository := classrooms.NewFirestoreRepository(firebaseConnection.FirestoreClient())
+	teacherClassService := classrooms.NewService(teacherClassRepository)
+	missionRepository := missions.NewFirestoreRepository(firebaseConnection.FirestoreClient())
 
-	missionGenerationPerTeacherMinuteLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	missionGenerationPerTeacherMinuteLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  missionGenerationPerTeacherMinuteLimit,
 			Prefix: "classgame:mission_generation",
 			Window: time.Minute,
@@ -191,9 +189,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize mission generation rate limiter: %w", err)
 	}
-	missionGenerationPerTeacherHourLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	missionGenerationPerTeacherHourLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  missionGenerationPerTeacherHourLimit,
 			Prefix: "classgame:mission_generation:teacher:hour",
 			Window: time.Hour,
@@ -202,9 +200,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize hourly mission generation rate limiter: %w", err)
 	}
-	missionGenerationPerIPHourLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	missionGenerationPerIPHourLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  missionGenerationPerIPHourLimit,
 			Prefix: "classgame:mission_generation:ip:hour",
 			Window: time.Hour,
@@ -213,9 +211,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize mission generation IP rate limiter: %w", err)
 	}
-	studentTutorPerStudentMinuteLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	studentTutorPerStudentMinuteLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  studentTutorPerStudentMinuteLimit,
 			Prefix: "classgame:student_tutor:student:minute",
 			Window: time.Minute,
@@ -224,9 +222,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor per-minute rate limiter: %w", err)
 	}
-	studentTutorPerStudentHourLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	studentTutorPerStudentHourLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  studentTutorPerStudentHourLimit,
 			Prefix: "classgame:student_tutor:student:hour",
 			Window: time.Hour,
@@ -235,9 +233,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor hourly rate limiter: %w", err)
 	}
-	studentTutorPerIPMinuteLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	studentTutorPerIPMinuteLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  studentTutorPerIPMinuteLimit,
 			Prefix: "classgame:student_tutor:ip:minute",
 			Window: time.Minute,
@@ -246,9 +244,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor IP per-minute rate limiter: %w", err)
 	}
-	studentTutorPerIPHourLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	studentTutorPerIPHourLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  studentTutorPerIPHourLimit,
 			Prefix: "classgame:student_tutor:ip:hour",
 			Window: time.Hour,
@@ -257,9 +255,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor IP hourly rate limiter: %w", err)
 	}
-	studentLearningPerClassHourLimiter, err := sharedratelimit.NewRedisFixedWindow(
+	studentLearningPerClassHourLimiter, err := redis.NewFixedWindow(
 		redisConnection.Client(),
-		sharedratelimit.FixedWindowOptions{
+		redis.FixedWindowOptions{
 			Limit:  studentLearningPerClassHourLimit,
 			Prefix: "classgame:student_learning:class:hour",
 			Window: time.Hour,
@@ -269,14 +267,14 @@ func run() (runErr error) {
 		return fmt.Errorf("initialize student learning generation rate limiter: %w", err)
 	}
 
-	missionServiceOptions := []mission.ServiceOption{mission.WithAttachmentReader(storageConnection)}
+	missionServiceOptions := []missions.ServiceOption{missions.WithAttachmentReader(storageConnection)}
 	var missionAttachmentHandler http.Handler
 	var studentLearningTaskHandler http.Handler
-	var learningTasks users.LearningTaskEnqueuer
-	var taskAuthenticator *missionattachment.OIDCAuthenticator
+	var learningTasks students.LearningTaskEnqueuer
+	var taskAuthenticator *attachments.OIDCAuthenticator
 	if cfg.CloudTasksEnabled {
 
-		storageCopier, err := missionattachment.NewStorageCopier(missionattachment.StorageCopierOptions{
+		storageCopier, err := attachments.NewStorageCopier(attachments.StorageCopierOptions{
 			BucketName: storageConnection.BucketName(),
 			Bucket:     storageConnection.Bucket(),
 		})
@@ -284,7 +282,7 @@ func run() (runErr error) {
 			return fmt.Errorf("initialize mission attachment copier: %w", err)
 		}
 
-		taskQueue, err := cloudtasksqueue.Connect(context.Background(), cloudtasksqueue.Options{
+		taskQueue, err := cloudtasks.Connect(context.Background(), cloudtasks.Options{
 			ProjectID:          cfg.CloudTasksProjectID,
 			Location:           cfg.CloudTasksLocation,
 			Queue:              cfg.CloudTasksQueue,
@@ -302,7 +300,7 @@ func run() (runErr error) {
 			}
 		}()
 
-		learningTaskQueue, err := cloudtasksqueue.Connect(context.Background(), cloudtasksqueue.Options{
+		learningTaskQueue, err := cloudtasks.Connect(context.Background(), cloudtasks.Options{
 			ProjectID:          cfg.CloudTasksProjectID,
 			Location:           cfg.CloudTasksLocation,
 			Queue:              cfg.CloudTasksQueue,
@@ -319,19 +317,19 @@ func run() (runErr error) {
 				slog.Error("student learning task queue disconnect failed", "error", err)
 			}
 		}()
-		learningTasks = users.NewCloudLearningTaskEnqueuer(learningTaskQueue, time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
+		learningTasks = students.NewCloudLearningTaskEnqueuer(learningTaskQueue, time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
 
-		attachmentEnqueuer := missionattachment.NewCloudTaskEnqueuer(taskQueue, 2*time.Second)
+		attachmentEnqueuer := attachments.NewCloudTaskEnqueuer(taskQueue, 2*time.Second)
 		missionServiceOptions = append(
 			missionServiceOptions,
-			mission.WithAttachmentEnqueuer(attachmentEnqueuer),
+			missions.WithAttachmentEnqueuer(attachmentEnqueuer),
 		)
 
-		attachmentProcessor, err := missionattachment.NewProcessor(missionRepository, storageCopier)
+		attachmentProcessor, err := attachments.NewProcessor(missionRepository, storageCopier)
 		if err != nil {
 			return fmt.Errorf("initialize mission attachment processor: %w", err)
 		}
-		taskAuthenticator, err = missionattachment.NewOIDCAuthenticator(
+		taskAuthenticator, err = attachments.NewOIDCAuthenticator(
 			context.Background(),
 			cfg.CloudTasksOIDCAudience,
 			cfg.CloudTasksServiceAccount,
@@ -339,7 +337,7 @@ func run() (runErr error) {
 		if err != nil {
 			return fmt.Errorf("initialize mission attachment task authentication: %w", err)
 		}
-		missionAttachmentHandler, err = missionattachment.NewHTTPHandler(
+		missionAttachmentHandler, err = attachments.NewHTTPHandler(
 			taskAuthenticator,
 			attachmentProcessor,
 		)
@@ -349,7 +347,7 @@ func run() (runErr error) {
 
 	}
 
-	usersService := users.NewService(users.Dependencies{
+	usersService := students.NewService(students.Dependencies{
 		Sessions: usersRepository, Learning: usersRepository, ClassLearning: usersRepository,
 		Missions: missionRepository, Revisions: missionRepository, Classes: teacherClassRepository,
 		TraceGenerator: orchestratorService, TutorGenerator: orchestratorService, ClassGenerator: orchestratorService,
@@ -357,7 +355,7 @@ func run() (runErr error) {
 		AbandonmentWindow: time.Duration(cfg.StudentAbandonmentSeconds) * time.Second,
 	})
 	if cfg.CloudTasksEnabled {
-		studentLearningTaskHandler, err = users.NewLearningTaskHTTPHandler(
+		studentLearningTaskHandler, err = students.NewLearningTaskHTTPHandler(
 			taskAuthenticator,
 			usersService,
 		)
@@ -366,20 +364,20 @@ func run() (runErr error) {
 		}
 	}
 
-	missionService := mission.NewService(
+	missionService := missions.NewService(
 		missionRepository,
 		teacherClassService,
 		orchestratorService,
 		missionServiceOptions...,
 	)
-	dashboardRepository := dashboard.NewFirestoreRepository(firebaseConnection.FirestoreClient())
-	dashboardService := dashboard.NewService(dashboardRepository, teacherClassService, missionService)
-	authenticator := sharedfirebase.NewFirebaseAuthenticator(firebaseConnection.AuthClient())
-	teacherAuthenticator, err := sharedauth.RestrictProviders(authenticator, cfg.AuthTeacherProviders)
+	dashboardRepository := insights.NewFirestoreRepository(firebaseConnection.FirestoreClient())
+	dashboardService := insights.NewService(dashboardRepository, teacherClassService, missionService)
+	authenticator := firebase.NewFirebaseAuthenticator(firebaseConnection.AuthClient())
+	teacherAuthenticator, err := auth.RestrictProviders(authenticator, cfg.AuthTeacherProviders)
 	if err != nil {
 		return fmt.Errorf("initialize teacher authentication: %w", err)
 	}
-	studentAuthenticator, err := sharedauth.RestrictProviders(authenticator, cfg.AuthStudentProviders)
+	studentAuthenticator, err := auth.RestrictProviders(authenticator, cfg.AuthStudentProviders)
 	if err != nil {
 		return fmt.Errorf("initialize student authentication: %w", err)
 	}
@@ -387,20 +385,20 @@ func run() (runErr error) {
 	server := app.New(app.Options{
 		Analytics: analyticsClient,
 		Config:    cfg,
-		Dashboard: dashboard.HandlerOptions{
+		Dashboard: insights.HandlerOptions{
 			Authenticator:    teacherAuthenticator,
 			DashboardService: dashboardService,
 		},
-		TeacherClass: teacherclass.HandlerOptions{
+		TeacherClass: classrooms.HandlerOptions{
 			Analytics:           analyticsClient,
 			Authenticator:       teacherAuthenticator,
 			TeacherClassService: teacherClassService,
 		},
-		Mission: mission.HandlerOptions{
+		Mission: missions.HandlerOptions{
 			AttachmentService: missionService,
 			Analytics:         analyticsClient,
 			Authenticator:     teacherAuthenticator,
-			GenerationRateLimiters: mission.GenerationRateLimiters{
+			GenerationRateLimiters: missions.GenerationRateLimiters{
 				PerIPHour:        missionGenerationPerIPHourLimiter,
 				PerTeacherHour:   missionGenerationPerTeacherHourLimiter,
 				PerTeacherMinute: missionGenerationPerTeacherMinuteLimiter,
@@ -409,25 +407,25 @@ func run() (runErr error) {
 		},
 		MissionAttachment:   missionAttachmentHandler,
 		StudentLearningTask: studentLearningTaskHandler,
-		HealthChecks: []healthcheck.Check{
+		HealthChecks: []health.Check{
 			{
-				Name:    healthcheck.HealthCheckServiceFirebase,
+				Name:    health.HealthCheckServiceFirebase,
 				Run:     firebaseConnection.Ping,
 				Timeout: time.Duration(cfg.FirebasePingTimeoutSeconds) * time.Second,
 			},
 			{
-				Name:    healthcheck.HealthCheckServiceRedis,
+				Name:    health.HealthCheckServiceRedis,
 				Run:     redisConnection.Ping,
 				Timeout: time.Duration(cfg.RedisPingTimeoutSeconds) * time.Second,
 			},
 		},
 		StartedAt: startedAt,
-		Users: users.HandlerOptions{
+		Users: students.HandlerOptions{
 			StudentLearningService: usersService, StudentTutorService: usersService,
 			StudentClassReader: usersService,
 			Analytics:          analyticsClient,
 			Authenticator:      studentAuthenticator,
-			TutorRateLimiters: users.TutorRateLimiters{
+			TutorRateLimiters: students.TutorRateLimiters{
 				PerIPHour:        studentTutorPerIPHourLimiter,
 				PerIPMinute:      studentTutorPerIPMinuteLimiter,
 				PerStudentHour:   studentTutorPerStudentHourLimiter,
