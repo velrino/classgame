@@ -11,8 +11,9 @@ Read the steps in order. **Starts with** shows who begins each flow. Select a di
 | 03 | **Redis** | **Copy mission files to private storage**<br>[Guide](03-attachment-transfer/README.md) · [Mermaid source](03-attachment-transfer/SEQUENCE.txt) | <a href="03-attachment-transfer/diagram.png"><img src="03-attachment-transfer/diagram.png" alt="Sequence diagram for copying mission attachments to private storage" width="480" /></a> |
 | 04 | **Student** | **Answer a quiz question with Mia**<br>[Guide](04-quiz-play/README.md) · [Mermaid source](04-quiz-play/SEQUENCE.txt) | <a href="04-quiz-play/diagram.png"><img src="04-quiz-play/diagram.png" alt="Sequence diagram for a quiz turn, Mia feedback, and checkpoint saving" width="480" /></a> |
 | 05 | **Student** | **Finish the quiz and refresh student memory**<br>[Guide](05-learning-memory/README.md) · [Mermaid source](05-learning-memory/SEQUENCE.txt) | <a href="05-learning-memory/diagram.png"><img src="05-learning-memory/diagram.png" alt="Sequence diagram for quiz completion, finalization, and compact student memory" width="480" /></a> |
+| 06 | **Redis** | **Refresh class memory and teacher insights**<br>[Guide](06-class-insights/README.md) · [Mermaid source](06-class-insights/SEQUENCE.txt) | <a href="06-class-insights/diagram.png"><img src="06-class-insights/diagram.png" alt="Sequence diagram for class synthesis, versioned persistence, and teacher insight refresh" width="480" /></a> |
 
-Step 01 ends with the saved preview for teacher review. Step 02 ends with the published revision. Step 03 records private file-copy outcomes. Step 04 saves quiz evidence and progress. Step 05 finalizes learning and eligible student memory. Class synthesis and wider memory views will have a separate diagram.
+Step 01 ends with the saved preview for teacher review. Step 02 ends with the published revision. Step 03 records private file-copy outcomes. Step 04 saves quiz evidence and progress. Step 05 finalizes learning and eligible student memory. Step 06 refreshes class memory and teacher insights, completing the current business walkthrough.
 
 ## Style
 
