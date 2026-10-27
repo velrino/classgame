@@ -4,6 +4,8 @@ Review the intended environment before operational writes. Local startup does no
 
 | Guide | Status and purpose |
 | --- | --- |
+| [Enrollment and access](ENROLLMENT-AND-ACCESS.md) | Teacher eligibility, joins, and trusted proxies |
+| [Private attachments](PRIVATE-ATTACHMENTS.md) | Review and generation-fenced access changes |
 | [Query scale](QUERY-SCALE.md) | Student pages, history, evidence freshness, and rebuilds |
 | [Private uploads](PRIVATE-UPLOADS.md) | Explicit private defaults, access checks, and local SDK evidence |
 | [Queues](QUEUES.md) | Dedicated Redis, worker roles, failed work and recovery |

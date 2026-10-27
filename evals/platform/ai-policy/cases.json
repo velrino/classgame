@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "suite": "ai-policy",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "synthetic": true,
   "tutor_context": {
     "mission": {
@@ -1900,6 +1900,326 @@
           "job_matches": true,
           "eligible": false,
           "due": false
+        }
+      }
+    },
+    {
+      "id": "teacher-approved-v1",
+      "kind": "security",
+      "security": {
+        "action": "teacher",
+        "identity": {
+          "AuthMethod": "email",
+          "Email": "teacher@example.test",
+          "EmailVerified": true
+        },
+        "emails": "teacher@example.test"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": true
+        }
+      }
+    },
+    {
+      "id": "teacher-unlisted-v1",
+      "kind": "security",
+      "security": {
+        "action": "teacher",
+        "identity": {
+          "AuthMethod": "email",
+          "Email": "teacher@example.test",
+          "EmailVerified": true
+        },
+        "emails": "other@example.test"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "teacher-unverified-v1",
+      "kind": "security",
+      "security": {
+        "action": "teacher",
+        "identity": {
+          "AuthMethod": "email",
+          "Email": "teacher@example.test",
+          "EmailVerified": false
+        },
+        "emails": "teacher@example.test"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "teacher-disabled-v1",
+      "kind": "security",
+      "security": {
+        "action": "teacher",
+        "identity": {
+          "AuthMethod": "email",
+          "Email": "teacher@example.test",
+          "EmailVerified": true,
+          "Disabled": true
+        },
+        "emails": "teacher@example.test"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "teacher-anonymous-v1",
+      "kind": "security",
+      "security": {
+        "action": "teacher",
+        "identity": {
+          "AuthMethod": "anonymous",
+          "Email": "teacher@example.test",
+          "EmailVerified": true
+        },
+        "emails": ""
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "teacher-development-v1",
+      "kind": "security",
+      "security": {
+        "action": "teacher",
+        "identity": {
+          "AuthMethod": "email",
+          "Email": "teacher@example.test",
+          "EmailVerified": true
+        },
+        "emails": ""
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": true
+        }
+      }
+    },
+    {
+      "id": "teacher-wildcard-refused-v1",
+      "kind": "security",
+      "security": {
+        "action": "teacher",
+        "identity": {
+          "AuthMethod": "email",
+          "Email": "teacher@example.test",
+          "EmailVerified": true
+        },
+        "emails": "*@example.test"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": false,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "proxy-direct-no-trust-v1",
+      "kind": "security",
+      "security": {
+        "action": "proxy",
+        "proxies": "",
+        "peer": "10.0.0.5:4242",
+        "forwarded": "203.0.113.10"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "client_ip": "10.0.0.5"
+        }
+      }
+    },
+    {
+      "id": "proxy-untrusted-peer-v1",
+      "kind": "security",
+      "security": {
+        "action": "proxy",
+        "proxies": "10.0.0.4/31",
+        "peer": "192.0.2.1:4242",
+        "forwarded": "203.0.113.10"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "client_ip": "192.0.2.1"
+        }
+      }
+    },
+    {
+      "id": "proxy-explicit-chain-v1",
+      "kind": "security",
+      "security": {
+        "action": "proxy",
+        "proxies": "10.0.0.4/31",
+        "peer": "10.0.0.5:4242",
+        "forwarded": "198.51.100.99, 203.0.113.10, 10.0.0.4"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "client_ip": "203.0.113.10"
+        }
+      }
+    },
+    {
+      "id": "proxy-global-trust-refused-v1",
+      "kind": "security",
+      "security": {
+        "action": "proxy",
+        "proxies": "0.0.0.0/0",
+        "peer": "192.0.2.1:4242"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": false
+        }
+      }
+    },
+    {
+      "id": "join-open-v1",
+      "kind": "security",
+      "security": {
+        "action": "enrollment",
+        "class": {
+          "status": "active",
+          "enrollment": {
+            "open": true,
+            "expires_at": "2030-01-02T12:00:00Z"
+          }
+        },
+        "existing_member": false,
+        "now": "2030-01-01T12:00:00Z"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": true
+        }
+      }
+    },
+    {
+      "id": "join-expired-v1",
+      "kind": "security",
+      "security": {
+        "action": "enrollment",
+        "class": {
+          "status": "active",
+          "enrollment": {
+            "open": true,
+            "expires_at": "2029-12-01T12:00:00Z"
+          }
+        },
+        "existing_member": false,
+        "now": "2030-01-01T12:00:00Z"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": false,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "join-closed-v1",
+      "kind": "security",
+      "security": {
+        "action": "enrollment",
+        "class": {
+          "status": "active",
+          "enrollment": {
+            "open": false,
+            "expires_at": "2030-01-02T12:00:00Z"
+          }
+        },
+        "existing_member": false,
+        "now": "2030-01-01T12:00:00Z"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "join-existing-closed-v1",
+      "kind": "security",
+      "security": {
+        "action": "enrollment",
+        "class": {
+          "status": "active",
+          "enrollment": {
+            "open": false,
+            "expires_at": "2030-01-02T12:00:00Z"
+          }
+        },
+        "existing_member": true,
+        "now": "2030-01-01T12:00:00Z"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": true
+        }
+      }
+    },
+    {
+      "id": "join-inactive-v1",
+      "kind": "security",
+      "security": {
+        "action": "enrollment",
+        "class": {
+          "status": "closed"
+        },
+        "existing_member": true,
+        "now": "2030-01-01T12:00:00Z"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": false
+        }
+      }
+    },
+    {
+      "id": "join-legacy-v1",
+      "kind": "security",
+      "security": {
+        "action": "enrollment",
+        "class": {
+          "status": "active"
+        },
+        "existing_member": false,
+        "now": "2030-01-01T12:00:00Z"
+      },
+      "expected": {
+        "equals": {
+          "configuration_valid": true,
+          "allowed": true
         }
       }
     }

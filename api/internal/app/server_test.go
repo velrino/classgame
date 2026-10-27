@@ -8,7 +8,7 @@ import (
 )
 
 func TestProductionServerExtractsClientIPBehindTrustedProxy(t *testing.T) {
-	server := New(Options{Config: config.Config{AppEnv: "production"}})
+	server := New(Options{Config: config.Config{AppEnv: "production", TrustedProxyCIDRs: "10.0.0.4/31"}})
 	request := httptest.NewRequest("GET", "/", nil)
 	request.RemoteAddr = "10.0.0.5:4242"
 	request.Header.Set("X-Forwarded-For", "198.51.100.99, 203.0.113.10, 10.0.0.4")

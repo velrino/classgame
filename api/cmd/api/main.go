@@ -354,6 +354,10 @@ func run() (runErr error) {
 		return fmt.Errorf("initialize teacher authentication: %w", err)
 	}
 	studentAuthenticator, err := auth.RestrictProviders(authenticator, cfg.AuthStudentProviders)
+	teacherAuthenticator, teacherPolicyErr := auth.TeacherEmailPolicy(teacherAuthenticator, cfg.AuthTeacherEmailAllowlist)
+	if teacherPolicyErr != nil {
+		return fmt.Errorf("initialize teacher eligibility: %w", teacherPolicyErr)
+	}
 	if err != nil {
 		return fmt.Errorf("initialize student authentication: %w", err)
 	}

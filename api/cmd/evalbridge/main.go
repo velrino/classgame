@@ -9,11 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"time"
 
+	"classgame-api/internal/app"
 	"classgame-api/internal/auth"
+	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
@@ -27,7 +30,20 @@ type batch struct {
 	Cases        []evalCase                     `json:"cases"`
 }
 
+type securityInput struct {
+	Action         string                          `json:"action"`
+	Identity       auth.Identity                   `json:"identity"`
+	Emails         string                          `json:"emails"`
+	Proxies        string                          `json:"proxies"`
+	Peer           string                          `json:"peer"`
+	Forwarded      string                          `json:"forwarded"`
+	Class          classrooms.TeacherClassDocument `json:"class"`
+	ExistingMember bool                            `json:"existing_member"`
+	Now            time.Time                       `json:"now"`
+}
+
 type evalCase struct {
+	Security     *securityInput     `json:"security,omitempty"`
 	ID           string             `json:"id"`
 	Kind         string             `json:"kind"`
 	Tutor        *tutorInput        `json:"tutor,omitempty"`
@@ -193,7 +209,7 @@ func validateBatch(input batch) error {
 		}
 		seen[candidate.ID] = true
 		count := 0
-		for _, present := range []bool{candidate.Tutor != nil, candidate.Auth != nil, candidate.Projection != nil, candidate.Learning != nil, candidate.Scope != nil, candidate.Memory != nil, candidate.ObjectPath != nil, candidate.Evidence != nil, candidate.TutorEvent != nil, candidate.Finalization != nil} {
+		for _, present := range []bool{candidate.Tutor != nil, candidate.Auth != nil, candidate.Projection != nil, candidate.Learning != nil, candidate.Scope != nil, candidate.Memory != nil, candidate.ObjectPath != nil, candidate.Evidence != nil, candidate.TutorEvent != nil, candidate.Finalization != nil, candidate.Security != nil} {
 			if present {
 				count++
 			}
@@ -237,6 +253,10 @@ func validateBatch(input batch) error {
 		case "tutor_event":
 			if candidate.TutorEvent == nil || candidate.TutorEvent.Now.IsZero() {
 				return fmt.Errorf("case %s requires a tutor event and fixed clock", candidate.ID)
+			}
+		case "security":
+			if candidate.Security == nil || (candidate.Security.Action != "teacher" && candidate.Security.Action != "proxy" && candidate.Security.Action != "enrollment") {
+				return fmt.Errorf("invalid security fixture")
 			}
 		case "finalization":
 			if candidate.Finalization == nil || candidate.Finalization.Now.IsZero() {
@@ -287,6 +307,26 @@ func runCase(input batch, candidate evalCase) (map[string]any, error) {
 				return observation, fmt.Errorf("inspect provider context: %w", err)
 			}
 			observation["provider_context"] = supplied
+		}
+	case "security":
+		spec := candidate.Security
+		switch spec.Action {
+		case "teacher":
+			allowed, err := auth.ParseTeacherEmails(spec.Emails)
+			observation["configuration_valid"] = err == nil
+			observation["allowed"] = err == nil && auth.TeacherEmailAllowed(spec.Identity, allowed)
+		case "proxy":
+			extractor, err := app.ClientIP(spec.Proxies)
+			observation["configuration_valid"] = err == nil
+			if err == nil {
+				request := httptest.NewRequest("GET", "/", nil)
+				request.RemoteAddr = spec.Peer
+				request.Header.Set("X-Forwarded-For", spec.Forwarded)
+				observation["client_ip"] = extractor(request)
+			}
+		case "enrollment":
+			observation["allowed"] = classrooms.MayEnroll(spec.Class, spec.ExistingMember, spec.Now)
+			observation["configuration_valid"] = classrooms.ValidateEnrollment(spec.Class.Enrollment, spec.Now) == nil
 		}
 	case "auth":
 		verifier := &scriptedAuthenticator{identity: auth.Identity{AuthMethod: candidate.Auth.Method, Disabled: candidate.Auth.Disabled, ProviderUserID: "synthetic-user"}}

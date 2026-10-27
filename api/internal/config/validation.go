@@ -26,7 +26,9 @@ func (config Config) Validate() error {
 		return err
 	}
 	return validation.Errors{
-		"CORS_ALLOWED_ORIGINS": validation.Validate(config.CORSAllowedOrigins, validation.Required, validation.By(validateCORSOrigins(config.AppEnv))),
+		"TRUSTED_PROXY_CIDRS":          validation.Validate(config.TrustedProxyCIDRs, validation.By(validateProxyNetworks)),
+		"AUTH_TEACHER_EMAIL_ALLOWLIST": validation.Validate(config.AuthTeacherEmailAllowlist, validation.By(validateTeacherEmails(config.AppEnv))),
+		"CORS_ALLOWED_ORIGINS":         validation.Validate(config.CORSAllowedOrigins, validation.Required, validation.By(validateCORSOrigins(config.AppEnv))),
 		"HOST": validation.Validate(config.Host,
 			validation.Required,
 		),

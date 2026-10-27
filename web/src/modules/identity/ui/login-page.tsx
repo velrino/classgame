@@ -237,7 +237,7 @@ export function LoginPage() {
         <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-slate-950 shadow-2xl shadow-black/20 sm:p-8 lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
           <h2 className="text-2xl font-bold">Sign in</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Teachers use Google. Students enter from the game.
+            Use an allowed teacher account. Students enter from the game.
           </p>
 
           <div className="mt-6">

@@ -50,6 +50,8 @@ func (service *Service) ValidateStudentClassCode(
 	ctx context.Context,
 	classCode string,
 ) error {
+	// The public identifier check must not reject an existing member. New
+	// admission is enforced with membership inside the session transaction.
 	_, err := service.classByCode(ctx, classCode)
 	return err
 }

@@ -89,7 +89,13 @@ export interface StudentClassDto {
   grade_level: string;
 }
 
+export interface EnrollmentPolicy {
+  open: boolean;
+  expires_at: string;
+}
+
 export interface UpsertTeacherClassRequest {
+  enrollment?: EnrollmentPolicy;
   class_id?: string;
   class_name: string;
   subject: string;
@@ -104,6 +110,7 @@ export interface TeacherDto {
 }
 
 export interface TeacherClassDto {
+  enrollment?: EnrollmentPolicy;
   id: string;
   organization_id: string;
   district_id: string;

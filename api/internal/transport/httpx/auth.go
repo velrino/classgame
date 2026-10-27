@@ -31,6 +31,9 @@ func Authenticate(ctx context.Context, transport *echo.Context, authenticator au
 	if err == nil {
 		return identity, true, nil
 	}
+	if errors.Is(err, auth.ErrTeacherNotAllowed) {
+		return auth.Identity{}, false, JSONError(transport, http.StatusForbidden, "teacher_not_allowed", "This account is not allowed to teach here.")
+	}
 	if !errors.Is(err, auth.ErrMissingBearerToken) && !errors.Is(err, auth.ErrInvalidBearerToken) {
 		slog.Warn("request authentication failed", "error", err)
 	}
