@@ -18,6 +18,7 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 | [platform/ai-policy/cases.json](platform/ai-policy/cases.json) | Versioned synthetic inputs and expected policy behavior |
 | [platform/offline-evidence/cases.json](platform/offline-evidence/cases.json) | Scope, queue capacity, replay, retry, and completion policies; requires Node.js 24+ |
 | [api/cmd/evalbridge](../api/cmd/evalbridge/main.go) | Production Go calls with scripted provider/authentication ports |
+| [platform/retention/run.py](platform/retention/run.py) | Opt-in demo emulator export/delete/restore with actual Firestore types and stale worker checks |
 | [api/cmd/evalfirestore](../api/cmd/evalfirestore/README.md) | Optional real transaction checks on a guarded local emulator |
 | [platform/provider-budget/run.py](platform/provider-budget/run.py) | Opt-in local Redis budget checks with two Go processes and a real broker outage |
 | [manual rubric](platform/ai-policy/MANUAL-RUBRIC.md) | Separate pedagogical review and held-out comparison plan |
