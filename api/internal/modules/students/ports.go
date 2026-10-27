@@ -71,8 +71,4 @@ type ClassLearningStore interface {
 		classID string,
 		limit int,
 	) ([]StudentMissionAttemptDocument, error)
-	SaveClassLearningSynthesis(
-		ctx context.Context,
-		document ClassLearningSynthesisDocument,
-	) error
 }
