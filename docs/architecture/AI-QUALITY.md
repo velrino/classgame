@@ -40,4 +40,4 @@ These are proposed manual acceptance cases, not measured results or a new execut
 
 For a later evaluation workflow, version the prompt, model, document revision, retrieval configuration, and rubric. Review teaching quality and factual support separately from deterministic access/source-ID checks. Keep held-out cases and report privacy failures independently of overall quality scores.
 
-Run existing [Go checks and affected workflow checks](../development/validation.md) for implementation changes. Repository instructions require an explicit request before adding tests.
+Run existing [Go checks and affected workflow checks](../development/VALIDATION.md) for implementation changes. Repository instructions require an explicit request before adding tests.

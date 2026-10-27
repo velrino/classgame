@@ -1,6 +1,6 @@
 # ClassGame — 4-minute demo pitch
 
-> Historical submission material. Former hosted links and deployment descriptions are preserved as context; use [local setup](../development/local-setup.md) and [hosting history](../operations/hosting-history.md) for current instructions.
+> Historical submission material. Former hosted links and deployment descriptions are preserved as context; use [local setup](../development/LOCAL-SETUP.md) and [hosting history](../operations/HOSTING-HISTORY.md) for current instructions.
 
 Target runtime: **3:50–4:00** at a calm pace (~440 spoken words ≈ 110 words/min). Keep the Loom camera bubble visible and use the screen actions in brackets as silent cues.
 

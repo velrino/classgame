@@ -4,11 +4,11 @@ Integrate authorized work in this order: **feature branch → release branch →
 
 ## Prepare a feature
 
-1. Start from the current release branch. Use separate worktrees and explicit owned paths for parallel tasks; see [agent workspaces](../ai/agent-workspaces.md).
+1. Start from the current release branch. Use separate worktrees and explicit owned paths for parallel tasks; see [agent workspaces](../ai/AGENT-WORKSPACES.md).
 2. Make a scoped change and update canonical guidance when behavior/contracts change. Preserve unrelated working-tree edits.
-3. Run relevant [validation](../development/validation.md). Inspect the staged diff, credentials, client compatibility, and migration/rollback implications.
+3. Run relevant [validation](../development/VALIDATION.md). Inspect the staged diff, credentials, client compatibility, and migration/rollback implications.
 4. Commit and push when authorized. Use Conventional Commit subjects such as `refactor(web): split mission editing`. Use only `velrino <velrino@gmail.com>` as author and committer, without co-author trailers. Verify the intended local SHA against the remote branch.
-5. Open a feature PR against the release branch using the [four review lenses](code-review.md). Record checks, limitations, and required operational work.
+5. Open a feature PR against the release branch using the [four review lenses](CODE-REVIEW.md). Record checks, limitations, and required operational work.
 
 `feature/`, `fix/`, and `refactor/` describe the work; the release target defines the integration boundary. Do not force-push or rewrite shared history without explicit task authorization.
 

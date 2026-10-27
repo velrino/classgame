@@ -4,7 +4,7 @@ Historical submission material. Screenshots, recorded flows, and former hosted l
 
 | Document | Record |
 | --- | --- |
-| [Demo pitch](pitch.md) | Recorded product narrative and walkthrough |
-| [Submission draft](devpost-submission-draft.md) | Historical form content and hackathon framing |
+| [Demo pitch](PITCH.md) | Recorded product narrative and walkthrough |
+| [Submission draft](DEVPOST-SUBMISSION-DRAFT.md) | Historical form content and hackathon framing |
 
-Use [local setup](../development/local-setup.md) to run the app and [hosting history](../operations/hosting-history.md) for hosted status.
+Use [local setup](../development/LOCAL-SETUP.md) to run the app and [hosting history](../operations/HOSTING-HISTORY.md) for hosted status.

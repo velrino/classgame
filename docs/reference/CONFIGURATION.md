@@ -32,4 +32,4 @@ Model availability and permissions depend on the configured provider. Restart th
 
 Every `NEXT_PUBLIC_*` value is browser-visible. Never place service-account credentials, Redis credentials, private upload keys, or privileged tokens there. Public configuration is typically embedded during the web build.
 
-For local commands see [setup](../development/local-setup.md); for deployed identities and workers see [operations](../operations/cloud-run.md).
+For local commands see [setup](../development/LOCAL-SETUP.md); for deployed identities and workers see [operations](../operations/CLOUD-RUN.md).

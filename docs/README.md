@@ -4,14 +4,14 @@ Start with the task you need to complete. Each guide owns one topic; package `AG
 
 | Task | Start here |
 | --- | --- |
-| Run the application | [Local setup](development/local-setup.md) |
-| Check a change | [Validation](development/validation.md) |
+| Run the application | [Local setup](development/LOCAL-SETUP.md) |
+| Check a change | [Validation](development/VALIDATION.md) |
 | Understand system/module boundaries | [Architecture](architecture/README.md) |
 | Work with coding agents or AI quality | [AI](ai/README.md) |
 | Use routes, configuration, or stored data | [Reference](reference/README.md) |
 | Review or integrate a release | [Processes](processes/README.md) |
-| Operate or recover a deployment | [Operations](operations/README.md) · [Release safety](operations/release-safety.md) |
-| Add or update documentation | [Documentation standard](conventions/documentation.md) |
+| Operate or recover a deployment | [Operations](operations/README.md) · [Release safety](operations/RELEASE-SAFETY.md) |
+| Add or update documentation | [Documentation standard](conventions/DOCUMENTATION.md) |
 | Follow refactor acceptance criteria | [Plans](plans/README.md) |
 | Review the historical submission | [Pitch archive](pitch/README.md) |
 
