@@ -4,7 +4,7 @@ import { useAvatarPreference } from "@/modules/game/adapters/hooks/use-avatar-pr
 import { useWorldBridge } from "@/modules/game/hooks/use-world-bridge";
 import { useLearningSession } from "@/modules/learning";
 export function useGameSession() {
-  const { session, handlers } = useLearningSession();
+  const { session, handlers, recoveryError } = useLearningSession();
   const { avatarPresetId, selectAvatar } = useAvatarPreference();
   const { report, directiveRef, onReport, resetReport } = useWorldBridge(
     session,
@@ -19,6 +19,7 @@ export function useGameSession() {
     report,
     directiveRef,
     avatarPresetId,
+    recoveryError,
     handlers: { ...handlers, leaveMission, selectAvatar, onReport },
   };
 }

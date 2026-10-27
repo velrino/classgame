@@ -1,12 +1,17 @@
 "use client";
+import { ApiError } from "@/shared/http/errors";
 import { currentStudentIdentity } from "@/modules/identity";
 
 import { learningApi } from "@/modules/learning/adapters/http";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { StudentLearningStatus } from "@/modules/learning/adapters/types/contracts";
+import type {
+  StudentAttemptScope,
+  StudentLearningStatus,
+} from "@/modules/learning/adapters/types/contracts";
 
 import {
+  clearStudentMissionSession,
   readStudentMissionSession,
   studentSessionReadyEvent,
   type StudentMissionSession,
@@ -43,6 +48,7 @@ export function useLearningRecovery(
   dispatch: Dispatch<SessionAction>,
 ) {
   const [learningSyncReady, setLearningSyncReady] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const sessionRef = useRef(session);
   const revisionRef = useRef(0);
   const tokenRef = useRef("");
@@ -53,6 +59,26 @@ export function useLearningRecovery(
   const lastPauseAtRef = useRef(0);
   const pendingTurnsRef = useRef(new Map<string, Promise<void>>());
   const flushEvidenceRef = useRef<() => Promise<void>>(async () => undefined);
+  const resetRecovery = useCallback(() => {
+    hydrationRef.current += 1;
+    tutorRequestRef.current += 1;
+    revisionRef.current = 0;
+    tokenRef.current = "";
+    attemptReadyRef.current = false;
+    skipLocalSaveRef.current = false;
+    setLearningSyncReady(false);
+    setRecoveryError(null);
+  }, []);
+
+  const rejectChangedAttempt = useCallback(() => {
+    resetRecovery();
+    clearStudentMissionSession();
+    dispatch({ type: "leave-mission" });
+    setRecoveryError(
+      "This mission changed in another tab. Choose it again at the glowing desk to resume the correct version.",
+    );
+  }, [dispatch, resetRecovery]);
+
   useEffect(() => {
     sessionRef.current = session;
   }, [session]);
@@ -71,6 +97,7 @@ export function useLearningRecovery(
       }
 
       const generation = ++hydrationRef.current;
+      setRecoveryError(null);
       const mission = buildGameMission(missionSession.mission);
       const local = loadStudentRecovery(
         mission,
@@ -98,8 +125,21 @@ export function useLearningRecovery(
         const response = await learningApi.studentLearning(
           idToken,
           missionSession.missionId,
+          pinnedAttemptScope(missionSession),
         );
         if (cancelled || generation !== hydrationRef.current) {
+          return;
+        }
+
+        if (
+          response.attempt &&
+          (response.attempt.mission_id !== missionSession.missionId ||
+            response.attempt.published_revision !==
+              missionSession.publishedRevision ||
+            (missionSession.attemptId &&
+              response.attempt.id !== missionSession.attemptId))
+        ) {
+          rejectChangedAttempt();
           return;
         }
 
@@ -135,8 +175,15 @@ export function useLearningRecovery(
           checkpoint,
           now: Date.now(),
         });
-      } catch {
-        // The local recovery remains playable while the API is unavailable.
+      } catch (error) {
+        if (
+          !cancelled &&
+          generation === hydrationRef.current &&
+          isAttemptScopeConflict(error)
+        ) {
+          rejectChangedAttempt();
+        }
+        // The local recovery remains playable during a network outage.
       } finally {
         if (!cancelled && generation === hydrationRef.current) {
           setLearningSyncReady(true);
@@ -154,7 +201,7 @@ export function useLearningRecovery(
       cancelled = true;
       window.removeEventListener(studentSessionReadyEvent, hydrateWhenReady);
     };
-  }, [dispatch]);
+  }, [dispatch, rejectChangedAttempt]);
 
   const syncSnapshot = useCallback(
     async (
@@ -220,7 +267,7 @@ export function useLearningRecovery(
         const response = await learningApi.saveStudentLearning(
           idToken,
           {
-            mission_id: missionSession.missionId,
+            ...pinnedAttemptScope(missionSession),
             status:
               statusOverride ??
               learningStatus(activeSession.memory, activeSession.lesson?.phase),
@@ -239,12 +286,17 @@ export function useLearningRecovery(
           response.attempt?.snapshot.revision ?? 0,
         );
         return true;
-      } catch {
-        // Keep local resume state; the API remains authoritative for learning evidence.
+      } catch (error) {
+        if (
+          generation === hydrationRef.current &&
+          isAttemptScopeConflict(error)
+        )
+          rejectChangedAttempt();
+        // Keep local resume state during transient failures; scope conflicts require reselection.
         return false;
       }
     },
-    [],
+    [rejectChangedAttempt],
   );
 
   // Save the exact board phase synchronously on every reducer commit. Notes,
@@ -350,11 +402,12 @@ export function useLearningRecovery(
           const idToken = await user.getIdToken();
           tokenRef.current = idToken;
           const response = await learningApi.studentTutorTurn(idToken, {
-            mission_id: missionSession.missionId,
             ...evidence,
+            ...pinnedAttemptScope(missionSession),
           });
           acknowledgeTutorEvidence(recoveryId, evidence.event_id);
           if (
+            evidence.type === "feedback" ||
             requestVersion !== tutorRequestRef.current ||
             generation !== hydrationRef.current
           )
@@ -368,14 +421,19 @@ export function useLearningRecovery(
             explanationStyle: response.turn.explanation_style,
             difficultyBias: response.turn.difficulty_bias,
           });
-        } catch {
-          /* Keep student evidence for the next heartbeat; deterministic tutor copy remains playable. */
+        } catch (error) {
+          if (
+            generation === hydrationRef.current &&
+            isAttemptScopeConflict(error)
+          )
+            rejectChangedAttempt();
+          /* Retain scoped evidence for retries; a scope conflict requires mission reselection. */
         }
       })().finally(() => pendingTurnsRef.current.delete(evidence.event_id));
       pendingTurnsRef.current.set(evidence.event_id, pending);
       return pending;
     },
-    [dispatch, syncSnapshot],
+    [dispatch, rejectChangedAttempt, syncSnapshot],
   );
 
   useEffect(() => {
@@ -389,15 +447,6 @@ export function useLearningRecovery(
     };
   }, [requestTutorTurn]);
 
-  const resetRecovery = useCallback(() => {
-    hydrationRef.current += 1;
-    tutorRequestRef.current += 1;
-    revisionRef.current = 0;
-    tokenRef.current = "";
-    attemptReadyRef.current = false;
-    skipLocalSaveRef.current = false;
-    setLearningSyncReady(false);
-  }, []);
   const clearCurrentRecovery = useCallback(() => {
     const selected = readStudentMissionSession();
     clearMemory(
@@ -405,10 +454,33 @@ export function useLearningRecovery(
     );
     revisionRef.current = 0;
   }, []);
-  return { requestTutorTurn, resetRecovery, clearCurrentRecovery };
+  return {
+    requestTutorTurn,
+    resetRecovery,
+    clearCurrentRecovery,
+    recoveryError,
+  };
 }
 
 function studentRecoveryID(session: StudentMissionSession) {
   const anonymousUID = currentStudentIdentity()?.uid ?? "student";
   return session.attemptId || `${anonymousUID}:${session.missionId}`;
+}
+
+function pinnedAttemptScope(
+  session: StudentMissionSession,
+): StudentAttemptScope {
+  return {
+    mission_id: session.missionId,
+    published_revision: session.publishedRevision,
+    attempt_id: session.attemptId || undefined,
+  };
+}
+
+function isAttemptScopeConflict(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 409 &&
+    error.code === "mission_mismatch"
+  );
 }
