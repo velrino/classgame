@@ -146,6 +146,26 @@ def main():
         raise ValueError("resume changed its completed attempt")
     call(api, "/users/student-learning?" + urllib.parse.urlencode({**scope, "published_revision": revision + 1}), token=student_token, expected=409)
     passed("resume-and-revision-scope-v1")
+    closed, _ = call(api, "/teacher-classes", "POST", {
+        "class_id": class_id, "class_name": classroom["class_name"],
+        "subject": "Mathematics", "grade_level": "7th grade", "enrollment": {"open": False},
+    }, teacher_token)
+    if closed["teacher_class"]["enrollment"]["open"] is not False:
+        raise ValueError("teacher could not close new enrollment")
+    passed("teacher-close-enrollment-v1")
+    # Public code validation checks an active class only; identity decides membership.
+    call(api, "/users/student-session/validate", "POST", {"class_code": code})
+    call(api, "/users/student-session", "POST", {"class_code": code, "student_name": "Synthetic HTTP Student"}, student_token)
+    selected_again, _ = call(api, "/users/student-mission", "POST", {"class_code": code, "mission_id": mission_id, "student_name": "Synthetic HTTP Student"}, student_token)
+    if selected_again["user"]["activity"]["current_game"]["attempt_id"] != attempt_id:
+        raise ValueError("re-entry replaced an existing member's attempt")
+    returned, _ = call(api, "/users/student-learning?" + query, token=student_token)
+    if returned["attempt"]["id"] != attempt_id or returned["attempt"]["status"] != "completed":
+        raise ValueError("closed enrollment changed an existing member's progress")
+    passed("existing-member-reentry-and-resume-v1")
+    newcomer, _ = call(auth, "/identitytoolkit.googleapis.com/v1/accounts:signUp?key=local-eval", "POST", {"returnSecureToken": True})
+    call(api, "/users/student-session", "POST", {"class_code": code, "student_name": "Synthetic New Student"}, newcomer["idToken"], expected=404)
+    passed("closed-enrollment-denies-new-identity-v1")
     db = "/v1/projects/" + options.project + "/databases/(default)/documents/"
     call(firestore, db + "teacher_classes/" + class_id, token=teacher_token)
     call(firestore, db + "teacher_classes/" + class_id, token=student_token, expected=403)
@@ -154,9 +174,19 @@ def main():
     if any(key in projection.get("fields", {}) for key in ["teacher", "teacher_id", "knowledge_chunks", "teacher_prompt"]):
         raise ValueError("published student projection includes private fields")
     passed("firestore-browser-read-and-write-rules-v1")
+    completion_path = db + "student_mission_completions/" + student["localId"] + ":runQuery"
+    completion_query = {"structuredQuery": {"from": [{"collectionId": "missions"}]}}
+    call(firestore, completion_path, "POST", completion_query, student_token, expected=403)
+    completion_query["structuredQuery"]["where"] = {"fieldFilter": {
+        "field": {"fieldPath": "student_id"}, "op": "EQUAL", "value": {"stringValue": student["localId"]},
+    }}
+    catalog, _ = call(firestore, completion_path, "POST", completion_query, student_token)
+    if not any(row.get("document", {}).get("fields", {}).get("mission_id", {}).get("stringValue") == mission_id for row in catalog):
+        raise ValueError("the student completion query lost its finished mission")
+    passed("student-completion-catalog-query-v1")
     directory = ROOT / "evals/output" / (dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ") + "-local-http-" + suffix)
     directory.mkdir(mode=0o700, parents=True)
-    manifest = {"schema_version": 1, "suite": "local-http", "mode": "guarded-firebase-emulators", "revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "working_tree_dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()), "suite_version": 1, "case_ids": [case["id"] for case in cases], "api_tree": subprocess.check_output(["git", "rev-parse", "HEAD:api"], cwd=ROOT, text=True).strip(), "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "real_provider_calls": 0, "shared_database_calls": 0, "project": options.project, "passed": len(cases), "total": len(cases)}
+    manifest = {"schema_version": 1, "suite": "local-http", "mode": "guarded-firebase-emulators", "revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "working_tree_dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()), "suite_version": 2, "case_ids": [case["id"] for case in cases], "api_tree": subprocess.check_output(["git", "rev-parse", "HEAD:api"], cwd=ROOT, text=True).strip(), "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "real_provider_calls": 0, "shared_database_calls": 0, "project": options.project, "passed": len(cases), "total": len(cases)}
     report = {"results": cases, "request_metrics": requests, "median_request_ms": round(statistics.median(r["duration_ms"] for r in requests), 2), "fixture": {"class_id": class_id, "mission_id": mission_id, "attempt_id": attempt_id, "synthetic_student_uid": student["localId"]}, "cleanup": "Fixtures remain in the owned temporary emulator until its shutdown; no reset or cloud deletion is run."}
     for name, value in [("manifest.json", manifest), ("report.json", report)]:
         with (directory / name).open("x") as target:
