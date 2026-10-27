@@ -1,6 +1,12 @@
-import type { StudentTutorTurnRequest } from "@/modules/learning/adapters/types/contracts";
+import type {
+  StudentAttemptScope,
+  StudentTutorTurnRequest,
+} from "@/modules/learning/adapters/types/contracts";
 
-export type TutorEvidence = Omit<StudentTutorTurnRequest, "mission_id">;
+export type TutorEvidence = Omit<
+  StudentTutorTurnRequest,
+  keyof StudentAttemptScope
+>;
 export type PendingTutorTurn = {
   readonly questionId: string;
   readonly evidence: TutorEvidence;

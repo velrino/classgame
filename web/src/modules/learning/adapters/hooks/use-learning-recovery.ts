@@ -4,7 +4,10 @@ import { currentStudentIdentity } from "@/modules/identity";
 import { learningApi } from "@/modules/learning/adapters/http";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { StudentLearningStatus } from "@/modules/learning/adapters/types/contracts";
+import type {
+  StudentAttemptScope,
+  StudentLearningStatus,
+} from "@/modules/learning/adapters/types/contracts";
 
 import {
   readStudentMissionSession,
@@ -220,7 +223,7 @@ export function useLearningRecovery(
         const response = await learningApi.saveStudentLearning(
           idToken,
           {
-            mission_id: missionSession.missionId,
+            ...pinnedAttemptScope(missionSession),
             status:
               statusOverride ??
               learningStatus(activeSession.memory, activeSession.lesson?.phase),
@@ -350,11 +353,12 @@ export function useLearningRecovery(
           const idToken = await user.getIdToken();
           tokenRef.current = idToken;
           const response = await learningApi.studentTutorTurn(idToken, {
-            mission_id: missionSession.missionId,
             ...evidence,
+            ...pinnedAttemptScope(missionSession),
           });
           acknowledgeTutorEvidence(recoveryId, evidence.event_id);
           if (
+            evidence.type === "feedback" ||
             requestVersion !== tutorRequestRef.current ||
             generation !== hydrationRef.current
           )
@@ -411,4 +415,14 @@ export function useLearningRecovery(
 function studentRecoveryID(session: StudentMissionSession) {
   const anonymousUID = currentStudentIdentity()?.uid ?? "student";
   return session.attemptId || `${anonymousUID}:${session.missionId}`;
+}
+
+function pinnedAttemptScope(
+  session: StudentMissionSession,
+): StudentAttemptScope {
+  return {
+    mission_id: session.missionId,
+    published_revision: session.publishedRevision,
+    attempt_id: session.attemptId || undefined,
+  };
 }

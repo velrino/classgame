@@ -183,7 +183,24 @@ export function useLearningSession() {
           return;
         }
         const now = Date.now();
+        const eventID = learningEventID(now, session.memory.eventSequence + 1);
         dispatch({ type: "feedback", value, now });
+        void requestTutorTurn(lesson.question.id, {
+          event_id: eventID,
+          type: "feedback",
+          stage_id: sourceStageID(
+            session.mission,
+            lesson.pod,
+            lesson.question.id,
+          ),
+          question_id: sourceQuestionID(session.mission, lesson.question.id),
+          prompt: questionPrompt(lesson.question),
+          student_response: value,
+          expected_answer: expectedAnswer(lesson.question),
+          outcome: "support",
+          explicit_reasoning: "",
+          feedback: value,
+        });
       },
       continue: () => dispatch({ type: "continue", now: Date.now() }),
       leaveMission: () => {
