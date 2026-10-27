@@ -150,7 +150,9 @@ export function GamePage({
     evidenceState.pending === 0 &&
     !evidenceState.accepting &&
     !evidenceState.blocked;
-  const completionPending = localMissionComplete && !completedMission;
+  const completionRequested = localMissionComplete ||
+    session.lesson?.decision?.action === "mission-complete";
+  const completionPending = completionRequested && !completedMission;
   const syncStatus = session.hydrated ? (
     <EvidenceSyncStatus
       state={evidenceState}
@@ -417,7 +419,13 @@ export function GamePage({
             movementRef={movementRef}
             progress={session.memory.progress}
             tutorPod={session.tutorPod}
-            tutorLine={session.hydrated ? session.tutorLine : ""}
+            tutorLine={session.hydrated
+              ? completedMission
+                ? "Mission complete. Your teacher has your progress."
+                : completionPending
+                  ? "You finished the questions. Waiting to confirm your progress."
+                  : session.tutorLine
+              : ""}
             nearSeat={report.nearSeat}
             walkingToDesk={report.walking}
             avatarPresetId={avatarPresetId}
