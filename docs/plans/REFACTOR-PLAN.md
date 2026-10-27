@@ -39,4 +39,4 @@ Run the existing Go and web checks, offline policy evaluations, dependency scans
 
 ## Work that needs a separate operational step
 
-Keep these items open until there is real evidence: old public attachment access, deployed rules and data migration, large classroom query costs, shared AI budgets, and retention/restore policy. No cloud deployment, shared-data bootstrap, permission change, or data deletion is part of this release. See [release safety](../operations/RELEASE-SAFETY.md).
+The [validation record](../operations/RELEASE-VALIDATION.md) now records measured local queries, browser recovery, shared budgets, retention checks, and separately approved cloud access restrictions. Four old private files still need their existing owner to authorize runtime reads; issue #5 stays open. No app deployment, new permission grant, file deletion, or shared-data bootstrap ran. Future hosted setup follows [release safety](../operations/RELEASE-SAFETY.md).
