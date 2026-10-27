@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline policy evaluations: Python workflow, production Go policy execution."""
+"""Offline policy evaluations using production Go and TypeScript rules."""
 
 import argparse
 import datetime as dt
@@ -40,14 +40,17 @@ def load_dataset(path):
     if len(raw) > 2 * 1024 * 1024:
         raise ValueError("dataset exceeds 2 MiB")
     data = json.loads(raw, object_pairs_hook=unique_object, parse_constant=reject_constant)
-    allowed = {"schema_version", "suite", "version", "synthetic", "tutor_context", "mission", "cases"}
+    suite = data.get("suite") if isinstance(data, dict) else None
+    allowed = {"schema_version", "suite", "version", "synthetic", "cases"}
+    if suite == "ai-policy":
+        allowed |= {"tutor_context", "mission"}
     if not isinstance(data, dict) or set(data) != allowed:
         raise ValueError("dataset requires exactly: " + ", ".join(sorted(allowed)))
-    if type(data["schema_version"]) is not int or data["schema_version"] != 1 or data["suite"] != "ai-policy" or data["synthetic"] is not True:
-        raise ValueError("requires schema 1, ai-policy suite, and synthetic=true")
+    if type(data["schema_version"]) is not int or data["schema_version"] != 1 or not isinstance(suite, str) or suite not in {"ai-policy", "offline-evidence"} or data["synthetic"] is not True:
+        raise ValueError("requires schema 1, a supported suite, and synthetic=true")
     if not isinstance(data["version"], str) or not data["version"].strip():
         raise ValueError("dataset version is required")
-    if not isinstance(data["tutor_context"], dict) or not isinstance(data["mission"], dict):
+    if suite == "ai-policy" and (not isinstance(data["tutor_context"], dict) or not isinstance(data["mission"], dict)):
         raise ValueError("tutor_context and mission must be objects")
     cases = data["cases"]
     if not isinstance(cases, list) or not 1 <= len(cases) <= 100:
@@ -62,7 +65,7 @@ def load_dataset(path):
         if case_id in seen:
             raise ValueError("duplicate case ID: " + case_id)
         seen.add(case_id)
-        if not isinstance(kind, str) or kind not in KINDS or set(case) != {"id", "kind", kind, "expected"}:
+        if not isinstance(kind, str) or kind not in (KINDS if suite == "ai-policy" else {"browser"}) or set(case) != {"id", "kind", kind, "expected"}:
             raise ValueError("unknown case kind or fields: " + case_id)
         if not isinstance(case[kind], dict):
             raise ValueError("case input must be an object: " + case_id)
@@ -102,6 +105,18 @@ def select_cases(cases, selection):
 
 
 def invoke_bridge(data, cases):
+    if data["suite"] == "offline-evidence":
+        payload = {"cases": [{key: value for key, value in case.items() if key != "expected"} for case in cases]}
+        run = subprocess.run(["node", str(ROOT / "evals/platform/offline-evidence/bridge.mjs")],
+                             input=json.dumps(payload), text=True, capture_output=True,
+                             env={"PATH": os.environ.get("PATH", os.defpath), "TZ": "UTC"}, timeout=30)
+        if run.returncode:
+            raise RuntimeError("offline browser bridge rejected the batch:\n" + run.stderr)
+        output = json.loads(run.stdout, object_pairs_hook=unique_object)
+        results = output.get("results") if isinstance(output, dict) else None
+        if not isinstance(output, dict) or output.get("mode") != "offline" or output.get("real_provider_calls") != 0 or not isinstance(results, list) or not all(isinstance(item, dict) for item in results) or [item.get("id") for item in results] != [case["id"] for case in cases]:
+            raise RuntimeError("browser bridge returned an invalid result batch")
+        return results
     payload = {"tutor_context": data["tutor_context"], "mission": data["mission"],
                "cases": [{key: value for key, value in case.items() if key != "expected"} for case in cases]}
     build_env = dict(os.environ, GOPROXY="off")

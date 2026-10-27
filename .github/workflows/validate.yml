@@ -52,4 +52,5 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm run build
+      - run: python3 ../evals/run.py --dataset ../evals/platform/offline-evidence/cases.json
       - run: npm audit --audit-level=high
