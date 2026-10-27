@@ -43,6 +43,11 @@ type Config struct {
 	GenAICredentialsJSON            string
 	GenAIRequestTimeoutSeconds      int
 	GenAIMaxOutputTokens            int
+	GenAISharedBudgetScope          string
+	GenAISharedConcurrent           int
+	GenAISharedRequestsPerMinute    int
+	GenAISharedOutputPerMinute      int
+	GenAISharedLeaseSeconds         int
 	PostHogEnabled                  bool
 	PostHogProjectToken             string
 	PostHogHost                     string
@@ -99,6 +104,11 @@ func Load() (Config, error) {
 		GenAICredentialsJSON:            reader.getString("GENAI_CREDENTIALS_JSON", ""),
 		GenAIRequestTimeoutSeconds:      reader.getInt("GENAI_REQUEST_TIMEOUT_SECONDS", 30),
 		GenAIMaxOutputTokens:            reader.getInt("GENAI_MAX_OUTPUT_TOKENS", 4096),
+		GenAISharedBudgetScope:          reader.getString("GENAI_SHARED_BUDGET_SCOPE", "classgame-provider"),
+		GenAISharedConcurrent:           reader.getInt("GENAI_SHARED_CONCURRENT", 4),
+		GenAISharedRequestsPerMinute:    reader.getInt("GENAI_SHARED_REQUESTS_PER_MINUTE", 60),
+		GenAISharedOutputPerMinute:      reader.getInt("GENAI_SHARED_OUTPUT_TOKENS_PER_MINUTE", 65536),
+		GenAISharedLeaseSeconds:         reader.getInt("GENAI_SHARED_LEASE_SECONDS", 150),
 		PostHogEnabled:                  reader.getBool("POSTHOG_ENABLED", false),
 		PostHogProjectToken:             reader.getString("POSTHOG_PROJECT_TOKEN", ""),
 		PostHogHost:                     reader.getString("POSTHOG_HOST", "https://us.i.posthog.com"),
