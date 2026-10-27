@@ -42,4 +42,4 @@ Tutor turns use ordinary JSON responses. Keep student-facing teaching fields sep
 
 The server bounds request bodies and attachment downloads, applies authentication and operation-specific quotas, and returns structured errors. A class code is an enrollment mechanism, not teacher authorization. Health confirms dependencies, not a complete generation or learning journey.
 
-See [configuration](configuration.md), [data ownership](data-model.md), and [validation](../development/validation.md).
+See [configuration](CONFIGURATION.md), [data ownership](DATA-MODEL.md), and [validation](../development/VALIDATION.md).

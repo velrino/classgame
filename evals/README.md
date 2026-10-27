@@ -1,0 +1,26 @@
+# Evaluations
+
+Python controls the evaluation workflow; a small Go bridge calls the same API policy functions used in production. This keeps datasets, rubrics, and reporting easy to extend without reimplementing business rules or adding another `go.mod`.
+
+```bash
+# From the repository root; Python 3.9+ and the API Go toolchain are required.
+python3 evals/run.py
+python3 evals/run.py --list
+python3 evals/run.py --cases=tutor-private-context-minimized-v1,auth-wrong-provider-v1
+```
+
+Prepare Go dependencies normally first (`go -C api mod download`). Evaluation builds use the local module/toolchain cache with dependency downloads disabled. One bridge process executes the entire selected batch; no process is launched per case. It loads no application configuration or credentials and constructs no real provider/database client.
+
+| Path | Responsibility |
+| --- | --- |
+| [run.py](run.py) | Strict preflight, selection, assertions, manifests/results, exit gate |
+| [platform/ai-policy/cases.json](platform/ai-policy/cases.json) | Versioned synthetic inputs and expected policy behavior |
+| [api/cmd/evalbridge](../api/cmd/evalbridge/main.go) | Production Go calls with scripted provider/authentication ports |
+| [manual rubric](platform/ai-policy/MANUAL-RUBRIC.md) | Separate pedagogical review and held-out comparison plan |
+| `output/<unique-run>/` | Ignored, newly created run artifacts |
+
+`manifest.json` records the production revision, dirty state, dataset hash/version, mode, case IDs, and **zero real provider calls**. `results.json` records assertions and synthetic observations; raw provider prompts are replaced by their hash/length. The runner never reuses a run directory.
+
+Exit `0` means every selected policy case passed, `1` means assertions failed, and `2` means invalid input/build/bridge/output failure. Unknown flags/IDs, duplicate IDs, malformed cases, and unsupported modes fail before case execution. `--mode=live` is deliberately unavailable; no paid run occurs.
+
+These are offline policy and contract evaluations, including a scripted timeout result. Passing them does not establish teaching quality, live robustness, deployed permissions, or a safe release. See [evaluation scope](../docs/ai/EVALUATIONS.md) and [release safety](../docs/operations/RELEASE-SAFETY.md).

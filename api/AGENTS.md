@@ -4,11 +4,11 @@ The Go API owns classroom authorization, missions, student learning, generation,
 
 | Task | Canonical guide |
 | --- | --- |
-| Start or configure | [Local setup](../docs/development/local-setup.md), [configuration](../docs/reference/configuration.md) |
-| Change a use case or dependency | [Module boundaries](../docs/architecture/modules.md) |
-| Change routes or stored projections | [API](../docs/reference/api.md), [data model](../docs/reference/data-model.md) |
-| Change generation or context | [AI safeguards](../docs/architecture/ai-quality.md), [AI index](../docs/ai/README.md) |
-| Validate or operate | [Validation](../docs/development/validation.md), [operations](../docs/operations/README.md) |
+| Start or configure | [Local setup](../docs/development/LOCAL-SETUP.md), [configuration](../docs/reference/CONFIGURATION.md) |
+| Change a use case or dependency | [Module boundaries](../docs/architecture/MODULES.md) |
+| Change routes or stored projections | [API](../docs/reference/API.md), [data model](../docs/reference/DATA-MODEL.md) |
+| Change generation or context | [AI safeguards](../docs/architecture/AI-QUALITY.md), [AI index](../docs/ai/README.md) |
+| Validate or operate | [Validation](../docs/development/VALIDATION.md), [operations](../docs/operations/README.md) |
 
 - Keep one [go.mod](go.mod). Composition starts at [cmd/api](cmd/api/main.go).
 - Keep SDKs and persistence mappings at the edges. Define narrow ports beside their consumers; keep policy independent of provider state.

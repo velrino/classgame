@@ -4,11 +4,11 @@ Next.js teacher dashboard and Three.js student classroom. Read the [root rules](
 
 | Task | Canonical guide |
 | --- | --- |
-| Start or configure | [Local setup](../docs/development/local-setup.md), [configuration](../docs/reference/configuration.md) |
-| Change module ownership | [Module boundaries](../docs/architecture/modules.md) |
-| Change API behavior | [API contract](../docs/reference/api.md) |
-| Check a change | [Validation](../docs/development/validation.md) |
-| Review or integrate | [Code review](../docs/processes/code-review.md), [release workflow](../docs/processes/release-workflow.md) |
+| Start or configure | [Local setup](../docs/development/LOCAL-SETUP.md), [configuration](../docs/reference/CONFIGURATION.md) |
+| Change module ownership | [Module boundaries](../docs/architecture/MODULES.md) |
+| Change API behavior | [API contract](../docs/reference/API.md) |
+| Check a change | [Validation](../docs/development/VALIDATION.md) |
+| Review or integrate | [Code review](../docs/processes/CODE-REVIEW.md), [release workflow](../docs/processes/RELEASE-WORKFLOW.md) |
 
 - Routes/layouts stay in [src/app](src/app). Business behavior belongs to [src/modules](src/modules), with intentional public surfaces.
 - Put HTTP, realtime schemas, browser recovery, and vendor access behind module adapters. Keep UI intent separate from workflow controllers and pure policies.
@@ -20,7 +20,7 @@ Run relevant existing checks here: `npx tsc --noEmit`, `npm run lint`, `npm run 
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 

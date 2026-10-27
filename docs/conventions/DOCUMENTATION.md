@@ -4,7 +4,7 @@ Keep one canonical guide per topic. `AGENTS.md` files and package READMEs route 
 
 ## Place and name
 
-- Choose the topic folder from the [documentation home](../README.md). Use existing lowercase, `kebab-case.md` names; indexes remain `README.md`.
+- Choose the topic folder from the [documentation home](../README.md). Use UPPERCASE Markdown file names with the `.md` extension, such as `LOCAL-SETUP.md`. Each index is `README.md`. Folder names stay lowercase.
 - Keep human guidance in `docs/`. Fixtures, executable contracts, environment templates, and runtime data stay beside their consumers.
 - Root/package READMEs remain short entry points. Keep asset provenance beside the assets; do not create parallel package documentation trees.
 - Every real folder under `docs/` has a `README.md` listing its documents and child folders. Update indexes in the same change and list only real entries.

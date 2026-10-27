@@ -1,12 +1,12 @@
 # Module boundaries
 
-Use business capabilities as ownership boundaries. Keep one Go module, one web application, and acyclic dependencies. Extract one working use case at a time; directory moves alone do not establish isolation.
+Use business capabilities as code boundaries. Keep one Go module, one web app, and no import cycles. Move one working use case at a time.
 
 ## Go
 
 ```text
+api/cmd/api/                   # Composition, HTTP registration, lifecycle
 api/internal/
-  app/                         # Composition, HTTP registration, lifecycle
   config/                      # Environment parsing and validation
   modules/<capability>/
     domain/                    # Pure models, invariants, errors
@@ -19,7 +19,7 @@ api/internal/
   platform/                    # Provider clients and connection lifecycle
 ```
 
-Create subpackages when they enforce useful boundaries. A small capability can remain a cohesive package with focused files.
+The tree shows optional layers, not folders to create now. Current capabilities use focused files in one package. Create a subpackage when it gives a useful boundary.
 
 - Dependency direction is HTTP adapter → application → domain. Provider adapters implement application-owned ports; composition wires them.
 - Domain policy uses business types and standard-library primitives. Echo, Firebase, Redis, GenAI, and task SDKs stay at the edges.
@@ -31,6 +31,8 @@ Create subpackages when they enforce useful boundaries. A small capability can r
 ### Shared Go code
 
 Share a package only when consumers share its meaning and an owner is clear. Prefer focused names such as `ratelimit`, `contentpolicy`, or `timeutil`; keep provider packages separate from business policy. Technical shared packages must not import business modules.
+
+The technical [rate-limit capability](RATE-LIMITING.md) lives under `internal/platform/ratelimit`, with standard-library core policy and separate `redis/` and `http/` adapters. Business quota rules stay outside that technical package.
 
 Keep application-only packages under `internal/`; `pkg/` has no special export behavior. Do not create extra `go.mod` files, universal repositories, service locators, or wrappers around every standard-library call. Map distinct domain models rather than forcing them into a large shared object.
 

@@ -22,6 +22,6 @@ Identify security flaws: injection, data exposure, authentication, authorization
 
 ## Evidence and handoff
 
-Run relevant [existing checks and affected workflows](../development/validation.md). Report actual results and unresolved limits. Do not add tests without an explicit user request; a requested evaluation suite follows the same authorization rule.
+Run relevant [existing checks and affected workflows](../development/VALIDATION.md). Report actual results and unresolved limits. Do not add tests without an explicit user request; a requested evaluation suite follows the same authorization rule.
 
-Keep PRs focused enough to review. Separate behavior/security changes from mechanical moves where practical. The [release workflow](release-workflow.md) owns branch targets, authorship, and integration order.
+Keep PRs focused enough to review. Separate behavior/security changes from mechanical moves where practical. The [release workflow](RELEASE-WORKFLOW.md) owns branch targets, authorship, and integration order.

@@ -4,8 +4,10 @@ Current system responsibilities, module boundaries, and AI trust boundaries. [Pl
 
 | Guide | Purpose |
 | --- | --- |
-| [System](system.md) | Learning loop, capability ownership, and invariants |
-| [Modules](modules.md) | Dependency direction and useful package anatomy |
-| [AI quality and evidence](ai-quality.md) | Tutor context, retrieval limits, and private information boundaries |
+| [System](SYSTEM.md) | Learning loop, capability ownership, and invariants |
+| [Modules](MODULES.md) | Dependency direction and useful package anatomy |
+| [Rate limiting](RATE-LIMITING.md) | Core policy and its Redis/HTTP adapters |
+| [Background jobs](TASK-PORTABILITY.md) | Queue port, delivery, and backend limits |
+| [AI quality and evidence](AI-QUALITY.md) | Tutor context, retrieval limits, and private information boundaries |
 
-The original architecture SVG illustrates the historical submitted deployment. Use the [hosting record](../operations/hosting-history.md) for its status.
+The original architecture SVG illustrates the historical submitted deployment. Use the [hosting record](../operations/HOSTING-HISTORY.md) for its status.

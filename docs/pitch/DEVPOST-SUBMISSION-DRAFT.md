@@ -1,6 +1,6 @@
 # Devpost Submission Draft
 
-> Historical submission material. Former hosted links and deployment descriptions are preserved as context; use [local setup](../development/local-setup.md) and [hosting history](../operations/hosting-history.md) for current instructions.
+> Historical submission material. Former hosted links and deployment descriptions are preserved as context; use [local setup](../development/LOCAL-SETUP.md) and [hosting history](../operations/HOSTING-HISTORY.md) for current instructions.
 
 This file is a draft for the **All Things Agentic Hackathon** Devpost form. Last synced with the code on **August 29, 2026**.
 
@@ -238,7 +238,7 @@ cloudhackathons@google.com
 Yes
 ```
 
-[local setup](../development/local-setup.md) → _Run it locally_ and _Testing instructions (hosted)_.
+[local setup](../development/LOCAL-SETUP.md) → _Run it locally_ and _Testing instructions (hosted)_.
 
 ### Hosted Project URL If Available
 
@@ -415,7 +415,7 @@ Building ClassGame for the #AllThingsAgenticHackathon: the optional homework tha
 - [x] Used Cloud Run, Firestore, Cloud Tasks and Cloud Storage.
 - [ ] Selected **The Collaborative Partner** category.
 - [x] Public code repository.
-- [x] Reproducible setup and testing instructions in [local setup](../development/local-setup.md).
+- [x] Reproducible setup and testing instructions in [local setup](../development/LOCAL-SETUP.md).
 - [ ] Uploaded architecture diagram.
 - [ ] Uploaded public YouTube/Vimeo video under 4 minutes.
 - [ ] Video is in English or has English subtitles.

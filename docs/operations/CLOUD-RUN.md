@@ -1,6 +1,6 @@
 # Cloud Run operations
 
-The previous hosted deployment is offline; see [hosting history](hosting-history.md). Local startup does not recreate it. This guide describes the infrastructure contract to review before an intentional deployment.
+The previous hosted deployment is offline; see [hosting history](HOSTING-HISTORY.md). Local startup does not recreate it. This guide describes the infrastructure contract to review before an intentional deployment.
 
 ## Build inputs
 

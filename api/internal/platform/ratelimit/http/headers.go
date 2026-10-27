@@ -1,14 +1,14 @@
-package httpx
+package http
 
 import (
-	"net/http"
+	nethttp "net/http"
 	"strconv"
 	"time"
 
-	"classgame-api/internal/ratelimit"
+	"classgame-api/internal/platform/ratelimit"
 )
 
-func SetRateLimitHeaders(header http.Header, decision ratelimit.Decision) {
+func SetRateLimitHeaders(header nethttp.Header, decision ratelimit.Decision) {
 	header.Set("X-RateLimit-Limit", strconv.FormatInt(decision.Limit, 10))
 	header.Set("X-RateLimit-Remaining", strconv.FormatInt(decision.Remaining, 10))
 	if decision.Allowed {

@@ -8,7 +8,7 @@ import (
 	"classgame-api/internal/auth"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/missions"
-	"classgame-api/internal/ratelimit"
+	"classgame-api/internal/platform/ratelimit"
 )
 
 func TestValidateStudentClassCodeAcceptsActiveClass(t *testing.T) {

@@ -29,6 +29,7 @@ import (
 	"classgame-api/internal/platform/firebase"
 	"classgame-api/internal/platform/genai"
 	"classgame-api/internal/platform/objectstorage"
+	rateredis "classgame-api/internal/platform/ratelimit/redis"
 	"classgame-api/internal/platform/redis"
 	"classgame-api/internal/platform/redisqueue"
 )
@@ -180,9 +181,9 @@ func run() (runErr error) {
 	teacherClassService := classrooms.NewService(teacherClassRepository)
 	missionRepository := missions.NewFirestoreRepository(firebaseConnection.FirestoreClient())
 
-	missionGenerationPerTeacherMinuteLimiter, err := redis.NewFixedWindow(
+	missionGenerationPerTeacherMinuteLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  missionGenerationPerTeacherMinuteLimit,
 			Prefix: "classgame:mission_generation",
 			Window: time.Minute,
@@ -191,9 +192,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize mission generation rate limiter: %w", err)
 	}
-	missionGenerationPerTeacherHourLimiter, err := redis.NewFixedWindow(
+	missionGenerationPerTeacherHourLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  missionGenerationPerTeacherHourLimit,
 			Prefix: "classgame:mission_generation:teacher:hour",
 			Window: time.Hour,
@@ -202,9 +203,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize hourly mission generation rate limiter: %w", err)
 	}
-	missionGenerationPerIPHourLimiter, err := redis.NewFixedWindow(
+	missionGenerationPerIPHourLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  missionGenerationPerIPHourLimit,
 			Prefix: "classgame:mission_generation:ip:hour",
 			Window: time.Hour,
@@ -213,9 +214,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize mission generation IP rate limiter: %w", err)
 	}
-	studentTutorPerStudentMinuteLimiter, err := redis.NewFixedWindow(
+	studentTutorPerStudentMinuteLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  studentTutorPerStudentMinuteLimit,
 			Prefix: "classgame:student_tutor:student:minute",
 			Window: time.Minute,
@@ -224,9 +225,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor per-minute rate limiter: %w", err)
 	}
-	studentTutorPerStudentHourLimiter, err := redis.NewFixedWindow(
+	studentTutorPerStudentHourLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  studentTutorPerStudentHourLimit,
 			Prefix: "classgame:student_tutor:student:hour",
 			Window: time.Hour,
@@ -235,9 +236,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor hourly rate limiter: %w", err)
 	}
-	studentTutorPerIPMinuteLimiter, err := redis.NewFixedWindow(
+	studentTutorPerIPMinuteLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  studentTutorPerIPMinuteLimit,
 			Prefix: "classgame:student_tutor:ip:minute",
 			Window: time.Minute,
@@ -246,9 +247,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor IP per-minute rate limiter: %w", err)
 	}
-	studentTutorPerIPHourLimiter, err := redis.NewFixedWindow(
+	studentTutorPerIPHourLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  studentTutorPerIPHourLimit,
 			Prefix: "classgame:student_tutor:ip:hour",
 			Window: time.Hour,
@@ -257,9 +258,9 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student tutor IP hourly rate limiter: %w", err)
 	}
-	studentLearningPerClassHourLimiter, err := redis.NewFixedWindow(
+	studentLearningPerClassHourLimiter, err := rateredis.NewFixedWindow(
 		redisConnection.Client(),
-		redis.FixedWindowOptions{
+		rateredis.FixedWindowOptions{
 			Limit:  studentLearningPerClassHourLimit,
 			Prefix: "classgame:student_learning:class:hour",
 			Window: time.Hour,

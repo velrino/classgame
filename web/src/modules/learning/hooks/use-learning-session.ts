@@ -27,8 +27,12 @@ export function useLearningSession() {
     undefined,
     createInitialSession,
   );
-  const { requestTutorTurn, resetRecovery, clearCurrentRecovery } =
-    useLearningRecovery(session, dispatch);
+  const {
+    requestTutorTurn,
+    resetRecovery,
+    clearCurrentRecovery,
+    recoveryError,
+  } = useLearningRecovery(session, dispatch);
   // The hologram pauses before revealing a decision.
   useEffect(() => {
     if (session.lesson?.phase !== "thinking") {
@@ -183,7 +187,24 @@ export function useLearningSession() {
           return;
         }
         const now = Date.now();
+        const eventID = learningEventID(now, session.memory.eventSequence + 1);
         dispatch({ type: "feedback", value, now });
+        void requestTutorTurn(lesson.question.id, {
+          event_id: eventID,
+          type: "feedback",
+          stage_id: sourceStageID(
+            session.mission,
+            lesson.pod,
+            lesson.question.id,
+          ),
+          question_id: sourceQuestionID(session.mission, lesson.question.id),
+          prompt: questionPrompt(lesson.question),
+          student_response: value,
+          expected_answer: expectedAnswer(lesson.question),
+          outcome: "support",
+          explicit_reasoning: "",
+          feedback: value,
+        });
       },
       continue: () => dispatch({ type: "continue", now: Date.now() }),
       leaveMission: () => {
@@ -198,5 +219,5 @@ export function useLearningSession() {
     [clearCurrentRecovery, requestTutorTurn, resetRecovery, session],
   );
 
-  return { session, handlers };
+  return { session, handlers, recoveryError };
 }
