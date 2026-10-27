@@ -459,6 +459,12 @@ func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 			return ErrStaleFinalization
 		}
 		trace.Finalized = true
+		projected := attempt
+		projected.Trace = trace
+		writeProjection, err := repository.classEvidenceWrite(ctx, tx, projected, timestamp)
+		if err != nil {
+			return err
+		}
 
 		attempt.FinalizationToken = ""
 		attempt.FinalizationLeaseUntil = time.Time{}
@@ -474,6 +480,9 @@ func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 			"updated_at": timestamp,
 		}, firestore.MergeAll); err != nil {
 			return fmt.Errorf("write learning trace: %w", err)
+		}
+		if err := writeProjection(); err != nil {
+			return err
 		}
 		if !CanUpdateLearningMemory(user.Student, attempt, memory) {
 			return nil
