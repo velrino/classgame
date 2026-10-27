@@ -9,10 +9,10 @@ import (
 
 var (
 	// ErrRevisionPending tells the task handler that approval has not committed yet.
-	// Cloud Tasks should retry this error.
+	// background workers should retry this error.
 	ErrRevisionPending = errors.New("mission published revision is not available yet")
 	// ErrRevisionObsolete tells the task handler that the addressed immutable
-	// revision cannot exist or does not match the job. Cloud Tasks should
+	// revision cannot exist or does not match the job. background workers should
 	// acknowledge this error.
 	ErrRevisionObsolete = errors.New("mission published revision is obsolete")
 )
@@ -59,7 +59,7 @@ func validatePathID(field string, value string, maxLength int) error {
 	return nil
 }
 
-// PermanentError marks work that will not succeed on a later Cloud Tasks
+// PermanentError marks work that will not succeed on a later background workers
 // attempt, such as an invalid source URL or an attachment above the size limit.
 type PermanentError struct {
 	err error

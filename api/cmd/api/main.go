@@ -26,11 +26,11 @@ import (
 	"classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
 	"classgame-api/internal/platform/analytics"
-	"classgame-api/internal/platform/cloudtasks"
 	"classgame-api/internal/platform/firebase"
 	"classgame-api/internal/platform/genai"
 	"classgame-api/internal/platform/objectstorage"
 	"classgame-api/internal/platform/redis"
+	"classgame-api/internal/platform/redisqueue"
 )
 
 const (
@@ -56,6 +56,8 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 	analyticsClient, err := analytics.New(analytics.Options{
 		Enabled:      cfg.PostHogEnabled,
 		Environment:  cfg.AppEnv,
@@ -95,7 +97,7 @@ func run() (runErr error) {
 			slog.Error("firebase disconnect failed", "error", err)
 		}
 	}()
-	if cfg.FirebaseBootstrapEnabled {
+	if cfg.FirebaseBootstrapEnabled && cfg.AppRole != "worker" {
 		bootstrapContext, cancel := context.WithTimeout(
 			context.Background(),
 			time.Duration(cfg.FirebaseBootstrapTimeoutSeconds)*time.Second,
@@ -268,83 +270,16 @@ func run() (runErr error) {
 	}
 
 	missionServiceOptions := []missions.ServiceOption{missions.WithAttachmentReader(storageConnection)}
-	var missionAttachmentHandler http.Handler
-	var studentLearningTaskHandler http.Handler
+	var jobQueue *redisqueue.Client
 	var learningTasks students.LearningTaskEnqueuer
-	var taskAuthenticator *attachments.OIDCAuthenticator
-	if cfg.CloudTasksEnabled {
-
-		storageCopier, err := attachments.NewStorageCopier(attachments.StorageCopierOptions{
-			BucketName: storageConnection.BucketName(),
-			Bucket:     storageConnection.Bucket(),
-		})
+	if cfg.TasksEnabled {
+		jobQueue, err = redisqueue.Connect(ctx, redisqueue.Options{URL: cfg.TasksRedisURL, Queue: cfg.TasksQueue, Production: cfg.AppEnv == "production"})
 		if err != nil {
-			return fmt.Errorf("initialize mission attachment copier: %w", err)
+			return fmt.Errorf("initialize background queue: %w", err)
 		}
-
-		taskQueue, err := cloudtasks.Connect(context.Background(), cloudtasks.Options{
-			ProjectID:          cfg.CloudTasksProjectID,
-			Location:           cfg.CloudTasksLocation,
-			Queue:              cfg.CloudTasksQueue,
-			TargetURL:          cfg.CloudTasksTargetURL,
-			OIDCServiceAccount: cfg.CloudTasksServiceAccount,
-			OIDCAudience:       cfg.CloudTasksOIDCAudience,
-			DispatchDeadline:   290 * time.Second,
-		})
-		if err != nil {
-			return fmt.Errorf("initialize mission attachment task queue: %w", err)
-		}
-		defer func() {
-			if err := taskQueue.Close(); err != nil {
-				slog.Error("mission attachment task queue disconnect failed", "error", err)
-			}
-		}()
-
-		learningTaskQueue, err := cloudtasks.Connect(context.Background(), cloudtasks.Options{
-			ProjectID:          cfg.CloudTasksProjectID,
-			Location:           cfg.CloudTasksLocation,
-			Queue:              cfg.CloudTasksQueue,
-			TargetURL:          cfg.CloudTasksLearningTargetURL,
-			OIDCServiceAccount: cfg.CloudTasksServiceAccount,
-			OIDCAudience:       cfg.CloudTasksOIDCAudience,
-			DispatchDeadline:   290 * time.Second,
-		})
-		if err != nil {
-			return fmt.Errorf("initialize student learning task queue: %w", err)
-		}
-		defer func() {
-			if err := learningTaskQueue.Close(); err != nil {
-				slog.Error("student learning task queue disconnect failed", "error", err)
-			}
-		}()
-		learningTasks = students.NewLearningTaskScheduler(learningTaskQueue, time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
-
-		attachmentEnqueuer := attachments.NewTaskScheduler(taskQueue, 2*time.Second)
-		missionServiceOptions = append(
-			missionServiceOptions,
-			missions.WithAttachmentEnqueuer(attachmentEnqueuer),
-		)
-
-		attachmentProcessor, err := attachments.NewProcessor(missionRepository, storageCopier)
-		if err != nil {
-			return fmt.Errorf("initialize mission attachment processor: %w", err)
-		}
-		taskAuthenticator, err = attachments.NewOIDCAuthenticator(
-			context.Background(),
-			cfg.CloudTasksOIDCAudience,
-			cfg.CloudTasksServiceAccount,
-		)
-		if err != nil {
-			return fmt.Errorf("initialize mission attachment task authentication: %w", err)
-		}
-		missionAttachmentHandler, err = attachments.NewHTTPHandler(
-			taskAuthenticator,
-			attachmentProcessor,
-		)
-		if err != nil {
-			return fmt.Errorf("initialize mission attachment task handler: %w", err)
-		}
-
+		defer jobQueue.Close()
+		learningTasks = students.NewLearningTaskScheduler(jobQueue.Destination(redisqueue.Learning), time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
+		missionServiceOptions = append(missionServiceOptions, missions.WithAttachmentEnqueuer(attachments.NewTaskScheduler(jobQueue.Destination(redisqueue.Attachments), 2*time.Second)))
 	}
 
 	usersService := students.NewService(students.Dependencies{
@@ -354,13 +289,24 @@ func run() (runErr error) {
 		Tasks: learningTasks, GenerationLimiter: studentLearningPerClassHourLimiter,
 		AbandonmentWindow: time.Duration(cfg.StudentAbandonmentSeconds) * time.Second,
 	})
-	if cfg.CloudTasksEnabled {
-		studentLearningTaskHandler, err = students.NewLearningTaskHTTPHandler(
-			taskAuthenticator,
-			usersService,
-		)
+	if cfg.AppRole == "worker" || cfg.AppRole == "all" {
+		copier, err := attachments.NewStorageCopier(attachments.StorageCopierOptions{BucketName: storageConnection.BucketName(), Bucket: storageConnection.Bucket()})
 		if err != nil {
-			return fmt.Errorf("initialize student learning task handler: %w", err)
+			return fmt.Errorf("initialize attachment copier: %w", err)
+		}
+		processor, err := attachments.NewProcessor(missionRepository, copier)
+		if err != nil {
+			return fmt.Errorf("initialize attachment processor: %w", err)
+		}
+		worker, err := jobQueue.Worker(redisqueue.WorkerOptions{Concurrency: cfg.TasksConcurrency, Handlers: app.BackgroundHandlers(processor, usersService)})
+		if err != nil {
+			return fmt.Errorf("start background worker: %w", err)
+		}
+		defer worker.Shutdown()
+		slog.Info("background worker started", "queue", cfg.TasksQueue, "concurrency", cfg.TasksConcurrency)
+		if cfg.AppRole == "worker" {
+			<-ctx.Done()
+			return nil
 		}
 	}
 
@@ -405,8 +351,6 @@ func run() (runErr error) {
 			},
 			MissionService: missionService,
 		},
-		MissionAttachment:   missionAttachmentHandler,
-		StudentLearningTask: studentLearningTaskHandler,
 		HealthChecks: []health.Check{
 			{
 				Name:    health.HealthCheckServiceFirebase,
@@ -435,9 +379,6 @@ func run() (runErr error) {
 		},
 	})
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
 	slog.Info("server started",
 		"host", cfg.Host,
 		"port", cfg.Port,
@@ -448,7 +389,8 @@ func run() (runErr error) {
 		"genai_backend", cfg.GenAIBackend,
 		"genai_model", cfg.GenAIModel,
 		"redis_enabled", redisConnection.IsEnabled(),
-		"cloud_tasks_enabled", cfg.CloudTasksEnabled,
+		"tasks_enabled", cfg.TasksEnabled,
+		"app_role", cfg.AppRole,
 		"posthog_enabled", analyticsClient.Enabled(),
 		"firebase_storage_bucket", cfg.FirebaseStorageBucket,
 		"last_deploy", startedAt.Format(time.RFC3339Nano),

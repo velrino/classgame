@@ -92,3 +92,12 @@ func validRequestID(value string) bool {
 	}
 	return true
 }
+
+// WithGenerationScope bounds in-process call sharing to one background job.
+// The raw scope is never exported or logged.
+func WithGenerationScope(ctx context.Context, scope string) context.Context {
+	value, _ := ctx.Value(contextKey{}).(metadata)
+	digest := sha256.Sum256([]byte(scope))
+	value.generationScope = hex.EncodeToString(digest[:])
+	return context.WithValue(ctx, contextKey{}, value)
+}

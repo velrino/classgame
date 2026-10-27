@@ -1,38 +1,21 @@
 # Task portability
 
-The queue message is now independent of Google Cloud. Cloud Tasks is still the only implemented delivery backend. This change does not install Redis workers, change the backend, or move hosted resources.
+Background attachment copying and learning jobs now use Go workers with [Asynq v0.26.0](https://github.com/hibiken/asynq/tree/v0.26.0) and a dedicated Redis broker. The Cloud Tasks adapter, SDK dependency, worker HTTP endpoints and OIDC delivery configuration have been removed. No hosted resources were changed.
 
-## Current boundary
+[Message](../../api/internal/taskqueue/message.go) carries a stable ID, JSON payload, correlation metadata and delivery time. Module-owned schedulers keep job meaning and IDs. [The Redis adapter](../../api/internal/platform/redisqueue/client.go) owns delivery, delay, retries and archived work. [Application wiring](../../api/internal/app/background.go) connects it to the existing domain processors; it does not copy their policies.
 
-[Message](../../api/internal/taskqueue/message.go) holds a stable ID, JSON payload, metadata and delivery time. Workflow-owned ports accept this type. The attachment and learning schedulers no longer import the Cloud Tasks adapter. Routing, HTTP delivery, OIDC and provider limits stay in [the adapter](../../api/internal/platform/cloudtasks/client.go).
+`TASKS_ENABLED=false` remains the local default. Learning finalization uses its inline fallback; attachment copying and scheduled inactivity jobs need a worker. `APP_ROLE=api` serves HTTP, `worker` processes jobs, and `all` does both using the same manual setup. Interactive Mia remains in its synchronous request path.
 
-Local development currently uses `CLOUD_TASKS_ENABLED=false`. Learning finalization can use the existing inline fallback. Background attachment copying and scheduled watchdog delivery are not exercised in this mode. Interactive Mia replies stay in the request/stream (SSE) path, with deadlines and cancellation; they are not offline queue jobs.
+## Delivery limits
 
-## Backend choice
+Delivery is at least once, without ordering guarantees. Stable IDs reject a changed payload while the ID exists; identical payloads share the existing job. Completed IDs are retained for 24 hours. This is a bounded replay window, not permanent uniqueness or exactly-once model charging. Retries reuse the stored body. Invalid jobs are archived; transient failures retry up to ten times, with a five-minute task deadline. Worker shutdown allows 30 seconds before unfinished work is returned for recovery.
 
-| Option | Fit for this Go API | Operations work |
-| --- | --- | --- |
-| [Cloud Tasks](https://docs.cloud.google.com/tasks/docs/dual-overview) | Managed HTTP delivery while hosting on GCP | Configure queue limits, worker identity, retries and recovery. Google operates the queue. |
-| [Asynq with Redis](https://github.com/hibiken/asynq) | First candidate if we later choose Go workers across clouds | Run Go workers and a durable Redis service. Own capacity, failover, backups and recovery. |
-| [BullMQ](https://docs.bullmq.io/) | Its main library uses Node.js; useful if Node workers are already a team choice | Another worker runtime for this Go application, plus Redis operations. |
+Attachment publication enqueues before its transaction and records the immutable revision's transfer marker. A failed enqueue prevents publication. If publication is still committing, the worker retries. Completed object copies and obsolete revisions remain safe to repeat through the existing processor. A lost Redis acknowledgement may leave an extra job; it must not justify inventing new business IDs. Broker data loss still needs a reviewed re-enqueue from the persisted revision marker.
 
-Asynq provides scheduling, retries and worker-crash recovery in Go. Its documented Redis Cluster limits need a compatibility check before choosing a managed Redis service. This is a candidate, not an installed dependency or a completed migration.
+Learning jobs use persisted pending markers and scoped finalization claims. The recovery sweep retries normal pending work with the same job identity. An explicit operator redrive is needed after an archived/exhausted job; it must use the domain recovery command rather than changing the JSON in Redis. See [queue operations](../operations/QUEUES.md) for recovery and deployment gates.
 
-Changing the queue alone does not move Firebase Auth, Firestore, object storage, Vertex AI or worker identity. An AWS/Azure plan must decide which adapters to keep or replace, then verify authorization, data mapping, deadlines and recovery.
+## Hosting boundary
 
-## Reliability across instances
+Asynq is still v0.x: its API can change before 1.0, and the upstream project warns that some Lua scripts are incompatible with Redis Cluster. The pinned implementation targets a standalone-compatible endpoint; validate any managed service before adoption. Use a separate broker, persistence, no eviction, backups and tested restore/failover. Redis is now infrastructure the team must operate.
 
-[Cloud Tasks can deliver duplicates and does not promise execution order](https://docs.cloud.google.com/tasks/docs/common-pitfalls). A future Redis worker must also handle repeated or late delivery. Keep stable job IDs, pinned revision/attempt scope and transactional outcome checks. A retry must not apply old work to the student's new session. Idempotency means repeating a job keeps the same stored result.
-
-The AI request limit and matching-call sharing (coalescing) work inside one API process. Some request rate limits already use Redis, but there is no shared provider cost/concurrency budget. Two API instances can still call the model for the same event. Persisted tutor-turn replay protects stored writes; it does not prevent duplicate provider charges.
-
-Future multi-instance work should cover:
-
-- A shared provider budget and bounded worker concurrency, measured across replicas.
-- A durable operation lease for costly duplicate work when needed. A lease has an owner and expiry. A version token, checked on result writes, prevents an old worker from overwriting a newer result. A crash after a provider charge can still cause another charge unless the provider offers a suitable idempotency/replay contract.
-- A durable job-intent/outbox when one database transaction must publish state and schedule recoverable work. A dispatcher retries delivery after a crash.
-- A recovery scan for missing pending jobs, expired leases and failed jobs. Set retry limits, backoff, alerts and a failed-job archive/dead-letter queue with reviewed replay.
-
-A future Redis queue needs a dedicated broker, separate from disposable cache/rate-limit data. Choose [persistence and tested restore/failover](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/), with an explicit data-loss target. Use [no eviction](https://redis.io/docs/latest/develop/reference/eviction/) and handle enqueue errors when memory is full. Persistence and replication do not replace application recovery or scoped idempotency.
-
-These controls are follow-up design work. The implemented change closes the message-type coupling while preserving current job payloads, IDs, scheduling, OIDC and retry behavior.
+This change does not move Firebase Auth, Firestore, object storage or the AI provider. Provider admission and matching-call sharing remain per process; multiple replicas may still incur duplicate model charges after a failure. Application version checks and leases protect stored outcomes, not global cost uniqueness.

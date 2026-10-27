@@ -21,7 +21,7 @@ Review project, region, service names, repository paths, identities, and substit
 - Redis with scoped credentials for quotas and dependency checks.
 - Runtime credentials through Secret Manager or workload identity, with only necessary permissions.
 - Vertex AI or another supported GenAI backend when live generation is enabled.
-- Cloud Tasks queue, dispatcher identity, worker URLs, and matching OIDC audience when background delivery is enabled.
+- Dedicated Redis broker, worker process, persistence and recovery when background delivery is enabled; see [queues](QUEUES.md). The provided API build keeps jobs disabled until those inputs are configured.
 - Artifact Registry and Cloud Build permissions for container publication.
 
 Task workers validate a Google-signed token and the expected service-account identity. A task-specific header is not authentication. Preserve deterministic task IDs, classify retryable/permanent failures, and retain referenced published revisions.

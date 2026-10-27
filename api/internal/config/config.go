@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -23,14 +22,11 @@ type Config struct {
 	FirebaseCredentialsJSON         string
 	FirebasePingTimeoutSeconds      int
 	FirebaseStorageBucket           string
-	CloudTasksEnabled               bool
-	CloudTasksProjectID             string
-	CloudTasksLocation              string
-	CloudTasksQueue                 string
-	CloudTasksTargetURL             string
-	CloudTasksLearningTargetURL     string
-	CloudTasksServiceAccount        string
-	CloudTasksOIDCAudience          string
+	AppRole                         string
+	TasksEnabled                    bool
+	TasksRedisURL                   string
+	TasksQueue                      string
+	TasksConcurrency                int
 	StudentAbandonmentSeconds       int
 	AuthGoogleWebClientID           string
 	AuthTeacherProviders            string
@@ -67,11 +63,6 @@ func Load() (Config, error) {
 	googleCloudProject := reader.getString("GOOGLE_CLOUD_PROJECT", "rare-tape-466414-f4")
 	googleCloudLocation := reader.getString("GOOGLE_CLOUD_LOCATION", "global")
 	firebaseProjectID := reader.getString("FIREBASE_PROJECT_ID", "allthingsagentichackatho-ee359")
-	cloudTasksAudience := reader.getString("CLOUD_TASKS_OIDC_AUDIENCE", "")
-	learningTasksDefaultURL := ""
-	if strings.TrimSpace(cloudTasksAudience) != "" {
-		learningTasksDefaultURL = strings.TrimRight(cloudTasksAudience, "/") + "/internal/tasks/student-learning"
-	}
 	corsDefault := "http://localhost:3000,http://127.0.0.1:3000"
 	if reader.getString("APP_ENV", "development") == "production" {
 		corsDefault = ""
@@ -88,14 +79,11 @@ func Load() (Config, error) {
 		FirebaseCredentialsJSON:         reader.getString("FIREBASE_CREDENTIALS_JSON", ""),
 		FirebasePingTimeoutSeconds:      reader.getInt("FIREBASE_PING_TIMEOUT_SECONDS", 5),
 		FirebaseStorageBucket:           reader.getString("FIREBASE_STORAGE_BUCKET", "allthingsagentichackatho-ee359.firebasestorage.app"),
-		CloudTasksEnabled:               reader.getBool("CLOUD_TASKS_ENABLED", false),
-		CloudTasksProjectID:             reader.getString("CLOUD_TASKS_PROJECT_ID", googleCloudProject),
-		CloudTasksLocation:              reader.getString("CLOUD_TASKS_LOCATION", "us-east1"),
-		CloudTasksQueue:                 reader.getString("CLOUD_TASKS_QUEUE", "mission-attachment-copy"),
-		CloudTasksTargetURL:             reader.getString("CLOUD_TASKS_TARGET_URL", ""),
-		CloudTasksLearningTargetURL:     reader.getString("CLOUD_TASKS_LEARNING_TARGET_URL", learningTasksDefaultURL),
-		CloudTasksServiceAccount:        reader.getString("CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL", ""),
-		CloudTasksOIDCAudience:          cloudTasksAudience,
+		AppRole:                         reader.getString("APP_ROLE", "api"),
+		TasksEnabled:                    reader.getBool("TASKS_ENABLED", false),
+		TasksRedisURL:                   reader.getString("TASKS_REDIS_URL", ""),
+		TasksQueue:                      reader.getString("TASKS_QUEUE", "classgame-background"),
+		TasksConcurrency:                reader.getInt("TASKS_CONCURRENCY", 4),
 		StudentAbandonmentSeconds:       reader.getInt("STUDENT_ABANDONMENT_SECONDS", 120),
 		AuthGoogleWebClientID:           reader.getString("AUTH_GOOGLE_WEB_CLIENT_ID", "245584783597-t05j7fj2iucesiad4jpu4mlh72kgcs12.apps.googleusercontent.com"),
 		AuthTeacherProviders:            reader.getString("AUTH_TEACHER_PROVIDERS", "google"),

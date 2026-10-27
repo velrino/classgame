@@ -35,7 +35,7 @@ FIREBASE_BOOTSTRAP_ENABLED=false
 AUTH_TEACHER_PROVIDERS=google,password
 AUTH_STUDENT_PROVIDERS=anonymous
 REDIS_URL=redis://127.0.0.1:6379
-CLOUD_TASKS_ENABLED=false
+TASKS_ENABLED=false
 POSTHOG_ENABLED=false
 GENAI_ENABLED=false
 ```
@@ -85,8 +85,10 @@ Open [teacher login](http://localhost:3000/login) or the [student game](http://l
 
 `GENAI_ENABLED=false` selects deterministic fallbacks. For live generation, configure a supported backend and model using the [configuration reference](../reference/configuration.md); restart the API after changing its environment.
 
-With Cloud Tasks disabled, completion finalization can fall back to synchronous work. Background copies and scheduled abandonment processing need their configured worker infrastructure; disabling the queue does not reproduce scheduled delivery.
+With background tasks disabled, completion finalization can fall back to synchronous work. Background copies and scheduled abandonment processing need their configured worker infrastructure; disabling the queue does not reproduce scheduled delivery.
 
 For a new Firebase project, deploy the reviewed [Firestore rules](../../firestore.rules) explicitly to that project. This changes remote access rules and is separate from starting local processes.
 
 Next: [validation](validation.md), [API contracts](../reference/api.md), and [configuration](../reference/configuration.md).
+
+For a dedicated local job broker and separate Go workers, see [queue operations](../operations/QUEUES.md). The temporary transport smoke does not run application processors.

@@ -4,7 +4,7 @@ The modular architecture release targets an interactive [Scalar reference](http:
 
 ## Authentication
 
-Protected browser requests send `Authorization: Bearer <Firebase ID token>`. Teacher providers and student providers follow configured policy. Resource ownership and enrollment are checked independently of sign-in method. Task workers verify Google-signed OIDC identity and audience.
+Protected browser requests send `Authorization: Bearer <Firebase ID token>`. Teacher providers and student providers follow configured policy. Resource ownership and enrollment are checked independently of sign-in method. Background workers use the private Redis broker; there are no public task-delivery endpoints.
 
 ## Routes
 
@@ -27,8 +27,6 @@ Protected browser requests send `Authorization: Bearer <Firebase ID token>`. Tea
 | `POST /teacher-classes/{class_id}/missions/preview/stream` | Stream preview progress and result |
 | `POST /teacher-classes/{class_id}/missions/{mission_id}/approve` | Publish the expected draft revision |
 | `DELETE /teacher-classes/{class_id}/missions/{mission_id}` | Soft-delete a mission |
-| `POST /internal/tasks/mission-attachments` | Authenticated attachment-copy worker |
-| `POST /internal/tasks/student-learning` | Authenticated finalization/watchdog worker |
 
 Requests and responses retain `snake_case` fields. Approval requires `expected_draft_revision`; stale revisions return `409` rather than overwriting another editor. Use OpenAPI for payload schemas and response details.
 

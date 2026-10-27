@@ -10,7 +10,7 @@ Text instructions, prompt, and response schema share a 256 KiB input budget. Inl
 
 Identical in-flight inputs may coalesce inside the same client and hashed caller-token scope. Completed results are not cached; each caller decodes its own JSON target. The first caller's cancellation/deadline governs shared provider work; other waiters can cancel independently. Admission remains held until retained shared-result channels are released, bounding canceled waiters. This is process-local duplicate suppression, not durable idempotency or exactly-once execution across replicas.
 
-The API validates or replaces `X-Request-ID` and uses standard OpenTelemetry propagation APIs to accept/return W3C `traceparent`. Cloud Tasks inherits request/trace correlation and workers create a child correlation context. These headers do not authenticate requests; OIDC validation remains authoritative for workers. Request/task logs contain identifiers, route templates, status, and duration, without request bodies, bearer values, or worksheet/student content. No tracing exporter or SDK is installed by this propagation-only integration.
+The API validates or replaces `X-Request-ID` and uses standard OpenTelemetry propagation APIs to accept/return W3C `traceparent`. Redis jobs inherit request/trace correlation and workers create a child correlation context. These headers do not authenticate requests; broker ACLs protect worker delivery. Request/task logs contain identifiers, route templates, status, and duration, without request bodies, bearer values, or worksheet/student content. No tracing exporter or SDK is installed by this propagation-only integration.
 
 ## Compatibility and migration order
 
