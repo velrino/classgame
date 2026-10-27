@@ -13,7 +13,7 @@ import { DashboardShell } from "@/modules/dashboard";
 import { useTeacherAuth } from "@/modules/identity";
 
 const ARCHITECTURE_IMAGE_SRC =
-  "/assets/diagrams/architecture/architecture-graphviz.svg";
+  "/assets/diagrams/architecture/architecture.svg";
 const LIFECYCLE_IMAGE_SRC = "/assets/diagrams/lifecycle/content-lifecycle.svg";
 
 const diagrams = [

@@ -10,4 +10,4 @@ Current system responsibilities, module boundaries, and AI trust boundaries. [Pl
 | [Background jobs](TASK-PORTABILITY.md) | Queue port, delivery, and backend limits |
 | [AI quality and evidence](AI-QUALITY.md) | Tutor context, retrieval limits, and private information boundaries |
 
-The [current diagram](../../assets/diagrams/architecture/architecture-graphviz.svg) follows the code and optional services. Its [Graphviz source](../../assets/diagrams/architecture/architecture_graphviz.py) also writes the dashboard copy. It does not claim a live deployment; see the [hosting record](../operations/HOSTING-HISTORY.md).
+The [current diagram](../../assets/diagrams/architecture/architecture.svg) follows the code and optional services. Its [Graphviz source](../../assets/diagrams/architecture/architecture_graphviz.py) also writes the dashboard copy. It does not claim a live deployment; see the [hosting record](../operations/HOSTING-HISTORY.md).

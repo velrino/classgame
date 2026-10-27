@@ -16,7 +16,7 @@ Run from any directory:
 Outputs beside this file:
 
 - architecture-graphviz.png — 4K raster image.
-- architecture-graphviz.svg — self-contained vector image.
+- architecture.svg — self-contained vector image.
 """
 
 import base64
@@ -40,8 +40,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 ROOT = Path(__file__).resolve().parent
 RAW_OUTPUT = ROOT / "architecture-graphviz-raw"
 OUTPUT = ROOT / "architecture-graphviz.png"
-SVG_OUTPUT = ROOT / "architecture-graphviz.svg"
-WEB_SVG_OUTPUT = ROOT.parents[2] / "web/public/assets/diagrams/architecture/architecture-graphviz.svg"
+SVG_OUTPUT = ROOT / "architecture.svg"
+WEB_SVG_OUTPUT = ROOT.parents[2] / "web/public/assets/diagrams/architecture/architecture.svg"
 
 LOGICAL_SIZE = (1920, 1080)
 PNG_SCALE = 2
