@@ -1,6 +1,8 @@
 "use client";
 import {
   currentStudentIdentity,
+  isIdentityConfigured,
+  observeStudentIdentity,
   signOutStudentIdentity,
 } from "@/modules/identity";
 
@@ -13,6 +15,7 @@ import {
   StudentSessionGate,
   clearStudentMissionSession,
   clearStudentSession,
+  readStudentClassSession,
   readStudentMissionSession,
   saveStudentClassSession,
   saveStudentMissionSession,
@@ -62,6 +65,7 @@ export function GamePage({
   const [rewardOpen, setRewardOpen] = useState(false);
   const autoSitMissionIDRef = useRef("");
   const gameAccessTrackedRef = useRef(false);
+  const missionStartGenerationRef = useRef(0);
   const missionCompletionRef = useRef<{
     attemptId: string;
     captured: boolean;
@@ -79,7 +83,23 @@ export function GamePage({
     });
   }, [initialClassCode]);
 
+  useEffect(() => {
+    if (!isIdentityConfigured()) return;
+    let actorId = currentStudentIdentity()?.uid;
+    const unsubscribe = observeStudentIdentity((user) => {
+      if (user?.uid === actorId) return;
+      actorId = user?.uid;
+      missionStartGenerationRef.current += 1;
+      setStartingMissionID("");
+    });
+    return () => {
+      missionStartGenerationRef.current += 1;
+      unsubscribe();
+    };
+  }, []);
+
   const leaveMission = useCallback(() => {
+    missionStartGenerationRef.current += 1;
     clearStudentMissionSession();
     handlers.leaveMission();
     setStartingMissionID("");
@@ -89,6 +109,7 @@ export function GamePage({
   }, [handlers]);
 
   const leaveClass = useCallback(() => {
+    missionStartGenerationRef.current += 1;
     clearStudentSession();
     handlers.leaveMission();
     setStartingMissionID("");
@@ -238,6 +259,8 @@ export function GamePage({
   }, [handlers, session.hydrated, session.mission.id]);
 
   async function startMission(missionID: string) {
+    const generation = ++missionStartGenerationRef.current;
+    setStartingMissionID("");
     const selectedMission = missions.find(
       (mission) => mission.id === missionID,
     );
@@ -259,6 +282,17 @@ export function GamePage({
       return false;
     }
 
+    const isCurrentStart = () => {
+      const activeClass = readStudentClassSession();
+      return (
+        generation === missionStartGenerationRef.current &&
+        currentStudentIdentity()?.uid === user.uid &&
+        activeClass?.classId === classSession.classId &&
+        activeClass.classCode === classSession.classCode
+      );
+    };
+    if (!isCurrentStart()) return false;
+
     if (
       session.hydrated &&
       session.mission.id === selectedMission.id &&
@@ -273,11 +307,13 @@ export function GamePage({
     setMissionStartError(null);
     try {
       const idToken = await user.getIdToken();
+      if (!isCurrentStart()) return false;
       const response = await missionsApi.startStudentMission(idToken, {
         class_code: classSession.classCode,
         mission_id: missionID,
         student_name: classSession.studentName,
       });
+      if (!isCurrentStart()) return false;
       if (!response.mission) {
         throw new Error("The mission payload is unavailable.");
       }
@@ -302,6 +338,7 @@ export function GamePage({
       window.dispatchEvent(new Event(studentSessionReadyEvent));
       return true;
     } catch (error) {
+      if (!isCurrentStart()) return false;
       miaAnalytics.missionStartFailed(error, {
         class_id: classSession.classId,
         mission_id: missionID,
@@ -316,7 +353,7 @@ export function GamePage({
       }
       return false;
     } finally {
-      setStartingMissionID("");
+      if (isCurrentStart()) setStartingMissionID("");
     }
   }
 
