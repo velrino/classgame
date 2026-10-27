@@ -30,7 +30,7 @@ Mia receives at most **5 knowledge chunks, 12 recent turns, and 24 recent events
 
 The browser saves pending evidence in IndexedDB before advancing. Limits are **64 records per scope, 256 total, 1 MiB total, and 16 KiB per record**. Storage failure or a full queue blocks new responses. Automatic retries pause after five failures; unsent work remains on the device. Checkpoints wait for pending tutor evidence to flush. Scope conflicts require mission reselection.
 
-Legacy or short publications can display fallback questions that grounding does not recognize. This source-level limit is tracked in [issue #92](https://github.com/velrino/classgame/issues/92). Post-quiz finalization and learning-memory updates belong to the next diagram.
+Display, tutor grounding, accepted-answer migration, and completion use the same pinned playable-question list, including short and legacy publications. Post-quiz finalization and learning-memory updates belong to the next diagram.
 
 The `create participant` statements only place existing services at first use. See the [API contract](../../../../docs/reference/API.md) for route guidance.
 

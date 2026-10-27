@@ -61,6 +61,7 @@ type MissionDocument struct {
 	Published                *MissionSnapshot               `firestore:"published,omitempty" json:"-"`
 	DraftRevision            int64                          `firestore:"draft_revision" json:"draft_revision"`
 	PublishedRevision        int64                          `firestore:"published_revision" json:"published_revision"`
+	ApprovalReceipt          *MissionApprovalReceipt        `firestore:"approval_receipt,omitempty" json:"-"`
 	HasUnpublishedChanges    bool                           `firestore:"has_unpublished_changes" json:"has_unpublished_changes"`
 	Status                   string                         `firestore:"status" json:"status"`
 	StatusBeforeDelete       string                         `firestore:"status_before_delete,omitempty" json:"-"`
@@ -193,4 +194,12 @@ type MissionDraftEdits struct {
 	Summary          string
 	PreviewQuestions []generation.PreviewQuestion
 	HasChanges       bool
+}
+
+// MissionApprovalReceipt identifies the latest accepted request without
+// exposing its private retry metadata in API responses.
+type MissionApprovalReceipt struct {
+	ExpectedDraftRevision int64  `firestore:"expected_draft_revision"`
+	PublishedRevision     int64  `firestore:"published_revision"`
+	Fingerprint           string `firestore:"fingerprint"`
 }

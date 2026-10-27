@@ -156,31 +156,29 @@ func (service *Service) Approve(
 	if draftMission.Status == StatusDeleted {
 		return MissionDocument{}, ErrMissionDeleted
 	}
-	if draftMission.DraftRevision != expectedDraftRevision {
-		return MissionDocument{}, ErrMissionDraftConflict
-	}
 	if draftMission.Draft == nil {
 		return MissionDocument{}, ErrMissionDraftNotFound
 	}
 	if missionGuardrailBlocked(draftMission.EducationGuardrail) {
 		return MissionDocument{}, ErrMissionGuardrailBlocked
 	}
-	alreadyPublished := draftMission.Published != nil &&
-		draftMission.PublishedRevision == draftMission.DraftRevision &&
-		!draftMission.HasUnpublishedChanges
-	if !alreadyPublished && attachmentsNeedTransfer(draftMission.Draft.Attachments) {
+	plan, err := planMissionApproval(draftMission, expectedDraftRevision, input.DraftEdits)
+	if err != nil {
+		return MissionDocument{}, err
+	}
+	if !plan.ReusePublished && attachmentsNeedTransfer(draftMission.Draft.Attachments) {
 		if service.attachmentEnqueuer == nil {
 			slog.Warn(
 				"mission attachment queue disabled; publishing without background transfer",
 				"class_id", teacherClass.ClassID,
 				"mission_id", missionID,
-				"revision", expectedDraftRevision,
+				"revision", plan.Revision,
 			)
 		} else {
 			if err := service.attachmentEnqueuer.Enqueue(ctx, attachmentsmodule.Job{
 				ClassID:   teacherClass.ClassID,
 				MissionID: missionID,
-				Revision:  expectedDraftRevision,
+				Revision:  plan.Revision,
 			}); err != nil {
 				return MissionDocument{}, fmt.Errorf("%w: enqueue mission attachments: %w", ErrMissionAttachmentQueue, err)
 			}

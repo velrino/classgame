@@ -158,6 +158,9 @@ func (s *Store) Export(ctx context.Context, scope Scope) (Bundle, error) {
 	if e := add("class_learning_summaries/" + scope.Class); e != nil {
 		return b, e
 	}
+	if e := add("class_learning_refreshes/" + scope.Class); e != nil {
+		return b, e
+	}
 	sort.Slice(b.Records, func(i, j int) bool { return b.Records[i].Path < b.Records[j].Path })
 	b.SHA256 = b.Digest()
 	return b, b.Validate()
@@ -249,7 +252,10 @@ func (s *Store) apply(ctx context.Context, b Bundle, restoring bool) (bool, erro
 		return false, ErrConflict
 	}
 	writes := []*firestorepb.Write{}
+	refreshPath := "class_learning_refreshes/" + b.Scope.Class
+	hasRefresh := false
 	for _, record := range b.Records {
+		hasRefresh = hasRefresh || record.Path == refreshPath
 		var d firestorepb.Document
 		if e = protojson.Unmarshal(record.Document, &d); e != nil {
 			return false, e
@@ -262,6 +268,11 @@ func (s *Store) apply(ctx context.Context, b Bundle, restoring bool) (bool, erro
 		} else {
 			writes = append(writes, &firestorepb.Write{Operation: &firestorepb.Write_Delete{Delete: d.Name}, CurrentDocument: &firestorepb.Precondition{ConditionType: &firestorepb.Precondition_UpdateTime{UpdateTime: d.UpdateTime}}})
 		}
+	}
+	if !hasRefresh {
+		// An older bundle must not leave an untracked current intent behind.
+		// The absent-document precondition is checked with the recovery batch.
+		writes = append(writes, &firestorepb.Write{Operation: &firestorepb.Write_Delete{Delete: s.document(refreshPath)}, CurrentDocument: &firestorepb.Precondition{ConditionType: &firestorepb.Precondition_Exists{Exists: false}}})
 	}
 	next := "deleted"
 	if restoring {
@@ -291,6 +302,14 @@ func resetClaims(path string, d *firestorepb.Document) {
 		finalized := d.Fields["trace"].GetMapValue().GetFields()["finalized"].GetBooleanValue()
 		if !finalized && (text(d, "status") == "completed" || text(d, "status") == "abandoned") {
 			d.Fields["trace_state"] = str("pending")
+		}
+	}
+	if len(parts) == 2 && parts[0] == "class_learning_refreshes" {
+		d.Fields["owner_token"] = str("")
+		d.Fields["lease_until"] = zero
+		for _, key := range []string{"generation", "dispatch_generation"} {
+			generation := d.Fields[key].GetIntegerValue()
+			d.Fields[key] = &firestorepb.Value{ValueType: &firestorepb.Value_IntegerValue{IntegerValue: generation + 1}}
 		}
 	}
 	if len(parts) == 4 && parts[0] == "student_mission_attempts" && parts[2] == "tutor_events" && text(d, "state") == "processing" {

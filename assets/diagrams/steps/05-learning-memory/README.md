@@ -17,17 +17,18 @@ The diagram shows the queued path. With jobs disabled or enqueue failure, the AP
 | `student_mission_attempts/{attempt_id}` | Record completion, pending/processing/ready trace state, owner, and source versions. |
 | `student_mission_completions/{student_id}/missions/{attempt_id}` | Store the authoritative completion marker. |
 | `class_learning_students/{class_id}/students/{student_id}` | Update the teacher-facing evidence projection when class scope still matches. |
+| `class_learning_refreshes/{class_id}` | Durable class intent, source/dispatch generations, and owner/lease for independent refresh. |
 | `users/{student_id}.student.learning_memory` | Replace memory only for the current class/tenant and evidence no older than the saved memory. |
 
-The final transaction saves the private trace. It also writes class evidence and student memory when their scope checks pass. The class summary at `class_learning_summaries/{class_id}` refreshes afterward as a separate operation.
+The final transaction saves the private trace. Eligible class evidence changes also advance the durable refresh intent in that transaction; student memory updates when its scope and recency checks pass. The class summary at `class_learning_summaries/{class_id}` refreshes through a separate versioned job or the same processor inline.
 
 ## Bounded memory and recovery
 
 Student memory keeps at most **4 strengths and 4 needs**, up to 180 characters each, plus next adaptation up to **280 characters**. Trace input uses at most 160 recent events, 12 progress entries, 40 notes, and 40 decisions. Previous-memory input is also capped. A later tutor turn receives filtered skill IDs and explanation style. History remains separate; compact memory does not delete historical evidence. See [retention and recovery](../../../../docs/operations/RETENTION-RECOVERY.md).
 
-The finalizer claims a random owner token and a **5-minute lease**. Its commit compares student/class/tenant scope, publication, status, snapshot/evidence versions, dispatch generation, and owner token. Lease expiry permits a new claim; the final write uses that captured owner/version fence. Finalized or superseded jobs do no new finalization work.
+The finalizer claims a random owner token and a **5-minute lease**. Its commit compares student/class/tenant scope, publication, status, snapshot/evidence versions, dispatch generation, and owner token. Lease expiry permits a new claim; the final write uses that captured owner/version fence. Finalized or superseded jobs do no new student finalization work; pending class refresh can still be scheduled.
 
-Worker recovery scans bounded pages of 50 rows, once per minute, excluding active claims and finalized attempts. Archived or exhausted job IDs need reviewed redrive. Missing models/events, quota limits, or provider failure can use an observed deterministic trace. Other returned processing errors remain retryable. See [queue recovery](../../../../docs/operations/QUEUES.md).
+Student recovery scans bounded pages of 50 rows per process, once per minute, excluding active claims and finalized attempts. Independent class-intent recovery still runs after student finalization, in worker roles or inline with jobs disabled. Quota denial and returned processing/read/save errors leave class work pending; accepted observed fallbacks can complete it. Its commit checks owner, lease, tenant, and source generation; equal timestamps/counts cannot authorize a stale summary. Archived or exhausted IDs need reviewed redrive. Missing models/events, quota limits, or provider failure can use an observed deterministic student trace. See [queue recovery](../../../../docs/operations/QUEUES.md).
 
 ## Current memory scopes
 
@@ -35,11 +36,11 @@ Worker recovery scans bounded pages of 50 rows, once per minute, excluding activ
 | --- | --- |
 | Student | Compact memory replaced by eligible finalization. |
 | Class | Finalized student evidence plus a separate class summary; its flow is the next step. |
-| Teacher | Private trace and class-summary views. Separate teacher-owned memory is a [design follow-up #98](https://github.com/velrino/classgame/issues/98). |
-| School | Tenant boundary; separate aggregate memory is a [design follow-up #99](https://github.com/velrino/classgame/issues/99). |
-| District | Tenant boundary; separate aggregate memory is a [design follow-up #100](https://github.com/velrino/classgame/issues/100). |
+| Teacher | Private trace and class-summary views. Separate teacher-owned memory is a [deferred proposal #98](https://github.com/velrino/classgame/issues/98). |
+| School | Tenant boundary; separate aggregate memory is a [deferred proposal #99](https://github.com/velrino/classgame/issues/99). |
+| District | Tenant boundary; separate aggregate memory is a [deferred proposal #100](https://github.com/velrino/classgame/issues/100). |
 
-Class refresh can be missed after successful student finalization: [issue #96](https://github.com/velrino/classgame/issues/96). Concurrent summaries also need a stronger evidence-set fence: [issue #97](https://github.com/velrino/classgame/issues/97). These runtime follow-ups are separate from this diagram.
+Class evidence changes, removals, and rebuild-window transitions advance the source generation. Independent recovery retries class work without regrading the finalized student. Summaries record their evidence generation and fingerprint. Legacy classes without an intent need explicit, reviewed bootstrap; see the queue guide.
 
 The `create participant` statements only place existing services at first use. Sources: [completion service](../../../../api/internal/modules/students/learning.go), [finalizer](../../../../api/internal/modules/students/learning_jobs.go), [claim and failure writes](../../../../api/internal/modules/students/firestore_finalization.go), [final commit](../../../../api/internal/modules/students/firestore_attempts.go), [fence](../../../../api/internal/modules/students/finalization.go), and [browser completion](../../../../web/src/modules/learning/adapters/hooks/use-learning-recovery.ts).
 

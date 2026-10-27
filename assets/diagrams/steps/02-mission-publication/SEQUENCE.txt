@@ -66,29 +66,29 @@ sequenceDiagram
     API->>API: Check access, draft revision and content policy
     Note right of API: Rejected requests stop here.<br/>400 missing revision, 403 access,<br/>409 stale draft, 422 blocked content
 
-    opt Files need transfer, draft not already published, jobs enabled
+    opt Files need transfer, planned revision not yet published, jobs enabled
         create participant Redis
-        API->>Redis: Enqueue copy job<br/>for class, mission and revision
+        API->>Redis: Enqueue copy job<br/>for class, mission and planned revision
         Redis-->>API: Job accepted or queue failure
         break Configured queue rejects the job
             API-->>Teacher: 503 attachment_queue_unavailable
         end
     end
     Note over API,Redis: Enqueue happens before the DB transaction.<br/>Workers process the job in step 03.
-    Note right of API: With jobs disabled, skip enqueue.<br/>Publication can still continue.
+    Note right of API: Jobs disabled: skip enqueue.<br/>Publication can still continue.
 
     critical Firestore publication transaction
-        API->>DB: Recheck owner and expected revision<br/>Apply edits and publication writes
+        API->>DB: Recheck the approval plan<br/>Advance revision only for changed content
         activate DB
         Note right of DB: missions/{mission_id}/<br/>published_revisions/{revision}<br/>Also update class active_mission_id<br/>and the audience-safe student catalog.
         DB-->>API: Committed or revision conflict
         deactivate DB
     end
-    Note over API,DB: Unchanged draft, no inline edits<br/>Reuse the published revision. Class activation<br/>and the student catalog can still refresh.
+    Note over API,DB: Stable approval retries<br/>Identical latest request replays its publication.<br/>Unchanged current content reuses it.<br/>Class activation and catalog may refresh.
 
-    alt Draft revision changed before commit
+    alt Conflicting stale approval
         API-->>Teacher: 409 draft_conflict - review the latest draft
-    else Transaction committed
+    else Accepted publication or replay
         API-->>Teacher: Published mission and published_revision
     end
     deactivate API

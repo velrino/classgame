@@ -40,6 +40,22 @@ Fix dependency/configuration failures before retrying. Invalid jobs remain archi
 
 Learning pending markers are scanned in bounded pages by worker recovery. Active claims and current scope/version checks remain authoritative. After exhausted retries, use `go run ./cmd/learning-recovery --limit 25 --redrive` after reviewing the same read-only page to advance the dispatch generation; normal scans must retain the stable ID.
 
+Class synthesis has its own durable `class_learning_refreshes/{class_id}` intent. Evidence writes/removals and rebuild transitions advance its generation in the source transaction. The `class_refresh` job uses class, source generation, and dispatch generation as its stable identity. Owner/lease and tenant/source checks fence the summary commit. Failed processing stays pending even when the student trace is already finalized.
+
+Each worker process scans up to 50 class intents per minute. With jobs disabled, API roles run the same bounded recovery inline. From `api/`, after setting the broker and application configuration:
+
+```sh
+# Read-only pending page, then explicitly enqueue the reviewed page.
+go run ./cmd/learning-recovery --class-refresh --limit 25
+go run ./cmd/learning-recovery --class-refresh --limit 25 --enqueue
+# After reviewing archived/exhausted work, advance dispatch generation.
+go run ./cmd/learning-recovery --class-refresh --limit 25 --redrive
+# Explicit bootstrap for one legacy class without a durable intent.
+go run ./cmd/learning-recovery --class-refresh --class-id CLASS_ID --enqueue
+```
+
+Normal scans never create historical class intents or regrade students. Upgrade all workers before producers of `class_refresh`; older strict job decoders cannot consume this new kind. During rollback, pause compatible producers and preserve/reconcile pending work before removing compatible workers.
+
 Attachment transfer markers live in immutable mission revisions. Automatic attachment scans are not installed. After broker loss, inspect the stored `attachment_transfer_status`, class, mission and revision, then explicitly re-enqueue the known revision:
 
 ```sh
@@ -48,6 +64,8 @@ go run ./cmd/jobs --enqueue-attachment-class CLASS_ID \
 ```
 
 This only schedules the existing processor. It never grants public access or changes worksheet data itself. For an archived ID, review it and use `--retry`; for a completed ID restored from older database state, coordinate the 24-hour ID retention before re-enqueueing. Back up the broker before any queue deletion or bulk replay.
+
+Stored attachment outcomes keep their first validated object and timestamps. Late failures cannot downgrade them. Permanent failures stay skipped on retry; a validated success already in flight can recover them. Corrected source content otherwise uses a new published revision.
 
 ## Release gates and rollback
 

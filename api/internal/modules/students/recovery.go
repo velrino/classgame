@@ -15,6 +15,7 @@ type RecoveryReport struct {
 	Scanned    int    `json:"scanned"`
 	Candidates int    `json:"candidates"`
 	Enqueued   int    `json:"enqueued"`
+	Processed  int    `json:"processed,omitempty"`
 	Failed     int    `json:"failed"`
 	NextCursor string `json:"next_cursor,omitempty"`
 }

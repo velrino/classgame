@@ -27,6 +27,7 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		input.Status, input.Snapshot = requestedStatus, submittedSnapshot
 		completionStarted = false
+		invalidateEvidence := func() error { return nil }
 		userSnapshot, err := tx.Get(userRef)
 		if status.Code(err) == codes.NotFound {
 			return ErrStudentNotFound
@@ -124,6 +125,10 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 			} else if existing.Trace.Finalized && existing.Trace.EventCount == len(input.Snapshot.Events) {
 				trace = existing.Trace
 			}
+			invalidateEvidence, err = repository.invalidateClassEvidence(tx, existing, input.Timestamp)
+			if err != nil {
+				return err
+			}
 		case status.Code(err) != codes.NotFound:
 			return fmt.Errorf("read learning attempt: %w", err)
 		}
@@ -184,6 +189,9 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 
 		if err := tx.Set(attemptRef, learningAttemptFirestoreMap(attempt), firestore.MergeAll); err != nil {
 			return fmt.Errorf("write learning attempt: %w", err)
+		}
+		if err := invalidateEvidence(); err != nil {
+			return fmt.Errorf("invalidate class learning evidence: %w", err)
 		}
 		if attempt.Status == "completed" {
 			if err := tx.Set(

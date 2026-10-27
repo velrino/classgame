@@ -120,6 +120,10 @@ func (repository *FirestoreRepository) AppendStudentTutorTurn(
 			return ErrStudentAttemptClosed
 		}
 		attempt = EffectiveTutorEvidence(attempt)
+		invalidateEvidence, err := repository.invalidateClassEvidence(tx, attempt, input.Timestamp)
+		if err != nil {
+			return err
+		}
 
 		attempt.TutorEventSequence++
 		attempt.EvidenceRevision++
@@ -141,6 +145,9 @@ func (repository *FirestoreRepository) AppendStudentTutorTurn(
 		}
 		if input.Type == "answer" && input.ExpectedAnswer != "" && normalizedStudentAnswer(input.StudentResponse) == normalizedStudentAnswer(input.ExpectedAnswer) {
 			attempt.AcceptedAnswers = mergeAcceptedAnswer(attempt.AcceptedAnswers, AcceptedAnswerFact{QuestionID: input.QuestionID, StageID: input.StageID, StudentResponse: input.StudentResponse, PublishedRevision: attempt.PublishedRevision, TurnID: result.ID, AcceptedAt: input.Timestamp})
+		}
+		if err := invalidateEvidence(); err != nil {
+			return fmt.Errorf("invalidate class learning evidence: %w", err)
 		}
 		if err := tx.Set(eventRef, TutorEventDocument{State: "complete", StudentID: user.ID, EventID: input.EventID, Fingerprint: TutorEventFingerprint(input), Turn: result, CreatedAt: input.Timestamp}); err != nil {
 			return fmt.Errorf("write durable tutor replay: %w", err)

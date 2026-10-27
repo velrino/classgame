@@ -73,6 +73,7 @@ func (service *Service) SaveStudentLearningSnapshot(
 		return StudentMissionAttemptDocument{}, err
 	}
 	if attempt.Trace.Finalized {
+		service.requestClassLearningRefresh(ctx, attempt.ClassID)
 		return attempt, nil
 	}
 

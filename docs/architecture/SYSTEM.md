@@ -34,7 +34,7 @@ Provider connections and telemetry are infrastructure. Application composition w
 
 ## Invariants
 
-- Publishing the revision, active classroom mission, and student catalog is one transaction. A stale draft revision returns a conflict.
+- Publishing the revision, active classroom mission, and student catalog is one transaction. Changed content gets a new revision; exact latest-approval retries replay, and conflicting stale edits fail.
 - An attempt remains pinned to its published revision after later edits or publication.
 - Firebase identity verification does not replace classroom ownership or enrollment checks.
 - Resume checkpoints and authoritative learning evidence have separate trust levels.

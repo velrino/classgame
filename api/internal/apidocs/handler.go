@@ -193,7 +193,8 @@ func OpenAPI() object {
 	stream["description"] = "Authenticate and rate-limit before HTTP 200. Content-Type is text/event-stream. Event progress contains stage/message/percent; done contains mission; error contains the JSON error envelope. After stream headers are committed, failures are sent as error events. Respect cancellation and the generation deadline."
 	stream["responses"].(object)["200"] = object{"description": "SSE progress followed by done or error", "content": object{"text/event-stream": object{"schema": object{"type": "string"}, "example": "event: progress\ndata: {\"stage\":\"queued\",\"message\":\"Starting mission preview.\",\"percent\":1}\n\nevent: done\ndata: {\"mission\":{\"id\":\"mission-id\"}}\n\n"}}}
 	approve := add("/teacher-classes/{class_id}/missions/{mission_id}/approve", "post", "approveMission", "Publish the expected draft revision atomically", "teachers", missions.ApproveMissionRequest{}, record(object{"mission": builder.of(missions.MissionResponse{})}))
-	approve["responses"].(object)["409"] = response("Stale expected draft revision", errorSchema)
+	approve["description"] = "Changed reviewed content advances the draft and published revision. Identical retries of the latest accepted request replay while that publication remains current. Unchanged current content reuses its publication. Different stale edits return 409. Published content is created once; queue work targets the planned result revision."
+	approve["responses"].(object)["409"] = response("Conflicting stale approval or existing revision collision", errorSchema)
 	approve["responses"].(object)["422"] = response("Education guardrail prevents publication", errorSchema)
 	deletion := add("/teacher-classes/{class_id}/missions/{mission_id}", "delete", "deleteMission", "Soft-delete a mission while retaining published history", "teachers", nil, object{})
 	delete(deletion["responses"].(object), "200")

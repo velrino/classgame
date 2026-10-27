@@ -14,14 +14,17 @@ import (
 )
 
 const (
-	LearningJobFinalize = "finalize"
-	LearningJobWatchdog = "watchdog"
+	LearningJobClassRefresh = "class_refresh"
+	LearningJobFinalize     = "finalize"
+	LearningJobWatchdog     = "watchdog"
 
 	defaultLearningFinalizationDelay = time.Second
 	defaultStudentAbandonmentWindow  = 2 * time.Minute
 )
 
 type LearningJob struct {
+	ClassID                  string `json:"class_id,omitempty"`
+	ClassGeneration          int64  `json:"class_generation,omitempty"`
 	ExpectedEvidenceRevision int64  `json:"expected_evidence_revision,omitempty"`
 	ExpectedSnapshotRevision int64  `json:"expected_snapshot_revision,omitempty"`
 	ExpectedStatus           string `json:"expected_status,omitempty"`
@@ -39,6 +42,15 @@ func (job LearningJob) Validate() error {
 	}
 	if job.ExpectedStatus != "" && job.ExpectedStatus != "completed" && job.ExpectedStatus != "abandoned" {
 		return errors.New("learning job expected status is invalid")
+	}
+	if job.Kind == LearningJobClassRefresh {
+		if job.ClassGeneration < 1 || job.ClassID == "" || len(job.ClassID) > 120 || strings.TrimSpace(job.ClassID) != job.ClassID || strings.ContainsAny(job.ClassID, "/\x00") || job.ClassID == "." || job.ClassID == ".." || job.StudentID != "" || job.AttemptID != "" || job.ExpectedEvidenceRevision != 0 || job.ExpectedSnapshotRevision != 0 || job.ExpectedStatus != "" || !job.ExpectedLastActivityAt.IsZero() {
+			return errors.New("class refresh requires only class scope and positive source generation")
+		}
+		return nil
+	}
+	if job.ClassID != "" || job.ClassGeneration != 0 {
+		return errors.New("student learning job cannot include class refresh scope")
 	}
 	if job.Kind != LearningJobFinalize && job.Kind != LearningJobWatchdog {
 		return errors.New("student learning job kind is invalid")
@@ -97,6 +109,13 @@ func (enqueuer *LearningTaskScheduler) EnqueueFinalization(
 	return enqueuer.enqueue(ctx, job, enqueuer.now().Add(enqueuer.finalizationDelay))
 }
 
+func (enqueuer *LearningTaskScheduler) EnqueueClassRefresh(ctx context.Context, refresh ClassLearningRefresh) error {
+	if enqueuer == nil || enqueuer.queue == nil {
+		return errors.New("class learning task queue is not configured")
+	}
+	return enqueuer.enqueue(ctx, ClassRefreshJob(refresh), enqueuer.now().Add(enqueuer.finalizationDelay))
+}
+
 func (enqueuer *LearningTaskScheduler) EnqueueWatchdog(
 	ctx context.Context,
 	attempt StudentMissionAttemptDocument,
@@ -139,6 +158,10 @@ func (enqueuer *LearningTaskScheduler) enqueue(
 }
 
 func learningTaskID(job LearningJob) string {
+	if job.Kind == LearningJobClassRefresh {
+		digest := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%d\x00%d", job.Kind, job.ClassID, job.ClassGeneration, job.DispatchGeneration)))
+		return "class-learning-" + hex.EncodeToString(digest[:])
+	}
 	if job.Kind == LearningJobFinalize {
 		digest := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%s\x00%d\x00%d\x00%s\x00%d", job.Kind, job.StudentID, job.AttemptID, job.ExpectedEvidenceRevision, job.ExpectedSnapshotRevision, job.ExpectedStatus, job.DispatchGeneration)))
 		return "student-learning-" + hex.EncodeToString(digest[:])

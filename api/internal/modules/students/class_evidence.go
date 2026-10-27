@@ -118,7 +118,16 @@ func (repository *FirestoreRepository) classEvidenceWrite(ctx context.Context, t
 	} else if status.Code(err) != codes.NotFound {
 		return nil, err
 	}
-	return func() error { return tx.Set(ref, incoming) }, nil
+	writeRefresh, err := repository.classRefreshWrite(tx, attempt.ClassID, class, now)
+	if err != nil {
+		return nil, err
+	}
+	return func() error {
+		if err := tx.Set(ref, incoming); err != nil {
+			return err
+		}
+		return writeRefresh()
+	}, nil
 }
 
 type classEvidenceManifest struct {
@@ -255,20 +264,30 @@ func (repository *FirestoreRepository) RebuildClassEvidencePage(ctx context.Cont
 	var manifest classEvidenceManifest
 	if apply {
 		if after == "" {
-			classSnapshot, err := repository.client.Collection(classrooms.CollectionName).Doc(classID).Get(ctx)
-			if err != nil {
-				return result, err
-			}
-			var class classrooms.TeacherClassDocument
-			if err := classSnapshot.DataTo(&class); err != nil {
-				return result, err
-			}
 			seed := make([]byte, 16)
 			if _, err := rand.Read(seed); err != nil {
 				return result, err
 			}
-			manifest = classEvidenceManifest{Version: 1, Generation: hex.EncodeToString(seed), ClassID: classID, OrganizationID: class.OrganizationID, DistrictID: class.DistrictID, SchoolID: class.SchoolID, UpdatedAt: time.Now()}
-			if _, err := manifestRef.Set(ctx, manifest); err != nil {
+			err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+				classSnapshot, err := tx.Get(repository.client.Collection(classrooms.CollectionName).Doc(classID))
+				if err != nil {
+					return err
+				}
+				var class classrooms.TeacherClassDocument
+				if err := classSnapshot.DataTo(&class); err != nil {
+					return err
+				}
+				manifest = classEvidenceManifest{Version: 1, Generation: hex.EncodeToString(seed), ClassID: classID, OrganizationID: class.OrganizationID, DistrictID: class.DistrictID, SchoolID: class.SchoolID, UpdatedAt: time.Now()}
+				writeRefresh, err := repository.classRefreshWrite(tx, classID, class, manifest.UpdatedAt)
+				if err != nil {
+					return err
+				}
+				if err := tx.Set(manifestRef, manifest); err != nil {
+					return err
+				}
+				return writeRefresh()
+			})
+			if err != nil {
 				return result, err
 			}
 		} else {
@@ -353,7 +372,28 @@ func (repository *FirestoreRepository) RebuildClassEvidencePage(ctx context.Cont
 			current.NextCursor = result.NextCursor
 			current.Complete = result.NextCursor == ""
 			current.UpdatedAt = time.Now()
-			return tx.Set(manifestRef, current)
+			writeRefresh := func() error { return nil }
+			if current.Complete {
+				classRow, err := tx.Get(repository.client.Collection(classrooms.CollectionName).Doc(classID))
+				if err != nil {
+					return err
+				}
+				var class classrooms.TeacherClassDocument
+				if err := classRow.DataTo(&class); err != nil {
+					return err
+				}
+				if !sameEvidenceTenant(StudentMissionAttemptDocument{OrganizationID: current.OrganizationID, DistrictID: current.DistrictID, SchoolID: current.SchoolID}, class) {
+					return errors.New("class scope changed during evidence rebuild")
+				}
+				writeRefresh, err = repository.classRefreshWrite(tx, classID, class, current.UpdatedAt)
+				if err != nil {
+					return err
+				}
+			}
+			if err := tx.Set(manifestRef, current); err != nil {
+				return err
+			}
+			return writeRefresh()
 		})
 		if err != nil {
 			return result, err

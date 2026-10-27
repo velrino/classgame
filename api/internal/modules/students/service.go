@@ -62,6 +62,8 @@ type ClassLearningGenerator interface {
 }
 
 type Dependencies struct {
+	ClassRefresh      ClassLearningRefreshStore
+	ClassRefreshTasks ClassRefreshTaskEnqueuer
 	Recovery          RecoveryStore
 	Sessions          SessionStore
 	Learning          LearningStore
@@ -78,6 +80,8 @@ type Dependencies struct {
 }
 
 type Service struct {
+	classRefresh              ClassLearningRefreshStore
+	classRefreshTasks         ClassRefreshTaskEnqueuer
 	recovery                  RecoveryStore
 	sessions                  SessionStore
 	learning                  LearningStore
@@ -98,7 +102,7 @@ func NewService(dependencies Dependencies) *Service {
 	if window <= 0 {
 		window = defaultStudentAbandonmentWindow
 	}
-	return &Service{recovery: dependencies.Recovery, sessions: dependencies.Sessions, learning: dependencies.Learning, classLearning: dependencies.ClassLearning,
+	return &Service{classRefresh: dependencies.ClassRefresh, classRefreshTasks: dependencies.ClassRefreshTasks, recovery: dependencies.Recovery, sessions: dependencies.Sessions, learning: dependencies.Learning, classLearning: dependencies.ClassLearning,
 		abandonmentWindow: window, learningTaskEnqueuer: dependencies.Tasks, learningGenerationLimiter: dependencies.GenerationLimiter,
 		learningTraceGenerator: dependencies.TraceGenerator, tutorTurnGenerator: dependencies.TutorGenerator, classLearningGenerator: dependencies.ClassGenerator,
 		classReader: dependencies.Classes, missionReader: dependencies.Missions, revisionReader: dependencies.Revisions}

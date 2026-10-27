@@ -292,24 +292,37 @@ func run() (runErr error) {
 	missionServiceOptions := []missions.ServiceOption{missions.WithAttachmentReader(storageConnection)}
 	var jobQueue *redisqueue.Client
 	var learningTasks students.LearningTaskEnqueuer
+	var classRefreshTasks students.ClassRefreshTaskEnqueuer
 	if cfg.TasksEnabled {
 		jobQueue, err = redisqueue.Connect(ctx, redisqueue.Options{URL: cfg.TasksRedisURL, Queue: cfg.TasksQueue, Production: cfg.AppEnv == "production"})
 		if err != nil {
 			return fmt.Errorf("initialize background queue: %w", err)
 		}
 		defer jobQueue.Close()
-		learningTasks = students.NewLearningTaskScheduler(jobQueue.Destination(redisqueue.Learning), time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
+		scheduler := students.NewLearningTaskScheduler(jobQueue.Destination(redisqueue.Learning), time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
+		learningTasks, classRefreshTasks = scheduler, scheduler
 		missionServiceOptions = append(missionServiceOptions, missions.WithAttachmentEnqueuer(attachments.NewTaskScheduler(jobQueue.Destination(redisqueue.Attachments), 2*time.Second)))
 	}
 
 	usersService := students.NewService(students.Dependencies{
-		Recovery: usersRepository,
+		Recovery: usersRepository, ClassRefresh: usersRepository, ClassRefreshTasks: classRefreshTasks,
 		Sessions: usersRepository, Learning: usersRepository, ClassLearning: usersRepository,
 		Missions: missionRepository, Revisions: missionRepository, Classes: teacherClassRepository,
 		TraceGenerator: orchestratorService, TutorGenerator: orchestratorService, ClassGenerator: orchestratorService,
 		Tasks: learningTasks, GenerationLimiter: studentLearningPerClassHourLimiter,
 		AbandonmentWindow: time.Duration(cfg.StudentAbandonmentSeconds) * time.Second,
 	})
+	if !cfg.TasksEnabled || cfg.AppRole == "worker" || cfg.AppRole == "all" {
+		stopClassRecovery := app.StartBackgroundRecovery(ctx, func(ctx context.Context, after string, limit int) (string, error) {
+			report, err := usersService.RecoverPendingClassLearning(ctx, after, limit, false)
+			slog.InfoContext(ctx, "class learning recovery page", "scanned", report.Scanned, "candidates", report.Candidates, "enqueued", report.Enqueued, "processed", report.Processed, "failed", report.Failed)
+			if err != nil && report.Scanned == 0 {
+				return after, err
+			}
+			return report.NextCursor, err
+		})
+		defer stopClassRecovery()
+	}
 	if cfg.AppRole == "worker" || cfg.AppRole == "all" {
 		copier, err := attachments.NewStorageCopier(attachments.StorageCopierOptions{BucketName: storageConnection.BucketName(), Bucket: storageConnection.Bucket()})
 		if err != nil {

@@ -317,12 +317,14 @@ type SaveStudentTutorTurnInput struct {
 }
 
 type ClassLearningSynthesisDocument struct {
-	OrganizationID    string                            `firestore:"organization_id" json:"organization_id"`
-	DistrictID        string                            `firestore:"district_id" json:"district_id"`
-	SchoolID          string                            `firestore:"school_id" json:"school_id"`
-	ClassID           string                            `firestore:"class_id" json:"class_id"`
-	Synthesis         generation.ClassLearningSynthesis `firestore:"synthesis" json:"synthesis"`
-	AttemptCount      int                               `firestore:"attempt_count" json:"attempt_count"`
-	EvidenceUpdatedAt time.Time                         `firestore:"evidence_updated_at" json:"evidence_updated_at"`
-	UpdatedAt         time.Time                         `firestore:"updated_at" json:"updated_at"`
+	EvidenceGeneration  int64                             `firestore:"evidence_generation" json:"evidence_generation,omitempty"`
+	EvidenceFingerprint string                            `firestore:"evidence_fingerprint" json:"evidence_fingerprint,omitempty"`
+	OrganizationID      string                            `firestore:"organization_id" json:"organization_id"`
+	DistrictID          string                            `firestore:"district_id" json:"district_id"`
+	SchoolID            string                            `firestore:"school_id" json:"school_id"`
+	ClassID             string                            `firestore:"class_id" json:"class_id"`
+	Synthesis           generation.ClassLearningSynthesis `firestore:"synthesis" json:"synthesis"`
+	AttemptCount        int                               `firestore:"attempt_count" json:"attempt_count"`
+	EvidenceUpdatedAt   time.Time                         `firestore:"evidence_updated_at" json:"evidence_updated_at"`
+	UpdatedAt           time.Time                         `firestore:"updated_at" json:"updated_at"`
 }
