@@ -7,12 +7,13 @@ Select a diagram to open the full PNG. Add a row when a new step is ready.
 | Step | Flow | Diagram |
 |:---:|---|:---:|
 | 01 | **Upload material and prepare a mission draft**<br>[Guide](01-mission-draft/README.md) · [Mermaid source](01-mission-draft/SEQUENCE.txt) | <a href="01-mission-draft/diagram.png"><img src="01-mission-draft/diagram.png" alt="Sequence diagram for uploading material and preparing a mission draft" width="480" /></a> |
+| 02 | **Review and publish the mission**<br>[Guide](02-mission-publication/README.md) · [Mermaid source](02-mission-publication/SEQUENCE.txt) | <a href="02-mission-publication/diagram.png"><img src="02-mission-publication/diagram.png" alt="Sequence diagram for reviewing and publishing a mission" width="480" /></a> |
 
-This step ends at action 13, when the API returns the saved draft for teacher review. Publication, private file-copy workers, quiz play, and learning memory will have separate diagrams.
+Step 01 ends with the saved preview for teacher review. Step 02 ends with the published revision. Private file-copy workers, quiz play, and learning memory will have separate diagrams.
 
 ## Style
 
-Use a white background, normal participant boxes, white participant labels, and Arial. Introduce existing services visually at first use. Keep one short flow per diagram.
+Use a white background, normal participant boxes, white participant labels, and Arial. Introduce existing services visually at first use. Keep one short flow per diagram. Use bold for key actions, responses, and note headings; keep supporting text regular.
 
 ## Palette for future steps
 

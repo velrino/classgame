@@ -1,0 +1,94 @@
+---
+title: 02 - Review and publish the mission
+config:
+  theme: base
+  look: classic
+  fontFamily: Arial, sans-serif
+  themeCSS: |
+    rect.actor[name="Teacher"], line.actor-line[name="Teacher"] { fill: #04c7ff !important; stroke: #04c7ff !important; }
+    rect.actor[name="API"], line.actor-line[name="API"] { fill: #86d5fb !important; stroke: #86d5fb !important; }
+    rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
+    rect.actor[name="Redis"], line.actor-line[name="Redis"] { fill: #a573bc !important; stroke: #a573bc !important; }
+    text.actor, text.actor tspan { fill: #FFFFFF !important; }
+    text.actor { font-weight: 700 !important; }
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Teacher"][data-to="API"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="Redis"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="DB"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="Teacher"]),
+    g[data-et="note"] text.noteText:first-of-type,
+    g[data-et="note"] text.noteText:first-of-type tspan { font-weight: 700 !important; }
+  themeVariables:
+    background: "#FFFFFF"
+    primaryColor: "#FFFFFF"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#111111"
+    actorBkg: "#FFFFFF"
+    actorBorder: "#111111"
+    actorTextColor: "#FFFFFF"
+    actorLineColor: "#111111"
+    signalColor: "#111111"
+    signalTextColor: "#111111"
+    titleColor: "#111111"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#111111"
+    noteTextColor: "#111111"
+    activationBkgColor: "#FFFFFF"
+    activationBorderColor: "#111111"
+    labelBoxBkgColor: "#FFFFFF"
+    labelBoxBorderColor: "#111111"
+    labelTextColor: "#111111"
+    loopTextColor: "#111111"
+    sequenceNumberColor: "#FFFFFF"
+  sequence:
+    useMaxWidth: true
+    diagramMarginX: 20
+    diagramMarginY: 20
+    mirrorActors: false
+    actorMargin: 45
+    messageMargin: 24
+---
+sequenceDiagram
+    %% First-use headers introduce existing services visually.
+    %% They do not create infrastructure or service instances.
+    %% File-copy execution belongs to step 03.
+    autonumber
+    participant Teacher
+
+    Teacher->>Teacher: Review the draft and edit if needed
+    create participant API
+    Teacher->>API: Publish with expected_draft_revision<br/>and optional reviewed edits
+    activate API
+    API->>API: Validate the request and teacher identity
+
+    create participant DB
+    API->>DB: Load the teacher class and mission draft
+    DB-->>API: Owner, scope, revision and guardrails
+    API->>API: Check access, draft revision and content policy
+    Note right of API: Rejected requests stop here.<br/>400 missing revision, 403 access,<br/>409 stale draft, 422 blocked content
+
+    opt Files need transfer, draft not already published, jobs enabled
+        create participant Redis
+        API->>Redis: Enqueue copy job<br/>for class, mission and revision
+        Redis-->>API: Job accepted or queue failure
+        break Configured queue rejects the job
+            API-->>Teacher: 503 attachment_queue_unavailable
+        end
+    end
+    Note over API,Redis: Enqueue happens before the DB transaction.<br/>Workers process the job in step 03.
+    Note right of API: With jobs disabled, skip enqueue.<br/>Publication can still continue.
+
+    critical Firestore publication transaction
+        API->>DB: Recheck owner and expected revision<br/>Apply edits and publication writes
+        activate DB
+        Note right of DB: missions/{mission_id}/<br/>published_revisions/{revision}<br/>Also update class active_mission_id<br/>and the audience-safe student catalog.
+        DB-->>API: Committed or revision conflict
+        deactivate DB
+    end
+    Note over API,DB: Unchanged draft, no inline edits<br/>Reuse the published revision. Class activation<br/>and the student catalog can still refresh.
+
+    alt Draft revision changed before commit
+        API-->>Teacher: 409 draft_conflict - review the latest draft
+    else Transaction committed
+        API-->>Teacher: Published mission and published_revision
+    end
+    deactivate API
