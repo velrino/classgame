@@ -13,7 +13,6 @@ Start with the task you need to complete. Each guide owns one topic; package `AG
 | Operate or recover a deployment | [Operations](operations/README.md) · [Release safety](operations/RELEASE-SAFETY.md) |
 | Add or update documentation | [Documentation standard](conventions/DOCUMENTATION.md) |
 | Follow refactor acceptance criteria | [Plans](plans/README.md) |
-| Review the historical submission | [Pitch archive](pitch/README.md) |
 
 | Folder | Owns |
 | --- | --- |
@@ -25,7 +24,6 @@ Start with the task you need to complete. Each guide owns one topic; package `AG
 | [operations/](operations/README.md) | Runtime operations and dated hosting history |
 | [reference/](reference/README.md) | API contracts, configuration, data ownership |
 | [plans/](plans/README.md) | Intended changes and acceptance criteria |
-| [pitch/](pitch/README.md) | Historical product/submission material |
 
 Living guides describe the supported workflow and must match the code. Plans describe intent; completion needs implementation and validation evidence. Historical records describe their date, not current hosting, access, or feature availability.
 

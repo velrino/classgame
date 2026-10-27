@@ -7,7 +7,7 @@ Keep one Go API and one Next.js app. Use business modules with clear owners. Tra
 - Group code by capability: identity, classrooms, missions, learning, insights, attachments, and game.
 - Keep route files and handlers small. Put workflows in focused files.
 - Use short English guides in `docs/`, with one `README.md` per folder. Use UPPERCASE Markdown file names.
-- Use Scalar to read the OpenAPI contract. Keep the Product tour and original architecture SVG unchanged.
+- Use Scalar to read the OpenAPI contract. Keep the Product tour unchanged. Update the generated architecture diagram only under an explicit request.
 - Keep one Go module and explicit manual dependency wiring. Add a layer only when it helps.
 
 ## 2. Coupling
@@ -35,7 +35,7 @@ Keep one Go API and one Next.js app. Use business modules with clear owners. Tra
 
 ## Release checks
 
-Run the existing Go and web checks, offline policy evaluations, dependency scans, and affected local flows. Check links, file names, the Product tour, and the original SVG. Use the [release workflow](../processes/RELEASE-WORKFLOW.md); a merge does not deploy the app.
+Run the existing Go and web checks, offline policy evaluations, dependency scans, and affected local flows. Check links, file names, the Product tour, and the generated architecture assets. Use the [release workflow](../processes/RELEASE-WORKFLOW.md); a merge does not deploy the app.
 
 ## Completed access work and future deployment
 

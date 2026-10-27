@@ -1,46 +1,31 @@
 # ClassGame architecture diagram
 
-This directory contains the slide-ready production architecture diagram for
-ClassGame.
+The current diagram shows the modular code and optional services. It does not claim a live Cloud Run deployment. The old Product tour screenshots stay unchanged.
 
 ## Files
 
-- `architecture.py` — self-contained Pillow renderer with inline `uv`
-  dependencies.
-- `architecture.png` — generated 1920×1080 image.
-- `architecture_graphviz.py` — alternate icon-led Graphviz renderer inspired by
-  the `mingrammer/diagrams` layout used by `portfolio-front/diagrams/wpp.py`.
-- `architecture-graphviz.png` — alternate 4K (3840×2160) image for visual
-  comparison.
-- `architecture-graphviz.svg` — self-contained 1920×1080 vector version for
-  unlimited zoom and readable labels.
+- `architecture_graphviz.py` — source for the current icon-led diagram.
+- `architecture-graphviz.svg` — self-contained 1920×1080 vector used by the root README and dashboard.
+- `architecture-graphviz.png` — matching 3840×2160 raster for export.
+- `architecture.py` and `architecture.png` — legacy manual renderer and image from the submitted system.
 
 ## Regenerate
 
-From this directory:
+From the repository root:
 
-```bash
-uv run architecture.py
-uv run architecture_graphviz.py
+```sh
+uv run assets/diagrams/architecture/architecture_graphviz.py
 ```
 
-The renderer uses a fixed manual layout so the labels and cross-layer flows
-remain readable on a 16:9 presentation slide.
+Graphviz must be installed. The script writes SVG/PNG and syncs `web/public/assets/diagrams/architecture/architecture-graphviz.svg`. Icons are embedded in the SVG; no external image request is needed. Keep the 16:9 frame and review the render after changes.
 
-## What the diagram represents
+## Current boundaries
 
-- `classgame-web`: the student Three.js game and teacher dashboard, both served
-  by Next.js on Cloud Run.
-- `classgame-api`: the Go/Echo API, custom mission/tutor/learning orchestration,
-  safety controls, repositories, and OIDC task handlers on Cloud Run.
-- Vertex AI through `google.golang.org/genai`, using Gemini structured outputs.
-- Cloud Tasks for learning finalization, paused-attempt watchdogs, and canonical
-  attachment copies.
-- Redis for distributed generation quotas and service health.
-- Firebase Authentication, Firestore, and Cloud Storage for identity, durable
-  state, realtime projections, and immutable published attachments.
-- Uploadcare for temporary direct browser uploads and PostHog for product
-  analytics and exception events.
+- Browser modules call the Go API directly with Firebase ID tokens. The student game keeps pending evidence in IndexedDB. Selected Firestore projections provide scoped realtime reads; full history uses the paged API.
+- One Go module owns classrooms, missions, tutoring, learning, insights, and attachments. Workflows use ports and provider adapters. Scalar exposes the OpenAPI reference.
+- Interactive Mia tutoring is synchronous. All model workflows share Redis admission through the provider adapter. Vertex AI or the Gemini API selects the configured model.
+- Optional Asynq workers use a dedicated Redis broker for copies, finalization, inactivity checks, and recovery. Delivery is at least once. Durable facts, replay, and claims stay in Firestore.
+- Queue Redis is separate from Redis used for quotas and shared AI admission. Local jobs default off; finalization has an inline fallback.
+- Firebase Auth verifies identity. Cloud Storage worksheets are private and downloads go through the authorized API. Workers copy validated temporary Uploadcare inputs. PostHog is optional and receives content-free events.
 
-Arrow colors distinguish synchronous API/data traffic, Gemini reasoning,
-background tasks, and realtime/telemetry flows.
+See [system architecture](../../../docs/architecture/SYSTEM.md) and [queue operations](../../../docs/operations/QUEUES.md) for details.

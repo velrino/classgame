@@ -22,4 +22,4 @@ Keep one canonical guide per topic. `AGENTS.md` files and package READMEs route 
 
 Before a rename or deletion, use `rg` to find inbound references throughout the repository. Update Markdown/HTML links, scoped guides, indexes, and retained anchors together.
 
-Verify local targets and protected content after editing. During this modular refactor, keep the root Product tour section and original architecture SVG byte-identical; reorganizing prose does not authorize changing them.
+Verify local targets and protected content after editing. Keep the root Product tour section byte-identical. Update architecture images only when requested: edit the Graphviz source, regenerate SVG/PNG, and sync the dashboard copy. Keep existing image paths stable.

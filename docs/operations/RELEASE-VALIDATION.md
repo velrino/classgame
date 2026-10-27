@@ -16,7 +16,7 @@
 | Shared provider budget | 11 real local Redis cases plus 7 refusal guards; two processes and store outage |
 | Private upload adapter | 17 synthetic SDK cases plus 4 refusal guards; no real network call |
 | Retention and restore | 14 real local recovery cases plus 9 refusal guards; typed data, isolation, fences, and repeat restore |
-| Docs and assets | Links, UPPERCASE Markdown, folder indexes, exact Product tour, and original architecture SVG pass |
+| Docs and assets | Links, UPPERCASE Markdown, folder indexes, exact Product tour, and architecture asset checks pass |
 
 The browser review found and fixed incorrect advancement after a wrong answer, a crash on nullable server checkpoints, stale async updates, a late mission start after picker close, a completion query that did not match its identity rule, and delivery copy that appeared before acknowledgment. See [local flow evidence](../development/LOCAL-EMULATORS.md). Provider-disabled fallback is explicit; teachers must review whether a generated or fallback preview matches the lesson.
 
