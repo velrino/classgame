@@ -30,6 +30,8 @@ import type {
 } from "@/modules/learning";
 
 import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { useStudentHistory } from "../adapters/hooks/use-student-history";
 import {
   MissionFlowPreview,
   getMissionFlowKindStyle,
@@ -37,20 +39,23 @@ import {
 
 type StudentLearningDetailProps = {
   readonly open: boolean;
+  readonly completeHistory?: boolean;
   readonly student: DashboardStudentDto | null;
   readonly onOpenChange: (open: boolean) => void;
 };
 
 export function StudentLearningDetail({
   open,
+  completeHistory = false,
   student,
   onOpenChange,
 }: StudentLearningDetailProps) {
+  const history = useStudentHistory(student, open, completeHistory);
   const [selectedAttemptId, setSelectedAttemptId] = useState(
     safeList(student?.attempts)[0]?.id ?? "",
   );
   const [activeTab, setActiveTab] = useState("conversation");
-  const attempts = useMemo(() => safeList(student?.attempts), [student]);
+  const attempts = history.page.attempts;
   const attempt = useMemo(
     () =>
       attempts.find((item) => item.id === selectedAttemptId) ??
@@ -68,6 +73,16 @@ export function StudentLearningDetail({
       size="xl"
       layout="fill"
     >
+      <section aria-label="Mission history pages" className="shrink-0 border-b px-4 py-3 text-sm sm:px-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" disabled={history.loading || !history.canGoBack} onClick={history.previous}>Newer history</Button>
+          <Button variant="outline" size="sm" disabled={history.loading || !history.page.next_cursor} onClick={history.next}>Older history</Button>
+          {!completeHistory ? <Button variant="ghost" size="sm" disabled={history.loading} onClick={history.refresh}>Refresh</Button> : null}
+          <span className="text-xs text-muted-foreground">{history.loading ? "Loading history…" : `${attempts.length} ${completeHistory ? "recorded attempts" : "attempts on this page"}`}</span>
+        </div>
+        {history.page.read_at ? <p className="mt-1 text-xs text-muted-foreground">History snapshot read at {new Date(history.page.read_at).toLocaleTimeString()}. Refresh for new work.</p> : null}
+        {history.error ? <p role="alert" className="mt-2 text-destructive">{history.error}</p> : null}
+      </section>
       {attempt ? (
         <Tabs
           value={activeTab}
@@ -239,10 +254,9 @@ export function StudentLearningDetail({
             <span className="mx-auto grid size-12 place-items-center rounded-full bg-muted">
               <History className="size-5 text-muted-foreground" aria-hidden />
             </span>
-            <p className="mt-4 font-semibold">No recorded attempt yet</p>
+            <p className="mt-4 font-semibold">{history.loading ? "Loading mission history…" : history.error ? "Mission history is unavailable" : "No recorded attempt yet"}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              The learning flow appears after this student starts answering
-              inside the mission.
+              {history.loading ? "Your saved work is being loaded." : history.error ? "Select Refresh to try again. No saved work was removed." : "The learning flow appears after this student starts answering inside the mission."}
             </p>
           </div>
         </div>

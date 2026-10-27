@@ -2,13 +2,10 @@ package insights
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -104,74 +101,6 @@ func (repository *FirestoreRepository) UpsertTeacher(
 	}
 
 	return summary, nil
-}
-
-func (repository *FirestoreRepository) ListStudentsByClassID(
-	ctx context.Context,
-	classID string,
-) ([]studentUserDocument, error) {
-	iter := repository.client.Collection(usersCollectionName).
-		Where("student.class_id", "==", classID).
-		Documents(ctx)
-	defer iter.Stop()
-
-	students := make([]studentUserDocument, 0)
-	for {
-		snapshot, err := iter.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("iterate students: %w", err)
-		}
-
-		var user studentUserDocument
-		if err := snapshot.DataTo(&user); err != nil {
-			return nil, fmt.Errorf("decode student user %s: %w", snapshot.Ref.ID, err)
-		}
-		if user.ID == "" {
-			user.ID = snapshot.Ref.ID
-		}
-		if !slices.Contains(user.Roles, "student") {
-			continue
-		}
-
-		students = append(students, user)
-	}
-
-	return students, nil
-}
-
-func (repository *FirestoreRepository) ListLearningAttemptsByClassID(
-	ctx context.Context,
-	classID string,
-) ([]studentsmodule.StudentMissionAttemptDocument, error) {
-	iter := repository.client.Collection("student_mission_attempts").
-		Where("class_id", "==", classID).
-		Documents(ctx)
-	defer iter.Stop()
-
-	attempts := make([]studentsmodule.StudentMissionAttemptDocument, 0)
-	for {
-		snapshot, err := iter.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("iterate student learning attempts: %w", err)
-		}
-
-		var attempt studentsmodule.StudentMissionAttemptDocument
-		if err := snapshot.DataTo(&attempt); err != nil {
-			return nil, fmt.Errorf("decode student learning attempt %s: %w", snapshot.Ref.ID, err)
-		}
-		if attempt.ID == "" {
-			attempt.ID = snapshot.Ref.ID
-		}
-		attempts = append(attempts, attempt)
-	}
-
-	return attempts, nil
 }
 
 func (repository *FirestoreRepository) GetClassLearningSynthesis(

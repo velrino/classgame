@@ -10,6 +10,7 @@ import (
 )
 
 type OverviewResponse struct {
+	Page            *OverviewPageMetadata        `json:"page,omitempty"`
 	OrganizationID  string                       `json:"organization_id"`
 	DistrictID      string                       `json:"district_id"`
 	SchoolID        string                       `json:"school_id"`
@@ -224,6 +225,7 @@ type TeacherResponse struct {
 
 func ToOverviewResponse(overview DashboardOverview) OverviewResponse {
 	return OverviewResponse{
+		Page:            overview.Page,
 		OrganizationID:  overview.OrganizationID,
 		DistrictID:      overview.DistrictID,
 		SchoolID:        overview.SchoolID,

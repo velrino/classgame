@@ -15,7 +15,7 @@ import type {
 } from "@/modules/insights/adapters/types/contracts";
 import type { TeacherClassMissionDto } from "@/modules/missions";
 import { missionsApi } from "@/modules/missions";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 export function useDashboardSnapshots(
   auth: Pick<ReturnType<typeof useTeacherAuth>, "status" | "user">,
   initialClassId?: string,
@@ -27,6 +27,11 @@ export function useDashboardSnapshots(
   const [teacherClasses, setTeacherClasses] = useState<TeacherClassDto[]>([]);
 
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+
+  const [rosterPage, setRosterPage] = useState<{classId: string; cursor: string; trail: string[]}>({classId: "", cursor: "", trail: []});
+  const rosterCursor = rosterPage.classId === selectedClassId ? rosterPage.cursor : "";
+  const queryRef = useRef({actorId: auth.user?.uid, classId: selectedClassId as string | null, cursor: rosterCursor});
+  useEffect(() => { queryRef.current = {actorId: auth.user?.uid, classId: selectedClassId, cursor: rosterCursor}; }, [auth.user?.uid, selectedClassId, rosterCursor]);
 
   const [classesLoading, setClassesLoading] = useState(true);
 
@@ -106,11 +111,13 @@ export function useDashboardSnapshots(
       .then(async () => {
         setOverviewLoading(true);
         setOverview(null);
+        setSelectedStudent(null);
         setError(null);
 
         const token = await user.getIdToken();
         return insightsApi.overview(token, {
           class_id: selectedClassId,
+          limit: 25, cursor: rosterCursor,
         });
       })
       .then((response) => {
@@ -145,7 +152,7 @@ export function useDashboardSnapshots(
     return () => {
       cancelled = true;
     };
-  }, [auth.status, auth.user, selectedClassId]);
+  }, [auth.status, auth.user, selectedClassId, rosterCursor]);
 
   useEffect(() => {
     if (auth.status !== "signed_in" || !auth.user || !selectedClassId) {
@@ -207,6 +214,7 @@ export function useDashboardSnapshots(
         const token = await user.getIdToken();
         const response = await insightsApi.overview(token, {
           class_id: classId,
+          limit: 25, cursor: rosterCursor,
         });
         if (cancelled) {
           return;
@@ -236,7 +244,7 @@ export function useDashboardSnapshots(
       classId,
       () => void refreshOverviewInBackground(),
     );
-    const interval = window.setInterval(refreshOverviewInBackground, 60_000);
+    const interval = window.setInterval(refreshOverviewInBackground, 15_000);
     const refreshWhenVisible = () => {
       if (document.visibilityState === "visible") {
         void refreshOverviewInBackground();
@@ -250,7 +258,7 @@ export function useDashboardSnapshots(
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, [auth.status, auth.user, selectedClassId]);
+  }, [auth.status, auth.user, selectedClassId, rosterCursor]);
 
   const selectedClass = useMemo(() => {
     if (
@@ -268,18 +276,15 @@ export function useDashboardSnapshots(
   }, [overview?.teacher_class, selectedClassId, teacherClasses]);
 
   async function loadOverview(token: string, classId: string) {
-    const response = await insightsApi.overview(token, {
-      class_id: classId,
-    });
-
+    const captured = queryRef.current;
+    const response = await insightsApi.overview(token, {class_id: classId, limit: 25, cursor: captured.classId === classId ? captured.cursor : ""});
+    const current = queryRef.current;
+    if (current.actorId !== captured.actorId || current.classId !== captured.classId || current.cursor !== captured.cursor || current.classId !== classId) return;
     setOverview(response);
-    setSelectedClassId(response.class_id);
-    const teacherClass = response.teacher_class;
-    if (teacherClass) {
-      setTeacherClasses((current) => upsertTeacherClass(current, teacherClass));
-    }
+    if (response.teacher_class) setTeacherClasses((rows) => upsertTeacherClass(rows, response.teacher_class!));
     rememberSelectedClass(response.class_id);
   }
+
   return {
     overview,
     setOverview,
@@ -301,5 +306,15 @@ export function useDashboardSnapshots(
     setSelectedStudent,
     selectedClass,
     loadOverview,
+    canGoBack: rosterPage.classId === selectedClassId && rosterPage.trail.length > 0,
+    nextStudentPage: () => {
+      const next = overview?.page?.next_cursor;
+      if (!next || !selectedClassId) return;
+      setRosterPage({classId: selectedClassId, cursor: next, trail: [...(rosterPage.classId === selectedClassId ? rosterPage.trail : []), rosterCursor]});
+    },
+    previousStudentPage: () => {
+      if (!selectedClassId || rosterPage.classId !== selectedClassId || !rosterPage.trail.length) return;
+      setRosterPage({classId: selectedClassId, cursor: rosterPage.trail.at(-1)!, trail: rosterPage.trail.slice(0, -1)});
+    },
   };
 }

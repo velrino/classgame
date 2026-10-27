@@ -40,6 +40,7 @@ export function DashboardPage({
 }: { readonly initialClassId?: string } = {}) {
   const {
     auth,
+    canGoBack, nextStudentPage, previousStudentPage,
     activeTab,
     overview,
     teacherClasses,
@@ -134,6 +135,18 @@ export function DashboardPage({
           <p className="rounded-xl border border-[#9164f9]/35 bg-[#d2c2e9]/20 px-4 py-3 text-sm font-semibold text-foreground">
             {error}
           </p>
+        ) : null}
+
+        {overview?.page ? (
+          <section aria-label="Student page" className="rounded-xl border bg-muted/20 p-4 text-sm">
+            <p className="font-medium">Showing {overview.page.returned} students. Insights below cover this page and each student&apos;s latest attempt.</p>
+            <p className="mt-1 text-muted-foreground">Open a student to browse their full mission history. Visible pages refresh every 15 seconds.</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button variant="outline" disabled={!canGoBack || overviewLoading} onClick={previousStudentPage}>Previous students</Button>
+              <Button variant="outline" disabled={!overview.page.next_cursor || overviewLoading} onClick={nextStudentPage}>Next students</Button>
+              <time className="text-xs text-muted-foreground" dateTime={overview.page.read_at}>Read at {new Date(overview.page.read_at).toLocaleTimeString()}</time>
+            </div>
+          </section>
         ) : null}
 
         <Tabs
@@ -306,7 +319,7 @@ export function DashboardPage({
                       <div>
                         <CardTitle>Latest student activity</CardTitle>
                         <CardDescription className="mt-2">
-                          The 10 students who were active most recently.
+                          The 10 most recently active students on this page.
                         </CardDescription>
                       </div>
                       <span className="text-xs font-medium text-muted-foreground">
@@ -352,8 +365,9 @@ export function DashboardPage({
         ) : null}
 
         <StudentLearningDetail
-          key={selectedStudent?.id ?? "no-student"}
+          key={selectedStudent ? `${selectedStudent.class_id}:${selectedStudent.id}` : "no-student"}
           open={selectedStudent !== null}
+          completeHistory={overview?.page === undefined}
           student={selectedStudent}
           onOpenChange={(open) => {
             if (!open) {

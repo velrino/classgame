@@ -6,10 +6,14 @@ Review the intended environment before operational writes. Local startup does no
 | --- | --- |
 | [Enrollment and access](ENROLLMENT-AND-ACCESS.md) | Teacher eligibility, joins, and trusted proxies |
 | [Private attachments](PRIVATE-ATTACHMENTS.md) | Review and generation-fenced access changes |
+| [Query scale](QUERY-SCALE.md) | Student pages, history, evidence freshness, and rebuilds |
+| [Private uploads](PRIVATE-UPLOADS.md) | Explicit private defaults, access checks, and local SDK evidence |
 | [Queues](QUEUES.md) | Dedicated Redis, worker roles, failed work and recovery |
+| [AI budgets](AI-BUDGETS.md) | Shared provider admission, settings, and failure behavior |
 | [Cloud Run](CLOUD-RUN.md) | Deployment inputs, identities, workers, and verification |
 | [Hosting history](HOSTING-HISTORY.md) | Dated shutdown record; former URLs are historical |
 | [Release safety](RELEASE-SAFETY.md) | Compatibility, recovery, and rollout checks |
+| [Retention and recovery](RETENTION-RECOVERY.md) | Manual policy, encrypted scope export, and guarded restore |
 | [Durable evidence](DURABLE-EVIDENCE.md) | Replay, claims, finalizer fences, and recovery |
 | [Release validation](RELEASE-VALIDATION.md) | Dated local evidence and remaining checks |
 

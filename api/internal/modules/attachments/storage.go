@@ -74,6 +74,9 @@ func NewStorageCopier(options StorageCopierOptions) (*StorageCopier, error) {
 	if options.Bucket == nil {
 		return nil, errors.New("mission attachment storage bucket is required")
 	}
+	if options.Bucket.BucketName() != bucketName {
+		return nil, errors.New("mission attachment bucket handle does not match its configured name")
+	}
 
 	maxBytes := options.MaxBytes
 	if maxBytes <= 0 {
@@ -109,6 +112,10 @@ func (copier *StorageCopier) Copy(ctx context.Context, input CopyInput) (StoredO
 	} else if exists {
 		return existing, nil
 	}
+	uniform, err := copier.privateBucket(ctx)
+	if err != nil {
+		return StoredObject{}, err
+	}
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimSpace(input.SourceURL), nil)
 	if err != nil {
@@ -137,7 +144,12 @@ func (copier *StorageCopier) Copy(ctx context.Context, input CopyInput) (StoredO
 	writer := conditionedObject.NewWriter(ctx)
 	writer.ChunkSize = defaultWriterChunkBytes
 	writer.ContentType = contentType
-	// Private objects inherit the bucket access policy; never grant publicRead.
+	writer.CacheControl = "private, no-store"
+	// Fine-grained buckets may have public default object ACLs. Override them.
+	// Uniform buckets forbid object ACLs and rely on the verified private IAM policy.
+	if !uniform {
+		writer.PredefinedACL = "private"
+	}
 	writer.ContentDisposition = mime.FormatMediaType("inline", map[string]string{
 		"filename": strings.TrimSpace(input.FileName),
 	})
@@ -167,12 +179,14 @@ func (copier *StorageCopier) Copy(ctx context.Context, input CopyInput) (StoredO
 		return StoredObject{}, fmt.Errorf("finish cloud storage attachment: %w", err)
 	}
 
-	attrs, err := object.Attrs(ctx)
+	stored, exists, err := copier.existingObject(ctx, object, input)
 	if err != nil {
-		return StoredObject{}, fmt.Errorf("read stored attachment attributes: %w", err)
+		return StoredObject{}, err
 	}
-
-	return copier.toStoredObject(objectPath, attrs), nil
+	if !exists {
+		return StoredObject{}, errors.New("stored attachment was not found after upload")
+	}
+	return stored, nil
 }
 
 func (copier *StorageCopier) existingObject(
@@ -187,6 +201,25 @@ func (copier *StorageCopier) existingObject(
 	if err != nil {
 		return StoredObject{}, false, fmt.Errorf("read existing cloud storage attachment: %w", err)
 	}
+	uniform, err := copier.privateBucket(ctx)
+	if err != nil {
+		return StoredObject{}, false, err
+	}
+	if strings.TrimSpace(attrs.Metadata["firebaseStorageDownloadTokens"]) != "" {
+		return StoredObject{}, false, MarkPermanent(errors.New("attachment has download-token access; operator review is required"))
+	}
+	if !uniform {
+		// Attrs requests the full projection, keeping the ACL and metadata tied
+		// to one object generation. An omitted ACL is not proof of private access.
+		if len(attrs.ACL) == 0 {
+			return StoredObject{}, false, errors.New("attachment access could not be verified; operator review is required")
+		}
+		for _, rule := range attrs.ACL {
+			if rule.Entity == storage.AllUsers || rule.Entity == storage.AllAuthenticatedUsers {
+				return StoredObject{}, false, MarkPermanent(errors.New("attachment still has public access; operator review is required"))
+			}
+		}
+	}
 
 	if attrs.Metadata["class_id"] != input.ClassID ||
 		attrs.Metadata["mission_id"] != input.MissionID ||
@@ -196,6 +229,25 @@ func (copier *StorageCopier) existingObject(
 	}
 
 	return copier.toStoredObject(attrs.Name, attrs), true, nil
+}
+
+func (copier *StorageCopier) privateBucket(ctx context.Context) (bool, error) {
+	attrs, err := copier.bucket.Attrs(ctx)
+	if err != nil {
+		return false, errors.New("attachment bucket metadata could not be verified")
+	}
+	policy, err := copier.bucket.IAM().V3().Policy(ctx)
+	if err != nil {
+		return false, errors.New("attachment bucket access could not be verified")
+	}
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member == "allUsers" || member == "allAuthenticatedUsers" {
+				return false, MarkPermanent(errors.New("attachment bucket has public access; use a private bucket"))
+			}
+		}
+	}
+	return attrs.UniformBucketLevelAccess.Enabled, nil
 }
 
 func (copier *StorageCopier) toStoredObject(objectPath string, attrs *storage.ObjectAttrs) StoredObject {
