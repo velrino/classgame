@@ -303,7 +303,7 @@ export function roamingLine(
   if (
     POD_ORDER.every((podId) => memory.progress[podId].status === "complete")
   ) {
-    return `Mission complete. Your teacher has your progress.`;
+    return "You finished the mission questions.";
   }
 
   if (resumed) {

@@ -78,3 +78,9 @@ The local review on 2026-10-27 passed the native 14-case IndexedDB run, includin
 That review found a wrong-answer path that marked a stage complete after an explanation. The reducer now asks the student to try again and preserves the incorrect answer as evidence. The API still requires its own accepted answers before completion. The recovery policy suite covers this fix and older local progress repair.
 
 The review also found a resume crash when an empty server checkpoint field was `null`. One checkpoint normalizer now handles nullable fields before the board is restored. The policy suite covers both a cached checkpoint and published server question IDs.
+
+After the fixes, the same browser resumed, retried the earlier wrong answer, and finished all three questions. The real reward appeared after confirmation. An emulator read confirmed `completed`, three distinct accepted answers, and all three stages at `1/1`. Waiting copy now makes no delivery claim; the teacher-saved message requires the server completion acknowledgement and an empty queue.
+
+With a five-second tutor delay, leaving the board kept the student in the classroom after the response arrived. The accepted answer and queue acknowledgement remained; the old response did not reopen the board.
+
+The delayed mission picker check found a late response reopening a board after **Close**. Closing now aborts the request and invalidates its generation. The repeated browser check stayed in the classroom after the delay. The completion catalog also needs an explicit student identity filter to match the read rules; the local HTTP suite checks the denied unfiltered query and the successful scoped query.

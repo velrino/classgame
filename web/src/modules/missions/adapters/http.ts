@@ -36,12 +36,14 @@ export const missionsApi = {
   async startStudentMission(
     accessToken: string,
     data: StartStudentMissionRequest,
+    signal?: AbortSignal,
   ): Promise<StudentSessionResponse> {
     const res = await httpClient.request({
       accessToken,
       data,
       method: HttpMethod.POST,
       path: "/users/student-mission",
+      signal,
     });
 
     if (!res.ok) {
