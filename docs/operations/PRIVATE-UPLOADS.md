@@ -23,3 +23,7 @@ go run ./cmd/evalstorage -run
 The command invokes the production copier and Storage SDK through a scripted HTTP transport. It has no socket transport, credentials, application configuration, or real provider calls. It checks private upload requests, uniform mode, public and unreadable access, existing-file replay, download tokens, and verification after upload. It rejects a missing opt-in or unknown arguments. This checks SDK requests and local policy; it does not establish deployed permissions, Firebase download behavior, or cache expiry.
 
 Keep historical access review separate from these defaults. See [release safety](RELEASE-SAFETY.md) before a rollout.
+
+## Verified source guard
+
+The attachment adapter checks bucket scope, public bucket bindings, full object ACLs, and Firebase download-token metadata before reporting an upload as ready. The local SDK evaluation covers 17 cases and 4 refusal gates without a real network call. The integration commit is `8aa4c38`; live old-file access has a separate review procedure.
