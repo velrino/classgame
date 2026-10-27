@@ -404,6 +404,7 @@ func run() error {
 		}
 		return nil
 	})
+	var projectionCommitGapNS int64
 	check("live-finalizer-maintains-private-projection-v1", func() error {
 		uid := prefix + "-live"
 		id := prefix + "-live-attempt"
@@ -433,6 +434,14 @@ func run() error {
 		if err != nil {
 			return err
 		}
+		source, err := attemptRef.Get(ctx)
+		if err != nil {
+			return err
+		}
+		projectionCommitGapNS = row.UpdateTime.Sub(source.UpdateTime).Nanoseconds()
+		if projectionCommitGapNS != 0 {
+			return errors.New("source and projection did not share the finalization commit")
+		}
 		var entry students.ClassEvidenceEntry
 		if err := row.DataTo(&entry); err != nil {
 			return err
@@ -452,7 +461,7 @@ func run() error {
 			passed++
 		}
 	}
-	out := map[string]any{"mode": "firestore-emulator", "project": *project, "fixture_prefix": prefix, "fixture_students": 120, "fixture_attempts": 1440, "real_provider_calls": 0, "cleanup_complete": true, "passed": passed, "total": len(cases), "results": cases}
+	out := map[string]any{"mode": "firestore-emulator", "project": *project, "fixture_prefix": prefix, "fixture_students": 120, "fixture_attempts": 1440, "projection_commit_gap_ns": projectionCommitGapNS, "projection_measurement_scope": "source and projection Firestore UpdateTime after one finalizer transaction; not worker wait or traffic latency", "real_provider_calls": 0, "cleanup_complete": true, "passed": passed, "total": len(cases), "results": cases}
 	if err := json.NewEncoder(os.Stdout).Encode(out); err != nil {
 		return err
 	}
