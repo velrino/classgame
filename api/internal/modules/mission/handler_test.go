@@ -1,6 +1,7 @@
 package mission
 
 import (
+	"classgame-api/internal/pagination"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -168,12 +169,8 @@ func (*fakeMissionService) Delete(
 	return nil
 }
 
-func (*fakeMissionService) List(
-	context.Context,
-	sharedfirebase.Identity,
-	string,
-) ([]MissionDocument, error) {
-	return nil, nil
+func (*fakeMissionService) ListPage(context.Context, sharedfirebase.Identity, string, pagination.Params) ([]MissionDocument, string, error) {
+	return nil, "", nil
 }
 
 func (service *fakeMissionService) Preview(

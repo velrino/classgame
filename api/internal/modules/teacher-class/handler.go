@@ -1,6 +1,7 @@
 package teacherclass
 
 import (
+	"classgame-api/internal/pagination"
 	"context"
 	"errors"
 	"log/slog"
@@ -32,7 +33,7 @@ type Authenticator interface {
 
 type TeacherClassService interface {
 	Get(context.Context, sharedfirebase.Identity, string) (TeacherClassDocument, bool, error)
-	List(context.Context, sharedfirebase.Identity) ([]TeacherClassDocument, error)
+	ListPage(context.Context, sharedfirebase.Identity, pagination.Params) ([]TeacherClassDocument, string, error)
 	Upsert(context.Context, sharedfirebase.Identity, UpsertTeacherClassInput) (TeacherClassDocument, error)
 }
 
@@ -97,12 +98,17 @@ func (handler *Handler) GetTeacherClasses(ctx *echo.Context) error {
 		return err
 	}
 
-	teacherClasses, err := handler.teacherClassService.List(requestContext, identity)
+	page, err := pagination.Parse(ctx.QueryParams())
+	if err != nil {
+		return jsonError(ctx, http.StatusBadRequest, "validation_failed", err.Error())
+	}
+	teacherClasses, next, err := handler.teacherClassService.ListPage(requestContext, identity, page)
 	if err != nil {
 		return handler.serviceError(ctx, err)
 	}
 	return ctx.JSON(http.StatusOK, map[string]any{
 		"teacher_classes": ToResponses(teacherClasses),
+		"next_cursor":     next,
 	})
 }
 

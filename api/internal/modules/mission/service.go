@@ -1,6 +1,7 @@
 package mission
 
 import (
+	"classgame-api/internal/pagination"
 	"context"
 	"crypto/rand"
 	"errors"
@@ -49,6 +50,7 @@ type MissionRepository interface {
 	Create(context.Context, CreateMissionInput) (MissionDocument, error)
 	Get(context.Context, string, string) (MissionDocument, bool, error)
 	List(context.Context, string, int) ([]MissionDocument, error)
+	ListPage(context.Context, string, pagination.Params) ([]MissionDocument, string, error)
 	Publish(
 		context.Context,
 		string,

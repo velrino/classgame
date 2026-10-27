@@ -1,6 +1,7 @@
 package mission
 
 import (
+	"classgame-api/internal/pagination"
 	"context"
 	"encoding/json"
 	"errors"
@@ -49,7 +50,7 @@ type GenerationRateLimiters struct {
 type MissionService interface {
 	Approve(context.Context, sharedfirebase.Identity, string, string, ApproveMissionInput) (MissionDocument, error)
 	Delete(context.Context, sharedfirebase.Identity, string, string) error
-	List(context.Context, sharedfirebase.Identity, string) ([]MissionDocument, error)
+	ListPage(context.Context, sharedfirebase.Identity, string, pagination.Params) ([]MissionDocument, string, error)
 	Preview(context.Context, sharedfirebase.Identity, CreateMissionInput) (MissionDocument, error)
 }
 
@@ -342,13 +343,18 @@ func (handler *Handler) ListMissions(ctx *echo.Context) error {
 		return err
 	}
 
-	missions, err := handler.missionService.List(requestContext, identity, classID)
+	page, err := pagination.Parse(ctx.QueryParams())
+	if err != nil {
+		return jsonError(ctx, http.StatusBadRequest, "validation_failed", err.Error())
+	}
+	missions, next, err := handler.missionService.ListPage(requestContext, identity, classID, page)
 	if err != nil {
 		return handler.serviceError(ctx, err)
 	}
 
 	return ctx.JSON(http.StatusOK, map[string]any{
-		"missions": ToResponses(missions),
+		"missions":    ToResponses(missions),
+		"next_cursor": next,
 	})
 }
 
