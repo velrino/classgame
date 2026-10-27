@@ -22,7 +22,8 @@ import (
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/pagination"
 	analyticsmodule "classgame-api/internal/platform/analytics"
-	"classgame-api/internal/ratelimit"
+	"classgame-api/internal/platform/ratelimit"
+	ratehttp "classgame-api/internal/platform/ratelimit/http"
 	"classgame-api/internal/transport/httpx"
 	"classgame-api/internal/uploadcare"
 )
@@ -504,7 +505,7 @@ func (handler *Handler) limitGeneration(
 		return false, nil
 	}
 
-	httpx.SetRateLimitHeaders(echoCtx.Response().Header(), policy.Decision)
+	ratehttp.SetRateLimitHeaders(echoCtx.Response().Header(), policy.Decision)
 	if policy.Decision.Allowed {
 		return false, nil
 	}

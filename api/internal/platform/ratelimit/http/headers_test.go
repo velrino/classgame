@@ -1,15 +1,15 @@
-package httpx
+package http
 
 import (
-	"net/http"
+	nethttp "net/http"
 	"testing"
 	"time"
 
-	"classgame-api/internal/ratelimit"
+	"classgame-api/internal/platform/ratelimit"
 )
 
 func TestSetRateLimitHeadersIncludesRoundedRetryAfter(t *testing.T) {
-	header := make(http.Header)
+	header := make(nethttp.Header)
 	SetRateLimitHeaders(header, ratelimit.Decision{
 		Allowed:    false,
 		Limit:      12,
@@ -29,7 +29,7 @@ func TestSetRateLimitHeadersIncludesRoundedRetryAfter(t *testing.T) {
 }
 
 func TestSetRateLimitHeadersOmitsRetryAfterWhenAllowed(t *testing.T) {
-	header := make(http.Header)
+	header := make(nethttp.Header)
 	SetRateLimitHeaders(header, ratelimit.Decision{
 		Allowed:    true,
 		Limit:      12,
