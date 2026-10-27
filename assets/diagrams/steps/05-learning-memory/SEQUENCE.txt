@@ -1,0 +1,101 @@
+---
+title: 05 - Finish the quiz and refresh student memory
+config:
+  theme: base
+  look: classic
+  fontFamily: Arial, sans-serif
+  themeCSS: |
+    rect.actor[name="Student"], line.actor-line[name="Student"] { fill: #04c7ff !important; stroke: #04c7ff !important; }
+    rect.actor[name="API"], line.actor-line[name="API"] { fill: #86d5fb !important; stroke: #86d5fb !important; }
+    rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
+    rect.actor[name="Redis"], line.actor-line[name="Redis"] { fill: #a573bc !important; stroke: #a573bc !important; }
+    rect.actor[name="Worker"], line.actor-line[name="Worker"] { fill: #5fcefd !important; stroke: #5fcefd !important; }
+    rect.actor[name="LLM"], line.actor-line[name="LLM"] { fill: #9054af !important; stroke: #9054af !important; }
+    text.actor, text.actor tspan { fill: #FFFFFF !important; }
+    text.actor { font-weight: 700 !important; }
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Student"][data-to="API"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="DB"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="Redis"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="Student"]),
+    text.messageText:has(+ [data-et="message"][data-from="Redis"][data-to="Worker"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Worker"][data-to="DB"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Worker"][data-to="LLM"]),
+    text.messageText:has(+ [data-et="message"][data-from="Worker"][data-to="Redis"]),
+    g[data-et="note"] text.noteText:first-of-type,
+    g[data-et="note"] text.noteText:first-of-type tspan { font-weight: 700 !important; }
+  themeVariables:
+    background: "#FFFFFF"
+    primaryColor: "#FFFFFF"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#111111"
+    actorBkg: "#FFFFFF"
+    actorBorder: "#111111"
+    actorTextColor: "#FFFFFF"
+    actorLineColor: "#111111"
+    signalColor: "#111111"
+    signalTextColor: "#111111"
+    titleColor: "#111111"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#111111"
+    noteTextColor: "#111111"
+    activationBkgColor: "#FFFFFF"
+    activationBorderColor: "#111111"
+    labelBoxBkgColor: "#FFFFFF"
+    labelBoxBorderColor: "#111111"
+    labelTextColor: "#111111"
+    loopTextColor: "#111111"
+    sequenceNumberColor: "#FFFFFF"
+  sequence:
+    useMaxWidth: true
+    diagramMarginX: 20
+    diagramMarginY: 20
+    mirrorActors: false
+    actorMargin: 45
+    messageMargin: 24
+---
+sequenceDiagram
+    %% First-use headers introduce existing services, not new infrastructure.
+    %% This is the queued success path; notes describe inline fallback.
+    %% Class synthesis and wider memory views belong to a later step.
+    autonumber
+    participant Student
+    Note over Student: Ready to finish<br/>Quiz answers are saved.<br/>Pending tutor evidence is flushed.
+
+    create participant API
+    Student->>API: Request quiz completion<br/>Attempt, publication and snapshot scope
+    activate API
+    create participant DB
+    API->>DB: Validate and commit completion<br/>Use accepted answers and mark trace pending
+    DB-->>API: Completed attempt and completion marker
+
+    create participant Redis
+    API->>Redis: Enqueue the versioned finalization job
+    Note right of Redis: Stable job identity<br/>Student and attempt IDs<br/>Evidence and snapshot versions<br/>Status and dispatch generation
+    API-->>Student: Completion accepted for the reward
+    deactivate API
+    Note over Student,API: Quiz completion is confirmed.<br/>AI insights may still be pending.
+    Note over API,Redis: Inline fallback<br/>If jobs are disabled or enqueue fails,<br/>the API runs the same finalizer.
+
+    create participant Worker
+    Redis->>Worker: Deliver the finalization job
+    activate Worker
+    Worker->>DB: Claim the target attempt<br/>Owner token and 5-minute lease
+    DB-->>Worker: Claimed attempt and student context
+    Worker->>DB: Load the pinned published mission
+    DB-->>Worker: Published learning content
+    Note over DB,Worker: Superseded or finalized work is skipped.<br/>Busy claims retry. Recovery scans pending work.
+
+    create participant LLM
+    Worker->>LLM: Build an evidence-based learning trace<br/>Bounded evidence and previous memory
+    activate LLM
+    LLM-->>Worker: Structured learning trace
+    deactivate LLM
+    Note right of LLM: Observed fallback is available.<br/>Missing model/events, quota limits<br/>or provider failure can use it.
+
+    Worker->>DB: Commit the finalized learning result<br/>Compare owner, scope and evidence versions
+    Note right of DB: One Firestore transaction<br/>Private trace marked ready<br/>Class evidence and memory when eligible
+    DB-->>Worker: Ready result or stale-result rejection
+    Note over DB,Worker: Compact memory replaces the old summary.<br/>Same class/tenant and no older evidence only.<br/>Up to 4 strengths and 4 needs<br/>Next adaptation: 280 characters
+    Note over Redis,Worker: Class summary refresh follows.<br/>It is separate from the student commit.<br/>See the next memory step.
+    Worker-->>Redis: Complete delivery
+    deactivate Worker
