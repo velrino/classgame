@@ -53,5 +53,6 @@ export function useWorldBridge(session: Session, avatarPresetId: string) {
   }, [directive]);
 
   const onReport = useCallback((next: WorldReport) => setReport(next), []);
-  return { report, directiveRef, onReport };
+  const resetReport = useCallback(() => setReport(idleReport), []);
+  return { report, directiveRef, onReport, resetReport };
 }

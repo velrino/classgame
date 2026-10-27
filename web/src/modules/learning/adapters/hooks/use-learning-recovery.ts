@@ -162,7 +162,7 @@ export function useLearningRecovery(
       keepalive = false,
       flushEvidence = true,
     ) => {
-      const activeSession = sessionRef.current;
+      let activeSession = sessionRef.current;
       const missionSession = readStudentMissionSession();
       const user = currentStudentIdentity();
       if (
@@ -198,6 +198,15 @@ export function useLearningRecovery(
         return false;
       }
 
+      // An answer may have completed while evidence was in flight. Persist the
+      // latest reducer commit so a delayed write cannot overwrite a newer board.
+      activeSession = sessionRef.current;
+      if (
+        !activeSession.hydrated ||
+        activeSession.mission.id !== missionSession.missionId ||
+        generation !== hydrationRef.current
+      )
+        return false;
       const revision = nextRevision(revisionRef);
       const checkpoint = checkpointFromSession(activeSession);
       saveMemory(
