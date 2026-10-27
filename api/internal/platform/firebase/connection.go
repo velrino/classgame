@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	"firebase.google.com/go/v4/auth"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+
+	"classgame-api/internal/platform/firebase/emulator"
 )
 
 var (
@@ -22,10 +25,12 @@ var (
 const DefaultPingTimeout = 5 * time.Second
 
 type Options struct {
-	ProjectID       string
-	CredentialsFile string
-	CredentialsJSON string
-	PingTimeout     time.Duration
+	EmulatorEnabled                                      bool
+	Environment, AuthEmulatorHost, FirestoreEmulatorHost string
+	ProjectID                                            string
+	CredentialsFile                                      string
+	CredentialsJSON                                      string
+	PingTimeout                                          time.Duration
 }
 
 type Connection struct {
@@ -42,6 +47,19 @@ func Connect(ctx context.Context, input Options) (*Connection, error) {
 		return nil, ErrMissingProjectID
 	}
 
+	if err := (emulator.Options{
+		Enabled:               resolved.EmulatorEnabled,
+		Environment:           resolved.Environment,
+		ProjectID:             resolved.ProjectID,
+		AuthHost:              resolved.AuthEmulatorHost,
+		FirestoreHost:         resolved.FirestoreEmulatorHost,
+		CredentialsConfigured: resolved.CredentialsJSON != "" || resolved.CredentialsFile != "",
+	}).Validate(); err != nil {
+		return nil, err
+	}
+	if os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") != resolved.AuthEmulatorHost || os.Getenv("FIRESTORE_EMULATOR_HOST") != resolved.FirestoreEmulatorHost {
+		return nil, errors.New("Firebase emulator environment does not match validated options")
+	}
 	clientOption, err := buildClientOption(resolved)
 	if err != nil {
 		return nil, err
@@ -149,6 +167,9 @@ func resolveOptions(input Options) Options {
 }
 
 func buildClientOption(input Options) (option.ClientOption, error) {
+	if input.EmulatorEnabled {
+		return option.WithoutAuthentication(), nil
+	}
 	if input.CredentialsJSON != "" {
 		return option.WithCredentialsJSON([]byte(input.CredentialsJSON)), nil
 	}

@@ -202,6 +202,17 @@ export function decideAfterFeedback(context: FeedbackContext): Decision {
     };
   }
 
+  const current = memory.progress[pod];
+  if (current.queue.length <= 1 && current.pool.length === 0 &&
+      current.correct < current.required) {
+    return {
+      action: "next",
+      target: null,
+      message: "Take another look, then try this question again.",
+      why: "The explanation helps you practice. A correct answer is still needed.",
+    };
+  }
+
   switch (feedback) {
     case "confusing":
       return {
@@ -255,8 +266,9 @@ export function decideAfterPodComplete(
     };
   }
 
-  const nextIndex = POD_ORDER.indexOf(pod) + 1;
-  const next = POD_ORDER[nextIndex];
+  const next = POD_ORDER.find((candidate) =>
+    candidate !== pod && memory.progress[candidate].status !== "complete",
+  );
 
   if (!next) {
     return {

@@ -85,7 +85,7 @@ export function useEvidenceSync(
   const scopeRef = useRef(scope),
     callbacks = useRef({ onConflict, onTurn }),
     busy = useRef<Promise<EvidenceFlushResult> | null>(null),
-    accepting = useRef(false),
+    accepting = useRef<object | null>(null),
     controllerRef = useRef<AbortController | null>(null),
     problemRef = useRef(false),
     nextRetry = useRef(0);
@@ -147,6 +147,7 @@ export function useEvidenceSync(
                 : null,
       }));
     } catch {
+      if (!matches(current)) return;
       problemRef.current = true;
       setState((previous) => ({
         ...previous,
@@ -182,6 +183,8 @@ export function useEvidenceSync(
           if (controller.signal.aborted || !matches(current))
             return { complete: false, pending: 0 };
           const claim = await claimEvidence(current, owner.current);
+          if (controller.signal.aborted || !matches(current))
+            return { complete: false, pending: 0 };
           if (claim.kind === "empty")
             return { complete: !problemRef.current, pending: 0 };
           if (claim.kind === "wait") {
@@ -206,6 +209,7 @@ export function useEvidenceSync(
             wire,
             { signal: controller.signal },
           );
+          if (controller.signal.aborted || !matches(current)) break;
           if (
             remote.attempt &&
             (remote.attempt.id !== current.attemptId ||
@@ -238,6 +242,7 @@ export function useEvidenceSync(
               { signal: controller.signal },
             );
           }
+          if (controller.signal.aborted || !matches(current)) break;
           const perTurn = new AbortController(),
             abortTurn = () => perTurn.abort(),
             turnTimer = setTimeout(abortTurn, 45_000);
@@ -277,7 +282,7 @@ export function useEvidenceSync(
               error instanceof ApiError ? error.retryAfterSeconds : undefined,
             );
           } catch {
-            problemRef.current = true;
+            if (matches(current)) problemRef.current = true;
           }
         }
         if (
@@ -333,16 +338,18 @@ export function useEvidenceSync(
         }));
         return false;
       }
-      accepting.current = true;
+      const ticket = {};
+      accepting.current = ticket;
       setState((previous) => ({ ...previous, accepting: true }));
       try {
         await queueTutorEvidence(current, questionId, evidence);
         if (!matches(current)) return false;
         commit();
         await refresh();
-        void flush();
+        if (matches(current)) void flush();
         return true;
       } catch {
+        if (!matches(current)) return false;
         problemRef.current = true;
         setState((previous) => ({
           ...previous,
@@ -352,9 +359,11 @@ export function useEvidenceSync(
         }));
         return false;
       } finally {
-        accepting.current = false;
-        if (matches(current))
-          setState((previous) => ({ ...previous, accepting: false }));
+        if (accepting.current === ticket) {
+          accepting.current = null;
+          if (matches(current))
+            setState((previous) => ({ ...previous, accepting: false }));
+        }
       }
     },
     [flush, matches, refresh],
@@ -364,11 +373,13 @@ export function useEvidenceSync(
     if (!current) return;
     try {
       await retryTutorEvidence(current);
+      if (!matches(current)) return;
       problemRef.current = false;
       nextRetry.current = 0;
       await refresh();
-      await flush();
+      if (matches(current)) await flush();
     } catch {
+      if (!matches(current)) return;
       problemRef.current = true;
       setState((previous) => ({
         ...previous,
@@ -377,27 +388,30 @@ export function useEvidenceSync(
           "This browser cannot save work. Allow site data or use another browser.",
       }));
     }
-  }, [flush, refresh]);
+  }, [flush, refresh, matches]);
   const deletePending = useCallback(async (): Promise<boolean> => {
     const current = scopeRef.current;
     if (!current || currentStudentIdentity()?.uid !== current.actorId)
       return false;
     const total = await countActorEvidence(current.actorId);
+    if (!matches(current)) return false;
     if (
       !window.confirm(
         `Delete ${total} unsent responses from this browser? Work already sent stays with your teacher. You may need to answer again.`,
       )
     )
       return false;
-    if (currentStudentIdentity()?.uid !== current.actorId) return false;
+    if (!matches(current)) return false;
     controllerRef.current?.abort();
     await deleteActorEvidence(current.actorId);
+    if (!matches(current)) return false;
     problemRef.current = false;
     await refresh();
     return true;
-  }, [refresh]);
+  }, [refresh, matches]);
   useEffect(() => {
     problemRef.current = false;
+    accepting.current = null;
     controllerRef.current?.abort();
     busy.current = null;
     activeRun.current = null;

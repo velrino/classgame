@@ -15,6 +15,9 @@ type Config struct {
 	Host                            string
 	Port                            string
 	AppEnv                          string
+	FirebaseEmulatorsEnabled        bool
+	FirebaseAuthEmulatorHost        string
+	FirestoreEmulatorHost           string
 	FirebaseBootstrapEnabled        bool
 	FirebaseBootstrapTimeoutSeconds int
 	FirebaseProjectID               string
@@ -76,6 +79,9 @@ func Load() (Config, error) {
 		Host:                            reader.getString("HOST", "0.0.0.0"),
 		Port:                            reader.getString("PORT", "4004"),
 		AppEnv:                          reader.getString("APP_ENV", "development"),
+		FirebaseEmulatorsEnabled:        reader.getBool("FIREBASE_EMULATORS_ENABLED", false),
+		FirebaseAuthEmulatorHost:        reader.getString("FIREBASE_AUTH_EMULATOR_HOST", ""),
+		FirestoreEmulatorHost:           reader.getString("FIRESTORE_EMULATOR_HOST", ""),
 		FirebaseBootstrapEnabled:        reader.getBool("FIREBASE_BOOTSTRAP_ENABLED", true),
 		FirebaseBootstrapTimeoutSeconds: reader.getInt("FIREBASE_BOOTSTRAP_TIMEOUT_SECONDS", 30),
 		FirebaseProjectID:               firebaseProjectID,
