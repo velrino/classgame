@@ -3,9 +3,10 @@ package users
 import (
 	"time"
 
+	"classgame-api/internal/modules/mission"
 	"classgame-api/internal/modules/orchestrator"
 	"classgame-api/internal/modules/tenant"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 type UserRole string
@@ -33,13 +34,13 @@ type UserDocument struct {
 }
 
 type UserIdentity struct {
-	Provider       sharedfirebase.IdentityProvider `firestore:"provider" json:"provider"`
-	ProviderUserID string                          `firestore:"provider_user_id" json:"provider_user_id"`
-	AuthMethod     sharedfirebase.AuthMethod       `firestore:"auth_method" json:"auth_method"`
-	ProviderIDs    []string                        `firestore:"provider_ids" json:"provider_ids"`
-	SignInProvider string                          `firestore:"sign_in_provider" json:"sign_in_provider"`
-	CustomClaims   map[string]interface{}          `firestore:"custom_claims" json:"custom_claims"`
-	Token          IdentityToken                   `firestore:"token" json:"token"`
+	Provider       sharedauth.IdentityProvider `firestore:"provider" json:"provider"`
+	ProviderUserID string                      `firestore:"provider_user_id" json:"provider_user_id"`
+	AuthMethod     sharedauth.AuthMethod       `firestore:"auth_method" json:"auth_method"`
+	ProviderIDs    []string                    `firestore:"provider_ids" json:"provider_ids"`
+	SignInProvider string                      `firestore:"sign_in_provider" json:"sign_in_provider"`
+	CustomClaims   map[string]interface{}      `firestore:"custom_claims" json:"custom_claims"`
+	Token          IdentityToken               `firestore:"token" json:"token"`
 }
 
 type IdentityToken struct {
@@ -89,7 +90,7 @@ type StudentGameSession struct {
 }
 
 type UpsertStudentInput struct {
-	Identity                 sharedfirebase.Identity
+	Identity                 sharedauth.Identity
 	Scope                    tenant.Scope
 	ClassID                  string
 	ClassCode                string
@@ -103,7 +104,7 @@ type UpsertStudentInput struct {
 }
 
 type UpdateStudentPresenceInput struct {
-	Identity  sharedfirebase.Identity
+	Identity  sharedauth.Identity
 	MissionID string
 	Subject   string
 	StageID   string
@@ -228,12 +229,14 @@ type StudentLearningEvent struct {
 }
 
 type SaveStudentLearningSnapshotInput struct {
-	Identity  sharedfirebase.Identity
-	MissionID string
-	Status    string
-	Snapshot  StudentLearningSnapshot
-	Trace     orchestrator.LearningTraceBlueprint
-	Timestamp time.Time
+	Mission           mission.MissionDocument
+	PublishedRevision int64
+	Identity          sharedauth.Identity
+	MissionID         string
+	Status            string
+	Snapshot          StudentLearningSnapshot
+	Trace             orchestrator.LearningTraceBlueprint
+	Timestamp         time.Time
 }
 
 type StudentSessionMission struct {
@@ -274,7 +277,7 @@ type StudentTutorTurn struct {
 }
 
 type SaveStudentTutorTurnInput struct {
-	Identity          sharedfirebase.Identity
+	Identity          sharedauth.Identity
 	MissionID         string
 	EventID           string
 	Type              string

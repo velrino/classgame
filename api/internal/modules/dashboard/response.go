@@ -497,6 +497,7 @@ func toAttachmentResponses(attachments []mission.MissionAttachment) []Attachment
 	responses := make([]AttachmentResponse, 0, len(attachments))
 
 	for _, attachment := range attachments {
+		attachment = mission.PrivateAttachmentResponse(attachment)
 		responses = append(responses, AttachmentResponse{
 			UploadcareUUID:   attachment.UploadcareUUID,
 			CDNURL:           attachment.CDNURL,

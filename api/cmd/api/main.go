@@ -25,6 +25,7 @@ import (
 	"classgame-api/internal/modules/tenant"
 	"classgame-api/internal/modules/users"
 	sharedanalytics "classgame-api/internal/shared/analytics"
+	sharedauth "classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/cloudtasksqueue"
 	sharedgoogle "classgame-api/internal/shared/google"
 	sharedfirebase "classgame-api/internal/shared/google/firebase"
@@ -160,7 +161,21 @@ func run() (runErr error) {
 		return fmt.Errorf("initialize genai: %w", err)
 	}
 
-	orchestratorService := orchestrator.NewService(genAIClient)
+	storageConnection, err := objectstorage.Connect(context.Background(), objectstorage.Options{
+		BucketName:      cfg.FirebaseStorageBucket,
+		CredentialsFile: cfg.FirebaseCredentialsFile,
+		CredentialsJSON: cfg.FirebaseCredentialsJSON,
+	})
+	if err != nil {
+		return fmt.Errorf("initialize mission attachment storage: %w", err)
+	}
+	defer func() {
+		if err := storageConnection.Close(); err != nil {
+			slog.Error("mission attachment storage disconnect failed", "error", err)
+		}
+	}()
+
+	orchestratorService := orchestrator.NewService(genAIClient, storageConnection)
 	teacherClassRepository := teacherclass.NewRepository(firebaseConnection.FirestoreClient())
 	teacherClassService := teacherclass.NewService(teacherClassRepository)
 	missionRepository := mission.NewRepository(firebaseConnection.FirestoreClient())
@@ -257,23 +272,10 @@ func run() (runErr error) {
 	}
 	usersService.ConfigureLearningGenerationLimiter(studentLearningPerClassHourLimiter)
 
-	missionServiceOptions := make([]mission.ServiceOption, 0, 1)
+	missionServiceOptions := []mission.ServiceOption{mission.WithAttachmentReader(storageConnection)}
 	var missionAttachmentHandler http.Handler
 	var studentLearningTaskHandler http.Handler
 	if cfg.CloudTasksEnabled {
-		storageConnection, err := objectstorage.Connect(context.Background(), objectstorage.Options{
-			BucketName:      cfg.FirebaseStorageBucket,
-			CredentialsFile: cfg.FirebaseCredentialsFile,
-			CredentialsJSON: cfg.FirebaseCredentialsJSON,
-		})
-		if err != nil {
-			return fmt.Errorf("initialize mission attachment storage: %w", err)
-		}
-		defer func() {
-			if err := storageConnection.Close(); err != nil {
-				slog.Error("mission attachment storage disconnect failed", "error", err)
-			}
-		}()
 
 		storageCopier, err := missionattachment.NewStorageCopier(missionattachment.StorageCopierOptions{
 			BucketName: storageConnection.BucketName(),
@@ -369,22 +371,31 @@ func run() (runErr error) {
 	dashboardRepository := dashboard.NewRepository(firebaseConnection.FirestoreClient())
 	dashboardService := dashboard.NewService(dashboardRepository, teacherClassService, missionService)
 	authenticator := sharedfirebase.NewFirebaseAuthenticator(firebaseConnection.AuthClient())
+	teacherAuthenticator, err := sharedauth.RestrictProviders(authenticator, cfg.AuthTeacherProviders)
+	if err != nil {
+		return fmt.Errorf("initialize teacher authentication: %w", err)
+	}
+	studentAuthenticator, err := sharedauth.RestrictProviders(authenticator, cfg.AuthStudentProviders)
+	if err != nil {
+		return fmt.Errorf("initialize student authentication: %w", err)
+	}
 
 	server := app.New(app.Options{
 		Analytics: analyticsClient,
 		Config:    cfg,
 		Dashboard: dashboard.HandlerOptions{
-			Authenticator:    authenticator,
+			Authenticator:    teacherAuthenticator,
 			DashboardService: dashboardService,
 		},
 		TeacherClass: teacherclass.HandlerOptions{
 			Analytics:           analyticsClient,
-			Authenticator:       authenticator,
+			Authenticator:       teacherAuthenticator,
 			TeacherClassService: teacherClassService,
 		},
 		Mission: mission.HandlerOptions{
-			Analytics:     analyticsClient,
-			Authenticator: authenticator,
+			AttachmentService: missionService,
+			Analytics:         analyticsClient,
+			Authenticator:     teacherAuthenticator,
 			GenerationRateLimiters: mission.GenerationRateLimiters{
 				PerIPHour:        missionGenerationPerIPHourLimiter,
 				PerTeacherHour:   missionGenerationPerTeacherHourLimiter,
@@ -408,8 +419,9 @@ func run() (runErr error) {
 		},
 		StartedAt: startedAt,
 		Users: users.HandlerOptions{
-			Analytics:     analyticsClient,
-			Authenticator: authenticator,
+			StudentClassReader: usersService,
+			Analytics:          analyticsClient,
+			Authenticator:      studentAuthenticator,
 			TutorRateLimiters: users.TutorRateLimiters{
 				PerIPHour:        studentTutorPerIPHourLimiter,
 				PerIPMinute:      studentTutorPerIPMinuteLimiter,

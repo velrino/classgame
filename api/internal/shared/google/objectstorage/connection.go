@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -107,4 +108,36 @@ func buildClientOptions(input Options) ([]option.ClientOption, error) {
 	}
 
 	return nil, nil
+}
+
+// ReadAttachment reads only objects in the configured private bucket, with a
+// bounded allocation. It does not generate signed or public download URLs.
+func (connection *Connection) ReadAttachment(ctx context.Context, gsURI string, maxBytes int64) ([]byte, error) {
+	if connection == nil || connection.bucket == nil {
+		return nil, errors.New("attachment storage is not configured")
+	}
+	prefix := "gs://" + connection.bucketName + "/"
+	if !strings.HasPrefix(gsURI, prefix) || maxBytes <= 0 {
+		return nil, errors.New("invalid attachment storage reference")
+	}
+	objectPath := strings.TrimPrefix(gsURI, prefix)
+	if !strings.HasPrefix(objectPath, "classes/") || strings.Contains(objectPath, "..") {
+		return nil, errors.New("invalid attachment object path")
+	}
+	reader, err := connection.bucket.Object(objectPath).NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("open private attachment: %w", err)
+	}
+	defer reader.Close()
+	if reader.Attrs.Size > maxBytes {
+		return nil, errors.New("attachment exceeds size limit")
+	}
+	data, err := io.ReadAll(io.LimitReader(reader, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read private attachment: %w", err)
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, errors.New("attachment exceeds size limit")
+	}
+	return data, nil
 }

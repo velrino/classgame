@@ -2,11 +2,13 @@ package app
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
+	"classgame-api/internal/apidocs"
 	"classgame-api/internal/config"
 	"classgame-api/internal/modules/dashboard"
 	healthcheck "classgame-api/internal/modules/health-check"
@@ -48,6 +50,13 @@ func New(options Options) *echo.Echo {
 		server.Use(echo.WrapMiddleware(options.Analytics.RequestContextMiddleware))
 	}
 	server.Use(middleware.BodyLimit(defaultRequestBodyLimitBytes))
+	origins := strings.Split(options.Config.CORSAllowedOrigins, ",")
+	if options.Config.CORSAllowedOrigins == "" {
+		origins = []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+	}
+	for index := range origins {
+		origins[index] = strings.TrimSpace(origins[index])
+	}
 	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowHeaders: []string{
 			echo.HeaderAccept,
@@ -64,8 +73,10 @@ func New(options Options) *echo.Echo {
 			http.MethodOptions,
 			http.MethodPost,
 		},
-		AllowOrigins: []string{"*"},
+		AllowOrigins: origins,
 	}))
+
+	apidocs.RegisterRoutes(server)
 
 	healthcheck.RegisterRoutes(server, healthcheck.HandlerOptions{
 		AppEnv:         options.Config.AppEnv,

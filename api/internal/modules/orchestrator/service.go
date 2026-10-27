@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -97,13 +98,23 @@ type GenAIClient interface {
 	Provider() string
 }
 
-type Service struct {
-	genAI GenAIClient
+type AttachmentReader interface {
+	ReadAttachment(context.Context, string, int64) ([]byte, error)
 }
 
-func NewService(genAI GenAIClient) *Service {
+type Service struct {
+	attachmentReader AttachmentReader
+	genAI            GenAIClient
+}
+
+func NewService(genAI GenAIClient, readers ...AttachmentReader) *Service {
+	var reader AttachmentReader
+	if len(readers) > 0 {
+		reader = readers[0]
+	}
 	return &Service{
-		genAI: genAI,
+		genAI:            genAI,
+		attachmentReader: reader,
 	}
 }
 
@@ -438,7 +449,7 @@ func (service *Service) summarizeAttachment(
 		return "", GenAIUsage{}, fmt.Errorf("unsupported inline attachment MIME type %q", mimeType)
 	}
 
-	data, err := fetchAttachment(ctx, attachment)
+	data, err := service.fetchAttachment(ctx, attachment)
 	if err != nil {
 		return "", GenAIUsage{}, err
 	}
@@ -573,6 +584,16 @@ func buildAttachmentFileParts(ctx context.Context, attachments []AttachmentInput
 	}
 
 	return fileParts
+}
+
+func (service *Service) fetchAttachment(ctx context.Context, attachment AttachmentInput) ([]byte, error) {
+	if strings.HasPrefix(strings.TrimSpace(attachment.StorageURL), "gs://") {
+		if service.attachmentReader == nil {
+			return nil, errors.New("private attachment reader is not configured")
+		}
+		return service.attachmentReader.ReadAttachment(ctx, attachment.StorageURL, maxInlineAttachmentBytes)
+	}
+	return fetchAttachment(ctx, attachment)
 }
 
 func fetchAttachment(ctx context.Context, attachment AttachmentInput) ([]byte, error) {
