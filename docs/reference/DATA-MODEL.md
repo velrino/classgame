@@ -14,7 +14,10 @@ Firestore is the durable store. Records carry the configured organization, distr
 | `users/{uid}` | Student session, presence, durable learning memory |
 | `student_mission_attempts/{attempt_id}` | Pinned revision, checkpoints, events, tutor turns, learning trace |
 | `student_mission_completions/{student_id}/missions/{attempt_id}` | Minimal student-readable completion projection |
+| `class_learning_students/{class_id}` | Rebuild generation, cursor, and completion state |
+| `class_learning_students/{class_id}/students/{student_id}` | Private latest finalized evidence; source-version checked |
 | `class_learning_summaries/{class_id}` | Class-wide evidence synthesis |
+| `data_recovery_holds/{scope_hash}` | Private recovery owner/version receipts; maintenance commands only |
 
 Legacy class-scoped mission reads may coexist during migration. New writes and migrations must state which representation is authoritative before retiring compatibility reads.
 
@@ -28,8 +31,12 @@ Attempts identify the student, class, mission, and published revision. Resume st
 
 Treat browser snapshots as untrusted input. Derive authoritative progress from accepted events against the pinned mission rather than trusting client completion flags. Finalized evidence and duplicate event/task identities need explicit replay behavior.
 
+The [retention policy](../operations/RETENTION-RECOVERY.md) keeps class cleanup separate from global user/auth ownership. Encrypted class backups preserve Firestore field types; local restore clears old processing leases and advances finalizer dispatch generation. No live deletion or restore runs automatically.
+
 ## Browser access
 
 [Firestore rules](../../firestore.rules) deny browser writes. Students consume explicit projections and student-safe API responses; teachers read authorized class evidence. Class documents, private observations, and provider storage documents must not become general frontend contracts.
 
 Introduce new projections additively: write/backfill, verify, switch consumers, then retire old access. Include projection version/freshness and a rebuild procedure for derived insights. Do not change deployed rules until the corresponding consumers and backfill are ready.
+
+Teacher overview and history use [bounded pages and rebuildable evidence](../operations/QUERY-SCALE.md). Page counts are not whole-class totals. New projection reads switch only after a complete class rebuild.

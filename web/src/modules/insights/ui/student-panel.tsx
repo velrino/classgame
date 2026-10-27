@@ -19,14 +19,14 @@ export function StudentsTableSection({
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Students</h2>
         <p className="text-sm text-muted-foreground">
-          {students.length} in this class
+          {students.length} on this page
         </p>
       </div>
       {classLearning && classLearning.students_with_evidence > 0 ? (
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-xl border border-[#dad2e6] bg-[#d2c2e9]/15 p-4">
             <p className="text-xs font-semibold text-[#6841c4] uppercase">
-              LEARNING HISTORY
+              LATEST ATTEMPTS
             </p>
             <p className="mt-2 text-2xl font-black">
               {classLearning.students_with_evidence}/{students.length}

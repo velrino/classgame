@@ -6,6 +6,8 @@ Use an integrated build and development data to verify behavior. A draft PR, pas
 
 The shared GenAI client admits at most 16 callers and 4 provider calls per API process. Excess work fails immediately into existing workflow fallback handling; no generation queue is introduced. Limits are reviewed code constants.
 
+The [shared provider budget](AI-BUDGETS.md) also limits running calls, accepted requests, and reserved maximum output tokens across API and worker processes. All model workflows use this guard before paid work. It fails closed on store failure and configuration drift. Local singleflight remains a separate process-level optimization.
+
 Text instructions, prompt, and response schema share a 256 KiB input budget. Inline data is bounded to 5 parts and 20 MiB total. Oversize inputs are rejected, not silently truncated. Output tokens are capped by both configured maximum and 8,192; decoded response text is bounded to 256 KiB. The default timeout remains 30 seconds, with a 2-minute ceiling and earlier caller cancellation honored.
 
 Identical in-flight inputs may coalesce inside the same client and hashed caller-token scope. Completed results are not cached; each caller decodes its own JSON target. The first caller's cancellation/deadline governs shared provider work; other waiters can cancel independently. Admission remains held until retained shared-result channels are released, bounding canceled waiters. This is process-local duplicate suppression, not durable idempotency or exactly-once execution across replicas.
@@ -34,9 +36,9 @@ Record measured latency/read counts, fallback rates, and remaining delivery gaps
 
 ## Retention and deletion decisions
 
-Before production use, assign an owner and explicit retention/deletion rules for uploads, immutable mission revisions, checkpoints/events, tutor output, student memory, class summaries, logs, and backups. Record purpose, access, retention window, and deletion behavior rather than inventing a universal duration.
+The [retention and recovery policy](RETENTION-RECOVERY.md) assigns owners and explicit manual defaults for uploads, immutable revisions, attempts/replay, profiles, private projections, logs, queue records, and encrypted backups. It includes a read-only plan/export command and guarded local delete/restore verification. No automatic live deletion or hosted backup policy is enabled.
 
-A deletion procedure must cover derived projections and stored objects, prevent delayed jobs from recreating deleted data, and state what retained history/backups still contain. These decisions and existing public-object remediation remain operational work; this release does not claim they have run.
+A deletion procedure must cover derived projections and stored objects, prevent delayed jobs from recreating deleted data, and state what retained history/backups still contain. The policy and local restore evidence are implemented. Applying hosted retention, backup schedules, or old public-object remediation remains a separately reviewed operational action; this release does not claim they ran.
 
 ## Rollback and recovery
 

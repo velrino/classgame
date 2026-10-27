@@ -17,6 +17,7 @@ type TeacherSummary struct {
 }
 
 type TeacherClassDocument struct {
+	Enrollment      *Enrollment    `firestore:"enrollment,omitempty" json:"enrollment,omitempty"`
 	ID              string         `firestore:"id" json:"id"`
 	OrganizationID  string         `firestore:"organization_id" json:"organization_id"`
 	DistrictID      string         `firestore:"district_id" json:"district_id"`
@@ -36,6 +37,7 @@ type TeacherClassDocument struct {
 }
 
 type UpsertTeacherClassInput struct {
+	Enrollment *Enrollment
 	Scope      tenancy.Scope
 	ClassID    string
 	ClassName  string

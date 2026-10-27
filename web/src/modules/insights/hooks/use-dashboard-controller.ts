@@ -48,6 +48,7 @@ export function useDashboardController(initialClassId?: string) {
     setSelectedStudent,
     selectedClass,
     loadOverview,
+    canGoBack, nextStudentPage, previousStudentPage,
   } = useDashboardSnapshots(auth, initialClassId);
   const [activeTab, setActiveTab] = useState<DashboardTab>(defaultDashboardTab);
   const [missionBuilderOpen, setMissionBuilderOpen] = useState(false);
@@ -366,6 +367,7 @@ export function useDashboardController(initialClassId?: string) {
 
   return {
     auth,
+    canGoBack, nextStudentPage, previousStudentPage,
     activeTab,
     overview,
     teacherClasses,

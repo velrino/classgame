@@ -175,6 +175,13 @@ func OpenAPI() object {
 
 	overview := add("/dashboard/overview", "get", "getDashboardOverview", "Teacher-owned classroom overview and learning evidence", "teachers", nil, builder.of(insights.OverviewResponse{}))
 	appendParams(overview, query("class_id", "Optional teacher-owned class ID", false, object{"type": "string"}))
+	overview["description"] = "Bounded compatibility route. A full result is returned only when the class has at most 100 scanned student rows and 100 attempts. Larger classes return 409 pagination_required; use /dashboard/overview/page and student history pages. No partial result is labeled as complete."
+	overview["responses"].(object)["409"] = response("Use the paged overview and student history routes", errorSchema)
+	pagedOverview := add("/dashboard/overview/page", "get", "getDashboardOverviewPage", "A bounded student page with latest attempt summaries", "teachers", nil, builder.of(insights.OverviewResponse{}))
+	appendParams(pagedOverview, query("class_id", "Teacher-owned class ID", false, object{"type": "string"}), query("limit", "Student page size, default 25, maximum 100", false, integer), query("cursor", "Opaque class-scoped next_cursor", false, object{"type": "string"}))
+	pagedOverview["description"] = "page.metrics_scope is student_page; counts and patterns describe only this roster page and each student's latest attempt summary. Full attempt content is loaded through the student history route. read_at is server read time, not a claim that every page forms one database snapshot."
+	history := add("/dashboard/students/{student_id}/attempts", "get", "getStudentHistoryPage", "Page complete teacher-authorized attempt history", "teachers", nil, builder.of(insights.StudentHistoryResponse{}))
+	appendParams(history, query("class_id", "Teacher-owned class ID", true, object{"type": "string"}), query("limit", "History page size, default 5, maximum 10", false, integer), query("cursor", "Opaque cursor scoped to class and student; newest activity first with document-ID tie break", false, object{"type": "string"}))
 	classes := add("/teacher-classes", "get", "listTeacherClasses", "List the authenticated teacher's classes", "teachers", nil, record(object{"teacher_classes": object{"type": "array", "items": builder.of(classrooms.TeacherClassResponse{})}, "next_cursor": object{"type": "string"}}))
 	appendParams(classes, pagination...)
 	add("/teacher-classes", "post", "upsertTeacherClass", "Create a class or update a teacher-owned class", "teachers", classrooms.UpsertTeacherClassRequest{}, record(object{"teacher_class": builder.of(classrooms.TeacherClassResponse{})}))

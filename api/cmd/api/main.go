@@ -28,6 +28,7 @@ import (
 	"classgame-api/internal/platform/analytics"
 	"classgame-api/internal/platform/firebase"
 	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/platform/genai/redisbudget"
 	"classgame-api/internal/platform/objectstorage"
 	rateredis "classgame-api/internal/platform/ratelimit/redis"
 	"classgame-api/internal/platform/redis"
@@ -150,7 +151,17 @@ func run() (runErr error) {
 	}()
 
 	usersRepository := students.NewFirestoreRepository(firebaseConnection.FirestoreClient())
+	providerBudget, err := redisbudget.New(redisConnection.Client(), redisbudget.Options{
+		Scope: cfg.GenAISharedBudgetScope, Concurrent: int64(cfg.GenAISharedConcurrent),
+		RequestsPerWindow: int64(cfg.GenAISharedRequestsPerMinute), OutputTokensPerWindow: int64(cfg.GenAISharedOutputPerMinute),
+		Window: time.Minute, Lease: time.Duration(cfg.GenAISharedLeaseSeconds) * time.Second,
+	})
+	if err != nil {
+		return fmt.Errorf("initialize shared provider budget: %w", err)
+	}
+	defer providerBudget.Close()
 	genAIClient, err := genai.Connect(context.Background(), genai.Options{
+		Admission:       providerBudget,
 		Enabled:         cfg.GenAIEnabled,
 		Backend:         cfg.GenAIBackend,
 		Model:           cfg.GenAIModel,
@@ -343,6 +354,10 @@ func run() (runErr error) {
 		return fmt.Errorf("initialize teacher authentication: %w", err)
 	}
 	studentAuthenticator, err := auth.RestrictProviders(authenticator, cfg.AuthStudentProviders)
+	teacherAuthenticator, teacherPolicyErr := auth.TeacherEmailPolicy(teacherAuthenticator, cfg.AuthTeacherEmailAllowlist)
+	if teacherPolicyErr != nil {
+		return fmt.Errorf("initialize teacher eligibility: %w", teacherPolicyErr)
+	}
 	if err != nil {
 		return fmt.Errorf("initialize student authentication: %w", err)
 	}

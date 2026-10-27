@@ -11,9 +11,12 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"classgame-api/internal/auth"
 	"classgame-api/internal/modules/classrooms"
+	"classgame-api/internal/pagination"
 	"classgame-api/internal/transport/httpx"
 )
 
@@ -30,6 +33,8 @@ type Authenticator = auth.Authenticator
 
 type DashboardService interface {
 	GetOverview(context.Context, auth.Identity, string) (DashboardOverview, error)
+	GetOverviewPage(context.Context, auth.Identity, string, pagination.Params) (DashboardOverview, error)
+	GetStudentHistory(context.Context, auth.Identity, string, string, pagination.Params) (StudentHistoryResponse, error)
 }
 
 type HandlerOptions struct {
@@ -60,9 +65,14 @@ func RegisterRoutes(server *echo.Echo, options HandlerOptions) {
 
 	group := server.Group("/dashboard", dashboardRateLimiter(options))
 	group.GET("/overview", handler.GetOverview)
+	group.GET("/overview/page", handler.GetOverviewPage)
+	group.GET("/students/:student_id/attempts", handler.GetStudentHistory)
 }
 
-func (handler *Handler) GetOverview(ctx *echo.Context) error {
+func (handler *Handler) GetOverview(ctx *echo.Context) error     { return handler.overview(ctx, false) }
+func (handler *Handler) GetOverviewPage(ctx *echo.Context) error { return handler.overview(ctx, true) }
+
+func (handler *Handler) overview(ctx *echo.Context, paged bool) error {
 	if handler.authenticator == nil || handler.dashboardService == nil {
 		slog.Error("dashboard dependencies are not configured")
 		return httpx.JSONError(ctx, http.StatusInternalServerError, "not_configured", "Dashboard is not configured.")
@@ -83,12 +93,52 @@ func (handler *Handler) GetOverview(ctx *echo.Context) error {
 		}
 	}
 
-	overview, err := handler.dashboardService.GetOverview(requestContext, identity, classID)
+	var overview DashboardOverview
+	if paged {
+		page, parseErr := pagination.Parse(ctx.QueryParams())
+		if ctx.QueryParam("limit") == "" {
+			page.Limit = 25
+		}
+		if parseErr != nil {
+			return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", parseErr.Error())
+		}
+		overview, err = handler.dashboardService.GetOverviewPage(requestContext, identity, classID, page)
+	} else {
+		overview, err = handler.dashboardService.GetOverview(requestContext, identity, classID)
+	}
 	if err != nil {
 		return handler.serviceError(ctx, err)
 	}
 
 	return ctx.JSON(http.StatusOK, ToOverviewResponse(overview))
+}
+
+func (handler *Handler) GetStudentHistory(ctx *echo.Context) error {
+	if handler.authenticator == nil || handler.dashboardService == nil {
+		return httpx.JSONError(ctx, http.StatusInternalServerError, "not_configured", "Dashboard is not configured.")
+	}
+	requestContext, cancel := context.WithTimeout(ctx.Request().Context(), handler.dashboardTimeout)
+	defer cancel()
+	identity, ok, err := handler.authenticate(requestContext, ctx)
+	if err != nil || !ok {
+		return err
+	}
+	classID := ctx.QueryParam("class_id")
+	if err := validateClassID(classID); err != nil {
+		return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", "A valid class_id is required.")
+	}
+	page, err := pagination.Parse(ctx.QueryParams())
+	if ctx.QueryParam("limit") == "" {
+		page.Limit = 5
+	}
+	if err != nil {
+		return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", err.Error())
+	}
+	result, err := handler.dashboardService.GetStudentHistory(requestContext, identity, classID, ctx.Param("student_id"), page)
+	if err != nil {
+		return handler.serviceError(ctx, err)
+	}
+	return ctx.JSON(http.StatusOK, result)
 }
 
 func (handler *Handler) authenticate(
@@ -99,6 +149,19 @@ func (handler *Handler) authenticate(
 }
 
 func (handler *Handler) serviceError(ctx *echo.Context, err error) error {
+	if status.Code(err) == codes.FailedPrecondition {
+		return httpx.JSONError(ctx, http.StatusServiceUnavailable, "query_index_required", "The query indexes are not ready. Ask the operator to review firestore.indexes.json before using this view.")
+	}
+
+	if errors.Is(err, ErrInvalidPage) {
+		return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", "Invalid page or cursor. History limits are 1 to 10.")
+	}
+	if errors.Is(err, ErrPaginationRequired) {
+		return httpx.JSONError(ctx, http.StatusConflict, "pagination_required", "This class needs pages. Use /dashboard/overview/page and the student history endpoint.")
+	}
+	if errors.Is(err, classrooms.ErrClassNotFound) {
+		return httpx.JSONError(ctx, http.StatusNotFound, "class_not_found", "Class not found.")
+	}
 	if errors.Is(err, ErrTeacherAuthRequired) || errors.Is(err, classrooms.ErrTeacherAuthRequired) {
 		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Teacher sign-in is required.")
 	}
