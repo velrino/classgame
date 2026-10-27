@@ -40,7 +40,7 @@ Clone [velrino/classgame](https://github.com/velrino/classgame), configure Fireb
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md): architecture, development, operations, API/configuration reference, implementation plans, and pitch material each have a canonical home.
+Start with [docs/README.md](docs/README.md): architecture, development, operations, API/configuration reference, and implementation plans each have a canonical home.
 
 Coding assistance starts at the [root router](AGENTS.md) and scoped package guides. Use the [AI index](docs/ai/README.md) for workspace/evaluation guidance and [processes](docs/processes/README.md) for review and release integration.
 
