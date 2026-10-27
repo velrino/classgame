@@ -1,12 +1,12 @@
 # Module boundaries
 
-Use business capabilities as ownership boundaries. Keep one Go module, one web application, and acyclic dependencies. Extract one working use case at a time; directory moves alone do not establish isolation.
+Use business capabilities as code boundaries. Keep one Go module, one web app, and no import cycles. Move one working use case at a time.
 
 ## Go
 
 ```text
+api/cmd/api/                   # Composition, HTTP registration, lifecycle
 api/internal/
-  app/                         # Composition, HTTP registration, lifecycle
   config/                      # Environment parsing and validation
   modules/<capability>/
     domain/                    # Pure models, invariants, errors
@@ -19,7 +19,7 @@ api/internal/
   platform/                    # Provider clients and connection lifecycle
 ```
 
-Create subpackages when they enforce useful boundaries. A small capability can remain a cohesive package with focused files.
+The tree shows optional layers, not folders to create now. Current capabilities use focused files in one package. Create a subpackage when it gives a useful boundary.
 
 - Dependency direction is HTTP adapter → application → domain. Provider adapters implement application-owned ports; composition wires them.
 - Domain policy uses business types and standard-library primitives. Echo, Firebase, Redis, GenAI, and task SDKs stay at the edges.

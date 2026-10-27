@@ -23,4 +23,4 @@ This is **offline policy/contract coverage**. It does not evaluate generated tea
 
 Use the separate [pedagogical rubric and held-out plan](../../evals/platform/ai-policy/MANUAL-RUBRIC.md) for model quality. There is no live/paid execution path in this runner. Future Python graders can consume the JSON artifacts without moving production policy into the harness.
 
-For commands and output details see [evals/README.md](../../evals/README.md). Keep the broader [release gates](../operations/release-safety.md) and existing API/web checks as separate requirements.
+For commands and output details see [evals/README.md](../../evals/README.md). Keep the broader [release gates](../operations/RELEASE-SAFETY.md) and existing API/web checks as separate requirements.

@@ -4,6 +4,6 @@ Contracts and configuration for the current application. The running OpenAPI doc
 
 | Guide | Purpose |
 | --- | --- |
-| [API](api.md) | Authentication, routes, pagination, SSE, and errors |
-| [Configuration](configuration.md) | Environment settings and credential boundaries |
-| [Data model](data-model.md) | Storage ownership, revisions, and student projections |
+| [API](API.md) | Authentication, routes, pagination, SSE, and errors |
+| [Configuration](CONFIGURATION.md) | Environment settings and credential boundaries |
+| [Data model](DATA-MODEL.md) | Storage ownership, revisions, and student projections |

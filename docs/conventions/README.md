@@ -4,4 +4,4 @@ Repository documentation rules. Implementation boundaries belong to the [archite
 
 | Guide | Purpose |
 | --- | --- |
-| [Documentation standard](documentation.md) | Placement, naming, indexes, links, and status |
+| [Documentation standard](DOCUMENTATION.md) | Placement, naming, indexes, links, and status |

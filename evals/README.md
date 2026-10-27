@@ -23,4 +23,4 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 
 Exit `0` means every selected policy case passed, `1` means assertions failed, and `2` means invalid input/build/bridge/output failure. Unknown flags/IDs, duplicate IDs, malformed cases, and unsupported modes fail before case execution. `--mode=live` is deliberately unavailable; no paid run occurs.
 
-These are offline policy and contract evaluations, including a scripted timeout result. Passing them does not establish teaching quality, live robustness, deployed permissions, or a safe release. See [evaluation scope](../docs/ai/EVALUATIONS.md) and [release safety](../docs/operations/release-safety.md).
+These are offline policy and contract evaluations, including a scripted timeout result. Passing them does not establish teaching quality, live robustness, deployed permissions, or a safe release. See [evaluation scope](../docs/ai/EVALUATIONS.md) and [release safety](../docs/operations/RELEASE-SAFETY.md).
