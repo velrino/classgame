@@ -44,3 +44,7 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8787 go run ./cmd/evalqueries -run -project de
 ```
 
 This opt-in command seeds 120 synthetic students and 1,440 attempts, measures returned query/point documents and local time, checks paging, owner/cursor scope, legacy caps, projection rebuilds, stale sources, and live finalization. It deletes only owned fixture documents and calls no real provider. It refuses hosted endpoints and non-demo projects. Local document counts are not production billing or index-scan measurements.
+
+## Private upload SDK checks
+
+From `api/`, run `go run ./cmd/evalstorage -run`. The production copier and Storage SDK use only a scripted HTTP transport, with no sockets, credentials, or cloud writes. It checks explicit private ACLs with a public default, uniform buckets, public or unreadable access, existing-file replay, download tokens, bucket identity, and post-upload checks. This does not verify deployed access or cache expiry. See [private uploads](../docs/operations/PRIVATE-UPLOADS.md).
