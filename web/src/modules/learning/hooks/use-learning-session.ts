@@ -32,6 +32,10 @@ export function useLearningSession() {
     resetRecovery,
     clearCurrentRecovery,
     recoveryError,
+    evidenceState,
+    completionAcknowledged,
+    retryEvidence,
+    deleteUnsentEvidence,
   } = useLearningRecovery(session, dispatch);
   // The hologram pauses before revealing a decision.
   useEffect(() => {
@@ -62,23 +66,34 @@ export function useLearningSession() {
         const now = Date.now();
         const outcome = option.correct ? "correct" : "incorrect";
         const eventID = learningEventID(now, session.memory.eventSequence + 1);
-        dispatch({ type: "choose", index, now });
-        void requestTutorTurn(lesson.question.id, {
-          event_id: eventID,
-          type: "answer",
-          stage_id: sourceStageID(
-            session.mission,
-            lesson.pod,
-            lesson.question.id,
-          ),
-          question_id: sourceQuestionID(session.mission, lesson.question.id),
-          prompt: questionPrompt(lesson.question),
-          student_response: option.text,
-          expected_answer: expectedAnswer(lesson.question),
-          outcome,
-          explicit_reasoning: "",
-          feedback: "",
-        });
+
+        void requestTutorTurn(
+          lesson.question.id,
+          {
+            event_id: eventID,
+            type: "answer",
+            stage_id: sourceStageID(
+              session.mission,
+              lesson.pod,
+              lesson.question.id,
+            ),
+            question_id: sourceQuestionID(session.mission, lesson.question.id),
+            prompt: questionPrompt(lesson.question),
+            student_response: option.text,
+            expected_answer: expectedAnswer(lesson.question),
+            outcome,
+            explicit_reasoning: "",
+            feedback: "",
+          },
+          () =>
+            dispatch({
+              type: "choose",
+              index,
+              now,
+              eventId: eventID,
+              questionId: lesson.question.id,
+            }),
+        );
       },
       writeAnswer: (text: string) => {
         const lesson = session.lesson;
@@ -94,23 +109,34 @@ export function useLearningSession() {
             ? "correct"
             : "incorrect";
         const eventID = learningEventID(now, session.memory.eventSequence + 1);
-        dispatch({ type: "write-answer", text: answer, now });
-        void requestTutorTurn(lesson.question.id, {
-          event_id: eventID,
-          type: "answer",
-          stage_id: sourceStageID(
-            session.mission,
-            lesson.pod,
-            lesson.question.id,
-          ),
-          question_id: sourceQuestionID(session.mission, lesson.question.id),
-          prompt: questionPrompt(lesson.question),
-          student_response: answer,
-          expected_answer: expected,
-          outcome,
-          explicit_reasoning: "",
-          feedback: "",
-        });
+
+        void requestTutorTurn(
+          lesson.question.id,
+          {
+            event_id: eventID,
+            type: "answer",
+            stage_id: sourceStageID(
+              session.mission,
+              lesson.pod,
+              lesson.question.id,
+            ),
+            question_id: sourceQuestionID(session.mission, lesson.question.id),
+            prompt: questionPrompt(lesson.question),
+            student_response: answer,
+            expected_answer: expected,
+            outcome,
+            explicit_reasoning: "",
+            feedback: "",
+          },
+          () =>
+            dispatch({
+              type: "write-answer",
+              text: answer,
+              now,
+              eventId: eventID,
+              questionId: lesson.question.id,
+            }),
+        );
       },
       step: (index: number) => {
         const lesson = session.lesson;
@@ -129,23 +155,34 @@ export function useLearningSession() {
         const now = Date.now();
         const outcome = move === expectedStep.correct ? "correct" : "incorrect";
         const eventID = learningEventID(now, session.memory.eventSequence + 1);
-        dispatch({ type: "step", index, now });
-        void requestTutorTurn(lesson.question.id, {
-          event_id: eventID,
-          type: "answer",
-          stage_id: sourceStageID(
-            session.mission,
-            lesson.pod,
-            lesson.question.id,
-          ),
-          question_id: sourceQuestionID(session.mission, lesson.question.id),
-          prompt: questionPrompt(lesson.question),
-          student_response: `${move.op} → ${move.result}`,
-          expected_answer: `${expectedStep.correct.op} → ${expectedStep.correct.result}`,
-          outcome,
-          explicit_reasoning: "",
-          feedback: "",
-        });
+
+        void requestTutorTurn(
+          lesson.question.id,
+          {
+            event_id: eventID,
+            type: "answer",
+            stage_id: sourceStageID(
+              session.mission,
+              lesson.pod,
+              lesson.question.id,
+            ),
+            question_id: sourceQuestionID(session.mission, lesson.question.id),
+            prompt: questionPrompt(lesson.question),
+            student_response: `${move.op} → ${move.result}`,
+            expected_answer: `${expectedStep.correct.op} → ${expectedStep.correct.result}`,
+            outcome,
+            explicit_reasoning: "",
+            feedback: "",
+          },
+          () =>
+            dispatch({
+              type: "step",
+              index,
+              now,
+              eventId: eventID,
+              questionId: lesson.question.id,
+            }),
+        );
       },
       why: (reasoning: { misconceptionId: string } | { text: string }) => {
         const lesson = session.lesson;
@@ -160,25 +197,36 @@ export function useLearningSession() {
                 (item) => item.id === reasoning.misconceptionId,
               )?.reasoning ?? reasoning.misconceptionId);
         const eventID = learningEventID(now, session.memory.eventSequence + 1);
-        dispatch({ type: "why", reasoning, now });
-        void requestTutorTurn(lesson.question.id, {
-          event_id: eventID,
-          type: "reasoning",
-          stage_id: sourceStageID(
-            session.mission,
-            lesson.pod,
-            lesson.question.id,
-          ),
-          question_id: sourceQuestionID(session.mission, lesson.question.id),
-          prompt:
-            lesson.whyPrompt ||
-            `Why did you choose ${lesson.wrong?.chosen ?? "that answer"}?`,
-          student_response: reasoningText,
-          expected_answer: expectedAnswer(lesson.question),
-          outcome: "support",
-          explicit_reasoning: reasoningText,
-          feedback: "",
-        });
+
+        void requestTutorTurn(
+          lesson.question.id,
+          {
+            event_id: eventID,
+            type: "reasoning",
+            stage_id: sourceStageID(
+              session.mission,
+              lesson.pod,
+              lesson.question.id,
+            ),
+            question_id: sourceQuestionID(session.mission, lesson.question.id),
+            prompt:
+              lesson.whyPrompt ||
+              `Why did you choose ${lesson.wrong?.chosen ?? "that answer"}?`,
+            student_response: reasoningText,
+            expected_answer: expectedAnswer(lesson.question),
+            outcome: "support",
+            explicit_reasoning: reasoningText,
+            feedback: "",
+          },
+          () =>
+            dispatch({
+              type: "why",
+              reasoning,
+              now,
+              eventId: eventID,
+              questionId: lesson.question.id,
+            }),
+        );
       },
       explainNext: () => dispatch({ type: "explain-next" }),
       feedback: (value: FeedbackValue) => {
@@ -188,23 +236,34 @@ export function useLearningSession() {
         }
         const now = Date.now();
         const eventID = learningEventID(now, session.memory.eventSequence + 1);
-        dispatch({ type: "feedback", value, now });
-        void requestTutorTurn(lesson.question.id, {
-          event_id: eventID,
-          type: "feedback",
-          stage_id: sourceStageID(
-            session.mission,
-            lesson.pod,
-            lesson.question.id,
-          ),
-          question_id: sourceQuestionID(session.mission, lesson.question.id),
-          prompt: questionPrompt(lesson.question),
-          student_response: value,
-          expected_answer: expectedAnswer(lesson.question),
-          outcome: "support",
-          explicit_reasoning: "",
-          feedback: value,
-        });
+
+        void requestTutorTurn(
+          lesson.question.id,
+          {
+            event_id: eventID,
+            type: "feedback",
+            stage_id: sourceStageID(
+              session.mission,
+              lesson.pod,
+              lesson.question.id,
+            ),
+            question_id: sourceQuestionID(session.mission, lesson.question.id),
+            prompt: questionPrompt(lesson.question),
+            student_response: value,
+            expected_answer: expectedAnswer(lesson.question),
+            outcome: "support",
+            explicit_reasoning: "",
+            feedback: value,
+          },
+          () =>
+            dispatch({
+              type: "feedback",
+              value,
+              now,
+              eventId: eventID,
+              questionId: lesson.question.id,
+            }),
+        );
       },
       continue: () => dispatch({ type: "continue", now: Date.now() }),
       leaveMission: () => {
@@ -219,5 +278,13 @@ export function useLearningSession() {
     [clearCurrentRecovery, requestTutorTurn, resetRecovery, session],
   );
 
-  return { session, handlers, recoveryError };
+  return {
+    session,
+    handlers,
+    recoveryError,
+    evidenceState,
+    completionAcknowledged,
+    retryEvidence,
+    deleteUnsentEvidence,
+  };
 }

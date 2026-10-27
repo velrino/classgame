@@ -6,6 +6,7 @@ Next.js teacher dashboard and Three.js student classroom.
 - [Configuration](../docs/reference/configuration.md)
 - [Frontend module anatomy](../docs/architecture/modules.md#frontend)
 - [Validation](../docs/development/validation.md)
+- [Recover unsent student work](../docs/development/OFFLINE-EVIDENCE.md)
 
 ## Development
 

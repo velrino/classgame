@@ -14,9 +14,11 @@ export const learningApi = {
     accessToken: string,
     mission_id: string,
     scope?: Omit<StudentAttemptScope, "mission_id">,
+    options?: { signal?: AbortSignal },
   ): Promise<StudentLearningResponse> {
     const res = await httpClient.request({
       accessToken,
+      signal: options?.signal,
       data: { ...scope, mission_id },
       method: HttpMethod.GET,
       path: "/users/student-learning",
@@ -31,12 +33,13 @@ export const learningApi = {
   async saveStudentLearning(
     accessToken: string,
     data: StudentLearningSnapshotRequest,
-    options?: { keepalive?: boolean },
+    options?: { keepalive?: boolean; signal?: AbortSignal },
   ): Promise<StudentLearningResponse> {
     const res = await httpClient.request({
       accessToken,
       data,
       keepalive: options?.keepalive,
+      signal: options?.signal,
       method: HttpMethod.POST,
       path: "/users/student-learning",
     });
@@ -50,12 +53,14 @@ export const learningApi = {
   async studentTutorTurn(
     accessToken: string,
     data: StudentTutorTurnRequest,
+    options?: { signal?: AbortSignal },
   ): Promise<StudentTutorTurnResponse> {
     const res = await httpClient.request({
       accessToken,
       data,
       method: HttpMethod.POST,
       path: "/users/student-tutor-turn",
+      signal: options?.signal,
     });
 
     if (!res.ok) {

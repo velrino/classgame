@@ -31,7 +31,11 @@ import { Chalkboard } from "@/modules/game/ui/chalkboard";
 import { GameCanvas } from "@/modules/game/ui/game-canvas";
 import { GameHud } from "@/modules/game/ui/game-hud";
 import { MissionReward } from "@/modules/game/ui/mission-reward";
-import { sourceStageID, stageLabel } from "@/modules/learning";
+import {
+  EvidenceSyncStatus,
+  sourceStageID,
+  stageLabel,
+} from "@/modules/learning";
 
 export function GamePage({
   initialClassCode = "",
@@ -46,6 +50,10 @@ export function GamePage({
     avatarPresetId,
     handlers,
     recoveryError,
+    evidenceState,
+    completionAcknowledged,
+    retryEvidence,
+    deleteUnsentEvidence,
   } = useGameSession();
   const [startingMissionID, setStartingMissionID] = useState("");
   const [missionStartError, setMissionStartError] = useState<string | null>(
@@ -110,11 +118,26 @@ export function GamePage({
 
   const seatedLesson =
     session.seatedAt && session.lesson ? session.lesson : null;
-  const completedMission =
+  const localMissionComplete =
     session.hydrated &&
     Object.values(session.memory.progress).every(
       (progress) => progress.status === "complete",
     );
+  const completedMission =
+    localMissionComplete &&
+    completionAcknowledged &&
+    evidenceState.pending === 0 &&
+    !evidenceState.accepting &&
+    !evidenceState.blocked;
+  const completionPending = localMissionComplete && !completedMission;
+  const syncStatus = session.hydrated ? (
+    <EvidenceSyncStatus
+      state={evidenceState}
+      completionPending={completionPending}
+      onRetry={() => void retryEvidence()}
+      onDelete={() => void deleteUnsentEvidence()}
+    />
+  ) : null;
 
   useEffect(() => {
     const missionSession = readStudentMissionSession();
@@ -307,6 +330,11 @@ export function GamePage({
           showSeatMarker={missionsReady && pendingMissions.length > 0}
         />
 
+        {!seatedLesson && syncStatus ? (
+          <div className="absolute left-3 right-3 top-20 z-40 sm:left-auto sm:right-5 sm:w-80">
+            {syncStatus}
+          </div>
+        ) : null}
         {recoveryError ? (
           <p
             role="alert"
@@ -318,6 +346,11 @@ export function GamePage({
 
         {seatedLesson ? (
           <Chalkboard
+            syncStatus={syncStatus}
+            completionPending={completionPending}
+            assessmentDisabled={
+              evidenceState.blocked || evidenceState.accepting
+            }
             mission={session.mission}
             lesson={seatedLesson}
             progress={session.memory.progress}
