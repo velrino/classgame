@@ -50,7 +50,7 @@ func (repository *FirestoreRepository) Prepare(
 		plan.Attachments = make([]attachmentsmodule.AttachmentSnapshot, 0, len(revision.Snapshot.Attachments))
 		for index := range revision.Snapshot.Attachments {
 			attachment := &revision.Snapshot.Attachments[index]
-			if attachmentIsStored(*attachment) || attachmentFailedPermanently(*attachment) {
+			if !canTransitionAttachment(*attachment, AttachmentStorageCopying) {
 				continue
 			}
 
@@ -96,7 +96,7 @@ func (repository *FirestoreRepository) MarkStored(
 	target attachmentsmodule.AttachmentSnapshot,
 	stored attachmentsmodule.StoredObject,
 ) error {
-	return repository.updateRevisionAttachment(ctx, job, target, func(attachment *MissionAttachment) {
+	return repository.updateRevisionAttachment(ctx, job, target, AttachmentStorageStored, func(attachment *MissionAttachment) {
 		now := time.Now().UTC().Truncate(time.Microsecond)
 		storage := copyAttachmentStorage(attachment.Storage)
 		storage.Status = AttachmentStorageStored
@@ -126,7 +126,7 @@ func (repository *FirestoreRepository) MarkFailed(
 	message string,
 	retryable bool,
 ) error {
-	return repository.updateRevisionAttachment(ctx, job, target, func(attachment *MissionAttachment) {
+	return repository.updateRevisionAttachment(ctx, job, target, AttachmentStorageFailed, func(attachment *MissionAttachment) {
 		storage := copyAttachmentStorage(attachment.Storage)
 		storage.Status = AttachmentStorageFailed
 		storage.Retryable = retryable
@@ -158,6 +158,9 @@ func (repository *FirestoreRepository) Complete(ctx context.Context, job attachm
 				return errors.New("mission attachment revision still has pending transfers")
 			}
 		}
+		if revision.AttachmentTransferStatus == transferStatus {
+			return nil
+		}
 
 		revision.AttachmentTransferStatus = transferStatus
 		revision.AttachmentTransferAt = time.Now()
@@ -173,6 +176,7 @@ func (repository *FirestoreRepository) updateRevisionAttachment(
 	ctx context.Context,
 	job attachmentsmodule.Job,
 	target attachmentsmodule.AttachmentSnapshot,
+	nextStatus string,
 	update func(*MissionAttachment),
 ) error {
 	if repository == nil || repository.client == nil {
@@ -192,13 +196,17 @@ func (repository *FirestoreRepository) updateRevisionAttachment(
 		if attachmentIndex < 0 {
 			return attachmentsmodule.ErrRevisionObsolete
 		}
+		attachment := &revision.Snapshot.Attachments[attachmentIndex]
+		if !canTransitionAttachment(*attachment, nextStatus) {
+			return nil
+		}
 
 		mission, hasMission, err := readMissionForTransfer(tx, missionRef, job.ClassID)
 		if err != nil {
 			return err
 		}
 
-		update(&revision.Snapshot.Attachments[attachmentIndex])
+		update(attachment)
 		revision.AttachmentTransferAt = time.Now()
 		if err := tx.Set(revisionRef, revision); err != nil {
 			return fmt.Errorf("update mission attachment revision: %w", err)
@@ -363,15 +371,27 @@ func findTransferAttachment(
 	target attachmentsmodule.AttachmentSnapshot,
 ) int {
 	for index, attachment := range attachments {
-		if target.UploadcareUUID != "" && attachment.UploadcareUUID == target.UploadcareUUID {
-			return index
-		}
-		if target.UploadcareUUID == "" && attachment.CDNURL == target.SourceURL && attachment.FileName == target.FileName {
+		if toTransferAttachment(attachment) == target {
 			return index
 		}
 	}
 
 	return -1
+}
+
+// Stored results keep the first validated object and timestamps. A permanent
+// failure stays terminal for retries, but a validated in-flight success can win.
+func canTransitionAttachment(attachment MissionAttachment, nextStatus string) bool {
+	if attachmentIsStored(attachment) {
+		return false
+	}
+	if nextStatus == AttachmentStorageStored {
+		return true
+	}
+	if attachmentFailedPermanently(attachment) {
+		return false
+	}
+	return nextStatus == AttachmentStorageCopying || nextStatus == AttachmentStorageFailed
 }
 
 func copyAttachmentStorage(storage *MissionAttachmentStorage) *MissionAttachmentStorage {
