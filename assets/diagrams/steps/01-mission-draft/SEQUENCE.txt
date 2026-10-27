@@ -11,6 +11,14 @@ config:
     rect.actor[name="LLM"], line.actor-line[name="LLM"] { fill: #7784dc !important; stroke: #7784dc !important; }
     rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
     text.actor, text.actor tspan { fill: #FFFFFF !important; }
+    text.actor { font-weight: 700 !important; }
+    text.messageText:has(+ [data-et="message"][data-from="Teacher"][data-to="Uploadcare"]),
+    text.messageText:has(+ [data-et="message"][data-from="Teacher"][data-to="API"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="LLM"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="DB"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="Teacher"]),
+    g[data-et="note"] text.noteText:first-of-type,
+    g[data-et="note"] text.noteText:first-of-type tspan { font-weight: 700 !important; }
   themeVariables:
     background: "#FFFFFF"
     primaryColor: "#FFFFFF"
