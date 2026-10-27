@@ -30,8 +30,18 @@ The separate security-access approval was applied on 27 October 2026. Eight veri
 
 One worksheet had Firebase download-token metadata. Only that token key was removed with generation/metageneration conditions; other metadata and the file generation were preserved. This is separate from ordinary public ACL checks. Do not assume Public Access Prevention revokes Firebase token links or old cached copies.
 
-The API credential can read 8 of the 12 referenced files privately. Four return `403` because the account lacks general object-read access and their object ACLs do not authorize it. Keep them private. The existing object owner must restore the required private API access through a separate approved action; no new grant is included in this release. Do not treat an inaccessible file as ready or restore public access as a rollback.
+## Private runtime read repair
+
+The later approved follow-up added one `roles/storage.objectViewer` binding for the existing local API account. Its condition matches only the object resource type and four exact worksheet paths. The change uses project IAM because conditional bucket bindings require uniform access; the current fine-grained bucket access stays unchanged. See [Google's condition rules](https://docs.cloud.google.com/storage/docs/access-control/iam#conditions).
+
+The policy was read and written as version 3 with the original `etag`. All nine old bindings were preserved. The exact readback matched the planned change. No new identity, bucket-wide read grant, object write/delete permission, or public access was added.
+
+After the change, all 12 generation-pinned reads and all 12 full reads through the production attachment adapter passed. Anonymous generation-specific requests still returned `403` for all 15 worksheets and the empty marker. Worksheet download tokens remain zero, and the four reviewed files kept the same generation and metadata. No file content was printed or saved.
+
+The grant follows four exact logical paths, including other generations or future replacements at those names. IAM cannot pin a generation. Keep attachment names immutable and review this binding when the configured runtime identity changes. The four legacy ACLs remain unreadable and unchanged; Public Access Prevention blocks their public entries. New-upload readiness still fails closed when private access cannot be proven.
+
+To roll back this grant, remove only the `ClassGameLegacyWorksheetReads` binding using a fresh version-3 policy and `etag`. Preserve other bindings and audit settings. Recheck private reads and anonymous denial. Do not replace a newer policy with an old snapshot or restore public access.
 
 The active Firestore rule now makes administrative class documents teacher-only; the exact active source was read back and matched the repository. Local compatible-client checks cover teacher reads, denied student admin reads, denied browser writes, and enrolled mission subscriptions.
 
-No app deployment, new service, file deletion, Firestore data write, or new permission grant ran during this access review. Private manifests and aggregate evidence stay outside Git.
+No app deployment, new service, file deletion, or Firestore data write ran. The only new grant is the read-only condition described above. Private manifests and aggregate evidence stay outside Git.
