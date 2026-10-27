@@ -16,7 +16,7 @@ The policy is checked inside the membership transaction. Closing joins during a 
 
 Codes stay tied to stable classroom IDs. To replace a shared code, close joins and create a new class. There is no hidden code rotation that would break pinned attempts or old links.
 
-Public code validation and authenticated joins use shared Redis abuse limits. Redis failure rejects admission; it does not remove pending browser evidence. Repeated guesses are still a reason to close joins and review access. A code must never grant teacher access.
+Public code validation checks that the class is active so an existing member can restore a session after joins close. The membership transaction alone decides new admission. Public checks and authenticated joins use shared Redis abuse limits. Redis failure rejects admission; it does not remove pending browser evidence. Repeated guesses are still a reason to close joins and review access. A code must never grant teacher access.
 
 ## Client IP and proxy trust
 

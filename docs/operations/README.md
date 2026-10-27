@@ -4,6 +4,8 @@ Review the intended environment before operational writes. Local startup does no
 
 | Guide | Status and purpose |
 | --- | --- |
+| [Enrollment and access](ENROLLMENT-AND-ACCESS.md) | Teacher eligibility, joins, and trusted proxies |
+| [Private attachments](PRIVATE-ATTACHMENTS.md) | Review and generation-fenced access changes |
 | [Queues](QUEUES.md) | Dedicated Redis, worker roles, failed work and recovery |
 | [Cloud Run](CLOUD-RUN.md) | Deployment inputs, identities, workers, and verification |
 | [Hosting history](HOSTING-HISTORY.md) | Dated shutdown record; former URLs are historical |
