@@ -74,4 +74,4 @@ A changed source, another recovery owner, expired hold, nonempty restore target,
 FIRESTORE_EMULATOR_HOST=127.0.0.1:8787 python3 evals/platform/retention/run.py --run
 ```
 
-The runner compiles the real commands, uses a unique synthetic fixture in `demo-classgame-retention`, and removes only its own rows/files. Thirteen cases cover read-only plan/export, authenticated encryption, scope/duplicate rejection, owner holds, atomic version checks, other-class/tenant/global-user isolation, typed/projection restore, stale worker fences, preserved event replay, and idempotent restore. There are no real provider calls or shared cloud writes.
+The runner compiles the real commands, uses a unique synthetic fixture in `demo-classgame-retention`, and removes only its own rows/files. Fourteen cases cover read-only plan/export, authenticated encryption, scope/duplicate rejection, owner holds, atomic version checks, other-class/tenant/global-user isolation, typed/projection restore, stale worker fences, preserved event replay, and idempotent restore. There are no real provider calls or shared cloud writes.

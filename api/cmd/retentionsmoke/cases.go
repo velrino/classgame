@@ -223,6 +223,17 @@ func (s *suite) cases(artifact, keyPath, temp string) []result {
 		}
 		return nil
 	})
+	run("nonrepresentable-int64-restores-exactly-v1", func() error {
+		snapshot, e := store.Client.Doc("teacher_classes/" + s.scope.Class).Get(ctx)
+		if e != nil {
+			return e
+		}
+		value, ok := snapshot.Data()["mission_count"].(int64)
+		if !ok || value != 9007199254740993 {
+			return errors.New("integer type or precision changed through backup")
+		}
+		return nil
+	})
 	run("old-finalizer-and-provider-owners-are-fenced", func() error {
 		repo := students.NewFirestoreRepository(store.Client)
 		if _, e := repo.FinalizeStudentLearningTrace(ctx, s.fence, generation.LearningTraceBlueprint{Finalized: true}, students.StudentLearningMemory{}, time.Now()); !errors.Is(e, students.ErrStaleFinalization) {

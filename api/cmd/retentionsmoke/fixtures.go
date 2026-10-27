@@ -52,7 +52,7 @@ func (s *suite) seed() error {
 		}
 		return out
 	}
-	class := classrooms.TeacherClassDocument{ID: s.scope.Class, ClassID: s.scope.Class, OrganizationID: s.scope.Organization, DistrictID: s.scope.District, SchoolID: s.scope.School, TeacherID: s.prefix + "-teacher", Status: "archived", CreatedAt: now, UpdatedAt: now}
+	class := classrooms.TeacherClassDocument{ID: s.scope.Class, ClassID: s.scope.Class, OrganizationID: s.scope.Organization, DistrictID: s.scope.District, SchoolID: s.scope.School, TeacherID: s.prefix + "-teacher", MissionCount: 9007199254740993, Status: "archived", CreatedAt: now, UpdatedAt: now}
 	if e := s.put("teacher_classes/"+s.scope.Class, class); e != nil {
 		return e
 	}
