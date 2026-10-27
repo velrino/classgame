@@ -39,6 +39,9 @@ func (service *Service) SaveStudentTutorTurn(
 	if !exists {
 		return StudentTutorTurn{}, ErrStudentAttemptNotFound
 	}
+	if err := ValidateAttemptRequestScope(input.RequestScope, attempt); err != nil {
+		return StudentTutorTurn{}, err
+	}
 	input.ExpectedAttemptID = attempt.ID
 	input.ExpectedPublishedRevision = attempt.PublishedRevision
 	if existingTurn, exists := existingStudentTutorTurn(attempt.TutorTurns, input.EventID); exists {

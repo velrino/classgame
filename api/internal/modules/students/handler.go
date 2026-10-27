@@ -71,6 +71,7 @@ type StudentLearningService interface {
 		string,
 		string,
 		StudentLearningSnapshot,
+		AttemptScope,
 	) (StudentMissionAttemptDocument, error)
 	GetCurrentStudentLearningAttempt(
 		context.Context,
@@ -156,9 +157,11 @@ type StudentPresenceRequest struct {
 }
 
 type StudentLearningSnapshotRequest struct {
-	MissionID string                  `json:"mission_id"`
-	Status    string                  `json:"status"`
-	Snapshot  StudentLearningSnapshot `json:"snapshot"`
+	AttemptID         string                  `json:"attempt_id,omitempty"`
+	PublishedRevision int64                   `json:"published_revision,omitempty"`
+	MissionID         string                  `json:"mission_id"`
+	Status            string                  `json:"status"`
+	Snapshot          StudentLearningSnapshot `json:"snapshot"`
 }
 
 type StudentLearningResponse struct {
@@ -166,6 +169,8 @@ type StudentLearningResponse struct {
 }
 
 type StudentTutorTurnRequest struct {
+	AttemptID         string `json:"attempt_id,omitempty"`
+	PublishedRevision int64  `json:"published_revision,omitempty"`
 	MissionID         string `json:"mission_id"`
 	EventID           string `json:"event_id"`
 	Type              string `json:"type"`
@@ -496,6 +501,7 @@ func (handler *Handler) PostStudentLearning(ctx *echo.Context) error {
 		request.MissionID,
 		request.Status,
 		request.Snapshot,
+		AttemptScope{AttemptID: request.AttemptID, PublishedRevision: request.PublishedRevision},
 	)
 	if err != nil {
 		return handler.studentLearningError(ctx, err)
@@ -546,6 +552,7 @@ func (handler *Handler) PostStudentTutorTurn(ctx *echo.Context) error {
 		requestContext,
 		identity,
 		SaveStudentTutorTurnInput{
+			RequestScope:      AttemptScope{AttemptID: request.AttemptID, PublishedRevision: request.PublishedRevision},
 			MissionID:         request.MissionID,
 			EventID:           request.EventID,
 			Type:              request.Type,
@@ -665,6 +672,9 @@ func (request StudentPresenceRequest) Validate() error {
 }
 
 func (request StudentLearningSnapshotRequest) Validate() error {
+	if err := validateAttemptScopeFields(request.AttemptID, request.PublishedRevision); err != nil {
+		return err
+	}
 	if err := validation.ValidateStruct(&request,
 		validation.Field(&request.MissionID, validation.Required, validation.Length(1, 120)),
 		validation.Field(&request.Status,
@@ -832,6 +842,9 @@ func (request StudentLearningSnapshotRequest) Validate() error {
 }
 
 func (request StudentTutorTurnRequest) Validate() error {
+	if err := validateAttemptScopeFields(request.AttemptID, request.PublishedRevision); err != nil {
+		return err
+	}
 	if err := validation.ValidateStruct(&request,
 		validation.Field(&request.MissionID, validation.Required, validation.Length(1, 120)),
 		validation.Field(&request.EventID, validation.Required, validation.Length(1, 120)),
@@ -978,4 +991,20 @@ func resolveStudentSessionRateLimitExpires(value time.Duration) time.Duration {
 	}
 
 	return value
+}
+
+func validateAttemptScopeFields(attemptID string, revision int64) error {
+	if revision < 0 {
+		return errors.New("published_revision must be zero or greater")
+	}
+	if len(attemptID) > 120 {
+		return errors.New("attempt_id is too long")
+	}
+	if trimmed := strings.TrimSpace(attemptID); trimmed != "" {
+		matched, _ := regexp.MatchString(`^[A-Za-z0-9_-]{1,120}$`, trimmed)
+		if !matched {
+			return errors.New("attempt_id is invalid")
+		}
+	}
+	return nil
 }

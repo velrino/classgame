@@ -18,6 +18,7 @@ func (service *Service) SaveStudentLearningSnapshot(
 	missionID string,
 	status string,
 	snapshot StudentLearningSnapshot,
+	requestScope AttemptScope,
 ) (StudentMissionAttemptDocument, error) {
 	if identity.AuthMethod != auth.AuthMethodAnonymous {
 		return StudentMissionAttemptDocument{}, ErrStudentRequiresAnonymousAuth
@@ -33,6 +34,16 @@ func (service *Service) SaveStudentLearningSnapshot(
 	if !exists {
 		current = StudentMissionAttemptDocument{StudentID: user.ID, ClassID: user.Student.ClassID, MissionID: normalizeText(missionID), PublishedRevision: user.Activity.CurrentGame.PublishedRevision}
 	}
+	if current.ID == "" {
+		current.ID = user.Activity.CurrentGame.AttemptID
+	}
+	if current.ID == "" {
+		current.ID = learningAttemptID(user.ID, normalizeText(missionID), current.PublishedRevision)
+	}
+	if err := ValidateAttemptRequestScope(requestScope, current); err != nil {
+		return StudentMissionAttemptDocument{}, err
+	}
+
 	document, err := service.missionForAttempt(ctx, current)
 	if err != nil {
 		return StudentMissionAttemptDocument{}, err
@@ -48,7 +59,8 @@ func (service *Service) SaveStudentLearningSnapshot(
 	liveTrace.Finalized = false
 
 	attempt, _, completionStarted, err := service.learning.SaveStudentLearningSnapshot(ctx, SaveStudentLearningSnapshotInput{
-		Identity:          identity,
+		Identity:     identity,
+		RequestScope: requestScope, ExpectedAttemptID: current.ID,
 		Mission:           document,
 		PublishedRevision: current.PublishedRevision,
 		MissionID:         normalizeText(missionID),
