@@ -247,10 +247,13 @@ func (repository *FirestoreRepository) Publish(
 		if mission.Draft == nil {
 			return ErrMissionDraftNotFound
 		}
-		if expectedDraftRevision > 0 && mission.DraftRevision != expectedDraftRevision {
-			return ErrMissionDraftConflict
+		if missionGuardrailBlocked(mission.EducationGuardrail) {
+			return ErrMissionGuardrailBlocked
 		}
-		applyDraftEdits(&mission, draftEdits, teacher, timestamp)
+		plan, err := planMissionApproval(mission, expectedDraftRevision, draftEdits)
+		if err != nil {
+			return err
+		}
 
 		classSnapshot, err := tx.Get(classRef)
 		if status.Code(err) == codes.NotFound {
@@ -273,11 +276,7 @@ func (repository *FirestoreRepository) Publish(
 		}, teacher.ProviderUserID)
 
 		firstPublication := mission.Published == nil
-		alreadyPublished := mission.Published != nil &&
-			mission.PublishedRevision == mission.DraftRevision &&
-			!mission.HasUnpublishedChanges &&
-			!draftEdits.HasChanges
-		if alreadyPublished {
+		if plan.ReusePublished {
 			publishedMission, published := publishedView(mission)
 			if !published {
 				return ErrMissionNotFound
@@ -300,10 +299,12 @@ func (repository *FirestoreRepository) Publish(
 
 		publishedAt := timestamp
 
+		applyApprovalDraft(&mission, plan, teacher, timestamp)
 		published := *mission.Draft
 		prepareAttachmentsForPublish(published.Attachments, timestamp)
 		mission.Published = &published
 		mission.PublishedRevision = published.Revision
+		mission.ApprovalReceipt = &plan.Receipt
 		mission.HasUnpublishedChanges = false
 		mission.Status = StatusPublished
 		mission.PublishedAt = publishedAt
@@ -313,8 +314,8 @@ func (repository *FirestoreRepository) Publish(
 
 		revisionRef := ref.Collection(MissionRevisionsCollectionName).
 			Doc(strconv.FormatInt(mission.PublishedRevision, 10))
-		if err := tx.Set(revisionRef, publishedRevisionMap(mission, teacher)); err != nil {
-			return fmt.Errorf("write published mission revision: %w", err)
+		if err := tx.Create(revisionRef, publishedRevisionMap(mission, teacher)); err != nil {
+			return fmt.Errorf("create published mission revision: %w", err)
 		}
 
 		if err := tx.Set(ref, mission.firestoreMap()); err != nil {
@@ -351,29 +352,32 @@ func (repository *FirestoreRepository) Publish(
 		}, firestore.MergeAll)
 	})
 	if err != nil {
+		if status.Code(err) == codes.AlreadyExists {
+			return MissionDocument{}, ErrMissionDraftConflict
+		}
 		return MissionDocument{}, fmt.Errorf("publish mission: %w", err)
 	}
 
 	return mission, nil
 }
 
-func applyDraftEdits(
+func applyApprovalDraft(
 	mission *MissionDocument,
-	edits MissionDraftEdits,
+	plan missionApprovalPlan,
 	teacher classrooms.TeacherSummary,
 	timestamp time.Time,
 ) {
-	if mission == nil || mission.Draft == nil || !edits.HasChanges {
-		return
-	}
-
 	draft := *mission.Draft
-	draft.Title = edits.Title
-	draft.Summary = edits.Summary
-	draft.PreviewQuestions = edits.PreviewQuestions
-	draft.UpdatedBy = teacher
-	draft.UpdatedAt = timestamp
+	draft.Revision = plan.Revision
+	if plan.ContentChanged {
+		draft.Title = plan.Edits.Title
+		draft.Summary = plan.Edits.Summary
+		draft.PreviewQuestions = plan.Edits.PreviewQuestions
+		draft.UpdatedBy = teacher
+		draft.UpdatedAt = timestamp
+	}
 	mission.Draft = &draft
+	mission.DraftRevision = draft.Revision
 	mission.HasUnpublishedChanges = true
 	mission.UpdatedBy = teacher
 	mission.UpdatedAt = timestamp
@@ -618,6 +622,7 @@ func (mission MissionDocument) firestoreMap() map[string]any {
 		"published":               mission.Published,
 		"draft_revision":          mission.DraftRevision,
 		"published_revision":      mission.PublishedRevision,
+		"approval_receipt":        mission.ApprovalReceipt,
 		"has_unpublished_changes": mission.HasUnpublishedChanges,
 		"status":                  mission.Status,
 		"status_before_delete":    mission.StatusBeforeDelete,
