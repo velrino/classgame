@@ -35,3 +35,13 @@ These are offline policy checks, including a scripted timeout result. The browse
 `python3 evals/platform/queue-smoke/run.py` starts a temporary localhost Redis on a free non-default port and runs synthetic Go handlers through the real queue adapter. It checks completion, replay/conflict, delay, retry, archive and correlation. Two real Go worker processes share a job while two producers concurrently enqueue it. Another worker is killed before its synthetic effect; a replacement must recover it after the real lease expires. Finally, an already-connected producer must fail within a budget after the temporary broker stops. The crash check usually takes 1–2 minutes. Go and `redis-server` are required. Each run has a new ignored manifest/report directory under `evals/output/`. It makes zero database or real provider calls and does not run production domain workers. It is separate from the default offline policy suite, and does not establish production persistence, failover or teaching quality.
 
 These checks cover local transport behavior. They do not prove exactly-once effects or billing, recovery after an effect commits but its acknowledgement is lost, network partitions, Redis persistence/restore, managed failover, cluster compatibility or application recovery from a lost broker. Keep those environment-specific gates in [queue operations](../docs/operations/QUEUES.md). `database_calls=0` refers to domain databases; temporary Redis counters provide only synthetic observations.
+
+## Local query scale
+
+With a separately running loopback Firestore emulator, from `api/`:
+
+```sh
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8787 go run ./cmd/evalqueries -run -project demo-classgame-query
+```
+
+This opt-in command seeds 120 synthetic students and 1,440 attempts, measures returned query/point documents and local time, checks paging, owner/cursor scope, legacy caps, projection rebuilds, stale sources, and live finalization. It deletes only owned fixture documents and calls no real provider. It refuses hosted endpoints and non-demo projects. Local document counts are not production billing or index-scan measurements.

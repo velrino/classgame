@@ -95,6 +95,7 @@ type DashboardMetrics struct {
 }
 
 type DashboardOverview struct {
+	Page            *OverviewPageMetadata
 	OrganizationID  string
 	DistrictID      string
 	SchoolID        string
