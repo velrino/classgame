@@ -93,9 +93,9 @@ sequenceDiagram
     Note right of LLM: Observed fallback is available.<br/>Missing model/events, quota limits<br/>or provider failure can use it.
 
     Worker->>DB: Commit the finalized learning result<br/>Compare owner, scope and evidence versions
-    Note right of DB: One Firestore transaction<br/>Private trace marked ready<br/>Class evidence and memory when eligible
+    Note right of DB: One Firestore transaction<br/>Private trace marked ready<br/>Eligible class evidence + refresh intent<br/>Student memory when eligible
     DB-->>Worker: Ready result or stale-result rejection
     Note over DB,Worker: Compact memory replaces the old summary.<br/>Same class/tenant and no older evidence only.<br/>Up to 4 strengths and 4 needs<br/>Next adaptation: 280 characters
-    Note over Redis,Worker: Class summary refresh follows.<br/>It is separate from the student commit.<br/>See the next memory step.
+    Note over Redis,Worker: Class refresh has durable intent.<br/>Dispatch a separate versioned refresh job.<br/>Recovery can retry after student finalization.
     Worker-->>Redis: Complete delivery
     deactivate Worker

@@ -28,7 +28,7 @@ Protected browser requests send `Authorization: Bearer <Firebase ID token>`. Tea
 | `POST /teacher-classes/{class_id}/missions/{mission_id}/approve` | Publish the expected draft revision |
 | `DELETE /teacher-classes/{class_id}/missions/{mission_id}` | Soft-delete a mission |
 
-Requests and responses retain `snake_case` fields. Approval requires `expected_draft_revision`; stale revisions return `409` rather than overwriting another editor. Use OpenAPI for payload schemas and response details.
+Requests and responses retain `snake_case` fields. Approval requires `expected_draft_revision`. Changed reviewed content advances the draft and published revision; unchanged current content reuses its publication. An identical retry of the latest accepted request replays while that publication is current. Different stale edits return `409`. Use OpenAPI for payload schemas and response details.
 
 Class and mission list endpoints accept `limit` (default `50`, maximum `100`) and an opaque `cursor`. Responses return `next_cursor` when another page is available. Treat cursors as opaque and retain the same class/teacher scope when following a page; pagination does not change authorization.
 

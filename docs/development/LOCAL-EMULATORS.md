@@ -4,7 +4,7 @@ Use this mode for synthetic teacher/student work. It never reads app credentials
 
 ## Start the local services
 
-Use Node.js 24, the API Go toolchain, Redis, and Java 25 for the current Firestore emulator. Firebase CLI is an external development tool; it is not an app dependency.
+Use Node.js 24, the API Go toolchain, Redis, and Java 21 or later for the Firestore emulator. Firebase CLI is an external development tool; it is not an app dependency.
 
 From the repository root:
 

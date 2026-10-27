@@ -9,7 +9,7 @@ Start with the saved preview from [step 01](../01-mission-draft/README.md). The 
 - A configured Redis queue accepts the revision-scoped copy job before the Firestore transaction. These are separate operations. A queue failure stops publication.
 - With jobs disabled, publication can continue without a background copy.
 - A worker can receive the job before publication. It retries while the expected revision is pending. Worker execution belongs to step 03.
-- The transaction rechecks ownership and revision. Publishing unchanged content without inline edits reuses the revision, while refreshing class activation and the student catalog.
+- The transaction rechecks ownership and the approval plan. Changed content advances the revision. Unchanged current content reuses publication, while refreshing class activation and the student catalog.
 
 ## Firestore records
 
@@ -34,9 +34,9 @@ Start with the saved preview from [step 01](../01-mission-draft/README.md). The 
 
 The diagram shows the main flow and key branches. It is not an exhaustive HTTP error map.
 
-## Known integrity limit
+## Stable approval retries
 
-Inline approval edits currently do not advance the draft revision. Different edited approvals can overwrite the same published revision. This is tracked in [issue #81](https://github.com/velrino/classgame/issues/81); this diagram does not claim immutable snapshots or general exactly-once publication.
+An edited approval of draft 1 can publish revision 2. The same normalized request with expected revision 1 replays revision 2 while that accepted publication is current. Different stale edits, or a retry after a later draft change, return `409`. A private receipt identifies the latest accepted request. Published content uses create-only writes; queue jobs use the planned result revision.
 
 The `create participant` statements introduce existing services visually. They do not provision services. Redis is optional, so its header marks the first possible queue call.
 

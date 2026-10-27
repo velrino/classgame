@@ -30,7 +30,7 @@ Legacy class-nested mission records remain readable. Storage calls happen outsid
 
 ## Current limits
 
-This flow has **no separate attachment owner token** and does not guarantee exactly-once processing. Concurrent result writes need stronger transition checks: [issue #88](https://github.com/velrino/classgame/issues/88). Publication edits can also overwrite a revision: [issue #81](https://github.com/velrino/classgame/issues/81). These are separate runtime follow-ups.
+This flow has **no separate attachment owner token**. The transaction checks full attachment identity and preserves the first validated stored object and timestamps. Late failures cannot downgrade stored results or make a permanent failure retryable. A validated success already in flight may recover a failed file; other corrected source content uses a new published revision. These rules support retries without claiming exactly-once execution.
 
 There is no automatic attachment recovery scan. After broker loss or archived work, follow the [queue recovery guide](../../../../docs/operations/QUEUES.md). Private-access setup is covered in [private uploads](../../../../docs/operations/PRIVATE-UPLOADS.md).
 

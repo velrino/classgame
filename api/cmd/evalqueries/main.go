@@ -172,6 +172,7 @@ func run() error {
 	identity := auth.Identity{ProviderUserID: teacherID, AuthMethod: auth.AuthMethodEmail}
 	service := insights.NewService(repo, classrooms.NewService(classrooms.NewFirestoreRepository(client)), nil)
 	owned = append(owned, client.Collection(students.ClassEvidenceCollection).Doc(prefix))
+	owned = append(owned, client.Collection(students.ClassRefreshCollection).Doc(prefix))
 	for u := 0; u < 120; u++ {
 		owned = append(owned, client.Collection(students.ClassEvidenceCollection).Doc(prefix).Collection("students").Doc(fmt.Sprintf("%s-u%03d", prefix, u)))
 	}

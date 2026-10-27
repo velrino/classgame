@@ -82,9 +82,9 @@ sequenceDiagram
         end
         Note over Worker,Storage: Reuse a validated existing object.<br/>Concurrent writers reread the winning object.
 
-        Worker->>DB: Mark the attachment stored<br/>Transaction checks revision and attachment ID
+        Worker->>DB: Mark the attachment stored<br/>Check revision and full attachment identity
         DB-->>Worker: Attachment state committed
-        Note over Worker,DB: Save each failure and its retry flag.<br/>Temporary error: retry the job.<br/>Permanent file error: continue with other files.
+        Note over Worker,DB: Keep stored outcomes stable.<br/>Late failures cannot replace a stored file.<br/>New temporary failure: retry the job.<br/>Permanent file error: continue with other files.
     end
 
     Worker->>DB: Complete the revision transfer<br/>Check that no files are still pending
