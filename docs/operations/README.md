@@ -4,6 +4,7 @@ Review the intended environment before operational writes. Local startup does no
 
 | Guide | Status and purpose |
 | --- | --- |
+| [Query scale](QUERY-SCALE.md) | Student pages, history, evidence freshness, and rebuilds |
 | [Queues](QUEUES.md) | Dedicated Redis, worker roles, failed work and recovery |
 | [AI budgets](AI-BUDGETS.md) | Shared provider admission, settings, and failure behavior |
 | [Cloud Run](CLOUD-RUN.md) | Deployment inputs, identities, workers, and verification |

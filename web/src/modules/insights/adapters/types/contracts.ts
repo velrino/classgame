@@ -4,6 +4,8 @@ import type { TeacherClassMissionDto } from "@/modules/missions";
 
 export interface DashboardOverviewRequest {
   class_id?: string;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface SuggestionDto {
@@ -76,7 +78,21 @@ export interface ClassLearningSummaryDto {
   next_adaptation: string;
 }
 
+export interface DashboardPageDto {
+  limit: number;
+  returned: number;
+  next_cursor: string;
+  read_at: string;
+  metrics_scope: "student_page";
+  history_scope: "latest_attempt_summary";
+}
+export interface StudentHistoryResponse {
+  attempts: StudentLearningAttemptDto[];
+  next_cursor: string;
+  read_at: string;
+}
 export interface DashboardOverviewResponse {
+  page?: DashboardPageDto;
   organization_id: string;
   district_id: string;
   school_id: string;

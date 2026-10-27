@@ -113,16 +113,15 @@ export function StudentsTable({
         id: "attempts",
         accessorFn: (row) => row.attempts.length,
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Mission history" />
+          <DataTableColumnHeader column={column} title="Latest attempt" />
         ),
         cell: ({ row }) => (
           <div>
             <span className="rounded-md bg-[#d2c2e9]/35 px-2 py-1 font-semibold text-[#6841c4]">
-              {row.original.attempts.length}{" "}
-              {row.original.attempts.length === 1 ? "try" : "tries"}
+              {row.original.attempts.length ? "Available" : "No attempt"}
             </span>
             <p className="mt-2 text-xs font-medium text-[#6841c4]">
-              Open details
+              Browse history
             </p>
           </div>
         ),
