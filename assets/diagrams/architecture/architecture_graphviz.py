@@ -25,15 +25,11 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from diagrams import Cluster, Diagram, Edge, Node
-from diagrams.gcp.api import Endpoints
-from diagrams.gcp.compute import Run
 from diagrams.gcp.database import Firestore
-from diagrams.gcp.devtools import Tasks
 from diagrams.gcp.ml import AIPlatform, VertexAI
 from diagrams.gcp.operations import Monitoring
 from diagrams.gcp.security import Iam
 from diagrams.gcp.storage import GCS
-from diagrams.onprem.client import Users
 from diagrams.onprem.inmemory import Redis
 from diagrams.programming.flowchart import Decision, Document
 from diagrams.programming.framework import React
@@ -45,6 +41,7 @@ ROOT = Path(__file__).resolve().parent
 RAW_OUTPUT = ROOT / "architecture-graphviz-raw"
 OUTPUT = ROOT / "architecture-graphviz.png"
 SVG_OUTPUT = ROOT / "architecture-graphviz.svg"
+WEB_SVG_OUTPUT = ROOT.parents[2] / "web/public/assets/diagrams/architecture/architecture-graphviz.svg"
 
 LOGICAL_SIZE = (1920, 1080)
 PNG_SCALE = 2
@@ -52,10 +49,11 @@ CANVAS_SIZE = tuple(dimension * PNG_SCALE for dimension in LOGICAL_SIZE)
 # Slide header band (logical px). The graph is fitted into the space below it.
 HEADER_HEIGHT = 112
 FRAME_MARGIN_X = 48
-FRAME_MARGIN_BOTTOM = 40
+FRAME_MARGIN_BOTTOM = 64
 
-TITLE = "ClassGame · Production Architecture"
-SUBTITLE = "Teacher intent becomes a mission with M.I.A (Multimodal Intelligence Agent)"
+TITLE = "ClassGame · Modular Architecture"
+SUBTITLE = "One Next.js app · One Go module · Durable evidence · Private worksheets"
+FOOTER = "Scoped realtime only · History through the paged API · Local jobs default off · No hosted deployment implied"
 
 BLUE = "#3b63f3"
 PURPLE = "#8b5cf6"
@@ -92,6 +90,7 @@ def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.Im
 
 FONT_TITLE = font(36 * PNG_SCALE, bold=True)
 FONT_SUBTITLE = font(17 * PNG_SCALE)
+FONT_FOOTER = font(13 * PNG_SCALE)
 
 # No `ratio`/`size`: Graphviz lays the graph out at its natural density and we
 # fit the result onto the slide afterwards, so spacing and type scale together.
@@ -177,94 +176,69 @@ with Diagram(
     node_attr=node_attr,
     edge_attr=edge_attr,
 ):
-    # Both surfaces ship from the same Next.js service but stay separate
-    # product experiences on the slide.
-    with panel("BROWSER"):
-        students = card(Users, "Students", "anonymous session")
-        student_game = card(React, "3D learning game", "React · Three.js")
-        teachers = card(Users, "Teachers", "Google / demo account")
-        dashboard = card(React, "Teacher dashboard", "missions · live evidence")
+    with panel("NEXT.JS APP · BROWSER MODULES"):
+        student_game = card(React, "Student game", "Three.js · IndexedDB outbox")
+        dashboard = card(React, "Teacher dashboard", "adapters · hooks · UI")
 
-        students >> flow(label="play", weight="3") >> student_game
-        teachers >> flow(label="plan · observe", weight="3") >> dashboard
+    # These workflows are packages in the same Go module, not microservices.
+    with panel("GO MODULE · IN-PROCESS WORKFLOWS"):
+        api = card(Go, "Go API", "auth · classes · Scalar")
+        mission = card(AIPlatform, "Mission workflow", "draft · publish · attachments")
+        tutor = card(AIPlatform, "Mia tutor", "synchronous · grounded context")
+        learning = card(AIPlatform, "Learning + insights", "evidence · traces · summaries")
+        policy = card(Decision, "AI policy + ports", "validation · bounded fallback")
 
-    # Cloud Run is the synchronous spine; the Go API re-verifies browser
-    # identity before any tenant-scoped work.
-    with panel("CLOUD RUN"):
-        web = card(Run, "classgame-web", "Next.js")
-        api = card(Go, "classgame-api", "Go + Echo")
-
-        web >> flow(label="HTTPS + ID token", weight="8") >> api
-
-    # Custom application agents (not an ADK runtime). Stacked in one column;
-    # every model call funnels through the policy gate.
-    with panel("AGENT RUNTIME"):
-        mission = card(AIPlatform, "Mission Agent", "preview · revise · publish")
-        tutor = card(AIPlatform, "Mia Tutor Agent", "RAG · memory · multi-turn")
-        learning = card(AIPlatform, "Learning Agent", "trace · memory · synthesis")
-        policy = card(Decision, "Policy + grounding", "validation · safe fallback")
-
+        api >> flow(label="preview SSE · publish") >> mission
+        api >> flow(label="answer · feedback") >> tutor
+        api >> flow(label="checkpoint · paged history") >> learning
         mission >> flow(PURPLE) >> policy
-        tutor >> flow(PURPLE, label="grounded context") >> policy
+        tutor >> flow(PURPLE) >> policy
         learning >> flow(PURPLE) >> policy
 
-    with panel("GEMINI"):
-        vertex = card(VertexAI, "Gemini 3.7 Flash", "structured JSON · Vertex AI")
+    with panel("MODEL PROVIDER · CONFIGURED"):
+        model = card(VertexAI, "Gemini", "Vertex AI or Gemini API")
 
-    # Cloud Tasks only calls API-owned worker endpoints; the queue never owns
-    # business state.
-    with panel("ASYNC WORK + OPERATIONS"):
-        cloud_tasks = card(Tasks, "Cloud Tasks", "finalize · watchdog · copy")
-        task_handlers = card(Endpoints, "OIDC task handlers", "idempotent workers")
-        redis = card(Redis, "Redis", "quotas · health")
-        posthog = card(Monitoring, "PostHog", "analytics · exceptions")
+    with panel("BACKGROUND JOBS · OPTIONAL"):
+        broker = card(Redis, "Job broker", "dedicated Redis · Asynq")
+        workers = card(Go, "Go workers", "copy · finalize · inactivity")
+        broker >> flow(ORANGE, label="at-least-once delivery") >> workers
 
-        cloud_tasks >> flow(ORANGE, label="OIDC delivery") >> task_handlers
+    with panel("SHARED CONTROLS"):
+        limits = card(Redis, "Shared limits", "quotas · AI admission")
+        posthog = card(Monitoring, "PostHog", "optional · content-free events")
 
-    with panel("FIREBASE"):
-        firebase_auth = card(Iam, "Firebase Auth", "Google · password · anonymous")
-        firestore = card(Firestore, "Firestore", "missions · attempts · realtime")
-        storage = card(GCS, "Cloud Storage", "immutable published attachments")
+    with panel("IDENTITY + DURABLE DATA") as data_panel:
+        data_panel.dot.attr(rank="same")
+        firebase_auth = card(Iam, "Firebase Auth", "teacher policy · anonymous")
+        firestore = card(Firestore, "Firestore", "revisions · evidence · claims")
+        storage = card(GCS, "Private worksheets", "Cloud Storage · API downloads")
 
-    # Kept out of the operations panel: a cluster spanning many ranks would be
-    # forced into its own full-width row.
-    with panel("INTAKE"):
+    with panel("UPLOAD INTAKE"):
         uploadcare = card(Document, "Uploadcare", "temporary direct uploads")
 
-    # Experience entry points.
-    student_game >> flow(weight="3") >> web
-    dashboard >> flow(weight="3") >> web
+    # Both browser experiences call the API directly; Next.js is not a proxy.
+    student_game >> flow(label="HTTPS · Firebase ID token", weight="6") >> api
+    dashboard >> flow(label="HTTPS · Firebase ID token", weight="6") >> api
+    api >> flow(label="verify identity", minlen="2") >> firebase_auth
+    api >> flow(label="state · safe projections", weight="5") >> firestore
+    api >> flow(label="authorized downloads") >> storage
 
-    # API fan-out. `minlen` pushes the leaf services to the right so no column
-    # stacks more than four cards and the graph stays close to 16:9.
-    api >> flow(label="preview · publish") >> mission
-    api >> flow(label="answer · feedback") >> tutor
-    api >> flow(label="snapshot · summarize") >> learning
-    api >> flow(ORANGE, label="enqueue") >> cloud_tasks
+    # The queue owns delivery only. Durable facts and claims stay in Firestore.
+    api >> flow(ORANGE, label="enqueue scoped jobs") >> broker
     api >> Edge(style="invis") >> uploadcare
-    # One compound edge into the Firebase panel (clipped at its border): two
-    # node-level edges cannot both be straight, and the loser loops around the
-    # operations panel.
-    api >> flow(
-        label="verify identity · read / write",
-        lhead="cluster_FIREBASE",
-        minlen="3",
-        weight="10",
-    ) >> firebase_auth
-    api >> flow(RED, label="rate limits") >> redis
-    api >> pulse(TEAL, label="analytics · exceptions", minlen="2") >> posthog
+    workers >> flow(ORANGE, label="leases · finalize") >> firestore
+    workers >> flow(ORANGE, label="private copy") >> storage
+    uploadcare >> flow(ORANGE, label="validated source") >> workers
+    workers >> pulse(ORANGE, label="same Go services", constraint="false") >> learning
 
-    # Every prompt leaves through the application-owned safety gate.
-    policy >> flow(PURPLE, label="grounded prompt", weight="4") >> vertex
+    # All model calls use the same provider port and shared Redis admission.
+    policy >> flow(PURPLE, label="bounded prompt · JSON", weight="4") >> model
+    policy >> flow(RED, label="reserve · release") >> limits
+    workers >> flow(RED, label="shared admission", constraint="false") >> limits
+    api >> pulse(TEAL, label="optional telemetry", minlen="2") >> posthog
 
-    # Durable background work.
-    task_handlers >> flow(ORANGE, label="monotonic updates") >> firestore
-    task_handlers >> flow(ORANGE, label="canonical copy") >> storage
-    uploadcare >> flow(ORANGE, label="approved upload") >> task_handlers
-
-    # The browser's direct Firestore listeners are deliberately not drawn: a
-    # rank-1 → rank-6 edge can only be routed as a huge arc around every panel.
-    # Firestore's subtitle carries "realtime" instead.
+    # Realtime subscriptions use scoped Firestore projections. Their long
+    # browser-to-data arcs are summarized in the footer to keep labels legible.
 
 
 def frame_box(scale: int) -> tuple[int, int, int, int]:
@@ -295,6 +269,7 @@ def write_slide_png() -> None:
     draw = ImageDraw.Draw(canvas)
     draw.text((42 * PNG_SCALE, 22 * PNG_SCALE), TITLE, fill=INK, font=FONT_TITLE)
     draw.text((44 * PNG_SCALE, 66 * PNG_SCALE), SUBTITLE, fill=MUTED, font=FONT_SUBTITLE)
+    draw.text((44 * PNG_SCALE, 1058 * PNG_SCALE), FOOTER, fill=MUTED, font=FONT_FOOTER)
     canvas.save(OUTPUT, quality=95)
     raw_png.unlink()
 
@@ -354,7 +329,7 @@ def write_portable_svg() -> None:
             "height": str(LOGICAL_SIZE[1]),
             "viewBox": f"0 0 {LOGICAL_SIZE[0]} {LOGICAL_SIZE[1]}",
             "role": "img",
-            "aria-label": "ClassGame production architecture",
+            "aria-label": "ClassGame current modular architecture",
         },
     )
     ET.SubElement(
@@ -384,7 +359,15 @@ def write_portable_svg() -> None:
     )
     subtitle.text = SUBTITLE
 
+    footer = ET.SubElement(
+        outer,
+        f"{{{svg_namespace}}}text",
+        {"x": "44", "y": "1069", "fill": MUTED, "font-family": SANS, "font-size": "13"},
+    )
+    footer.text = FOOTER
     ET.ElementTree(outer).write(SVG_OUTPUT, encoding="utf-8", xml_declaration=True)
+    WEB_SVG_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    WEB_SVG_OUTPUT.write_bytes(SVG_OUTPUT.read_bytes())
     raw_svg.unlink()
 
 
@@ -392,3 +375,4 @@ write_slide_png()
 write_portable_svg()
 print(f"Wrote {OUTPUT} ({CANVAS_SIZE[0]}x{CANVAS_SIZE[1]})")
 print(f"Wrote {SVG_OUTPUT} (vector {LOGICAL_SIZE[0]}x{LOGICAL_SIZE[1]} viewBox)")
+print(f"Synced {WEB_SVG_OUTPUT}")

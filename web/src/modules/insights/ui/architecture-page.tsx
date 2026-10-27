@@ -23,7 +23,7 @@ const diagrams = [
     image: ARCHITECTURE_IMAGE_SRC,
     imageWidth: 1920,
     imageHeight: 1080,
-    alt: "ClassGame production architecture diagram",
+    alt: "ClassGame current modular architecture diagram",
   },
   {
     key: "lifecycle",
