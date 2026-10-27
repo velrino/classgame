@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -447,6 +448,18 @@ func (handler *Handler) PostStudentPresence(ctx *echo.Context) error {
 }
 
 func (handler *Handler) GetStudentLearning(ctx *echo.Context) error {
+	scope := AttemptScope{AttemptID: ctx.QueryParam("attempt_id")}
+	if value := strings.TrimSpace(ctx.QueryParam("published_revision")); value != "" {
+		revision, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", "published_revision must be an integer.")
+		}
+		scope.PublishedRevision = revision
+	}
+	if err := validateAttemptScopeFields(scope.AttemptID, scope.PublishedRevision); err != nil {
+		return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", err.Error())
+	}
+
 	missionID := strings.TrimSpace(ctx.QueryParam("mission_id"))
 	if err := validation.Validate(missionID, validation.Required, validation.Length(1, 120)); err != nil {
 		return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", "mission_id: "+err.Error())
@@ -469,6 +482,10 @@ func (handler *Handler) GetStudentLearning(ctx *echo.Context) error {
 	}
 	if !exists {
 		return ctx.JSON(http.StatusOK, StudentLearningResponse{Attempt: nil})
+	}
+
+	if err := ValidateAttemptRequestScope(scope, attempt); err != nil {
+		return httpx.JSONError(ctx, http.StatusConflict, "mission_mismatch", "This tab uses a different mission revision. Select the mission again.")
 	}
 
 	resume := ToStudentLearningResume(attempt)

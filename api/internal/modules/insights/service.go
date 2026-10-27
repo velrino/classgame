@@ -18,7 +18,7 @@ import (
 	"classgame-api/internal/modules/tenancy"
 )
 
-var ErrTeacherRequiresGoogleAuth = errors.New("dashboard requires google auth")
+var ErrTeacherAuthRequired = errors.New("dashboard requires a configured teacher sign-in provider")
 
 const studentOnlineWindow = 45 * time.Second
 
@@ -178,7 +178,7 @@ func (service *Service) GetOverview(
 
 func (service *Service) teacher(ctx context.Context, identity auth.Identity) (TeacherSummary, error) {
 	if !auth.IsTeacherAuthMethod(identity.AuthMethod) {
-		return TeacherSummary{}, ErrTeacherRequiresGoogleAuth
+		return TeacherSummary{}, ErrTeacherAuthRequired
 	}
 
 	return service.repository.UpsertTeacher(ctx, TeacherIdentity{

@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	ErrTeacherRequiresGoogleAuth = errors.New("teacher classes require google auth")
+	ErrTeacherAuthRequired       = errors.New("teacher classes require a configured teacher sign-in provider")
 	ErrClassCodeGenerationFailed = errors.New("could not generate a unique teacher class code")
 )
 
@@ -153,7 +153,7 @@ func (service *Service) TeacherFromIdentity(identity auth.Identity) (TeacherSumm
 
 func (service *Service) teacher(identity auth.Identity) (TeacherSummary, error) {
 	if !auth.IsTeacherAuthMethod(identity.AuthMethod) {
-		return TeacherSummary{}, ErrTeacherRequiresGoogleAuth
+		return TeacherSummary{}, ErrTeacherAuthRequired
 	}
 
 	displayName := strings.TrimSpace(identity.DisplayName)
