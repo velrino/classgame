@@ -1,4 +1,4 @@
-import { ArchitecturePage } from "@/modules/dashboard/pages/architecture-page";
+import { ArchitecturePage } from "@/modules/insights";
 
 export default function DashboardArchitectureRoute() {
   return <ArchitecturePage />;

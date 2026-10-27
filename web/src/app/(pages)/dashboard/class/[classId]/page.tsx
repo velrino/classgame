@@ -1,4 +1,4 @@
-import { DashboardPage } from "@/modules/dashboard/pages/dashboard-page";
+import { DashboardPage } from "@/modules/insights";
 
 type DashboardClassRouteProps = {
   readonly params: Promise<{ classId: string }>;
