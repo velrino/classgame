@@ -5,6 +5,7 @@ Review the intended environment before operational writes. Local startup does no
 | Guide | Status and purpose |
 | --- | --- |
 | [Queues](QUEUES.md) | Dedicated Redis, worker roles, failed work and recovery |
+| [AI budgets](AI-BUDGETS.md) | Shared provider admission, settings, and failure behavior |
 | [Cloud Run](CLOUD-RUN.md) | Deployment inputs, identities, workers, and verification |
 | [Hosting history](HOSTING-HISTORY.md) | Dated shutdown record; former URLs are historical |
 | [Release safety](RELEASE-SAFETY.md) | Compatibility, recovery, and rollout checks |
