@@ -4,7 +4,7 @@ The current diagram shows the modular code and optional services. It does not cl
 
 ## Files
 
-- `architecture_graphviz.py` — source for the current icon-led diagram.
+- `architecture.py` — source for the current icon-led diagram.
 - `architecture.png` — 3840×2160 PNG used by the root README and dashboard.
 
 ## Regenerate
@@ -12,7 +12,7 @@ The current diagram shows the modular code and optional services. It does not cl
 From the repository root:
 
 ```sh
-uv run assets/diagrams/architecture/architecture_graphviz.py
+uv run assets/diagrams/architecture/architecture.py
 ```
 
 Graphviz must be installed. The script writes only PNG and syncs `web/public/assets/diagrams/architecture/architecture.png`. Keep the 16:9 frame and review the render after changes. The old manual renderer and duplicate images are removed so they cannot overwrite the current diagram.

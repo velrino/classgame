@@ -4,7 +4,7 @@
 # ///
 """Render the ClassGame content lifecycle as an icon-led loop.
 
-Same slide language as `../architecture/architecture_graphviz.py` — compact
+Same slide language as `../architecture/architecture.py` — compact
 icon cards (icon on top, bold title, muted subtitle), the same palette, and a
 render fitted below a slide header on an exact 16:9 canvas — applied to the
 circular lifecycle shape. Six stages sit pinned on an ellipse so the loop reads
