@@ -1,28 +1,23 @@
 # Agent execution contract
 
-This directory defines contribution and isolation rules. It currently contains no deployed bot, scheduler, VM service, or model runner. Mia's application workflows live in the [system architecture](../docs/architecture/SYSTEM.md).
+This directory guides coding agents. It is not a deployed bot or worker service. Mia workflows and background workers belong to the [application architecture](../docs/architecture/SYSTEM.md).
 
-Read the [root rules](../AGENTS.md), the relevant package guide, and [workspace guidance](../docs/ai/AGENT-WORKSPACES.md).
+Read the [root rules](../AGENTS.md), nearest package guide, and [workspace guidance](../docs/ai/AGENT-WORKSPACES.md).
 
-- Give each parallel task a separate Git worktree and branch, explicit owned paths, and a handoff target.
-- A worktree prevents checkout collisions; it does not isolate processes, credentials, the network, or the filesystem.
-- Do not alter another task's files, environment, ports, or running processes. Record processes you start; stop only those you own.
-- Return actual changes, checks, limitations, commit SHA, and branch. The coordinator integrates the authorized result through the [release workflow](../docs/processes/RELEASE-WORKFLOW.md).
+## Set up a task
 
-## If standalone automation is added
+- The coordinator supplies the goal, issue, starting release revision, owned paths, branch/worktree, and expected handoff.
+- Give each parallel task that edits files a separate worktree and branch. Read-only audits may use an existing checkout.
+- Coordinate shared-file changes before editing. Do not overwrite another task's work or commit its files.
+- A worktree does not isolate processes, credentials, ports, the network, or the rest of the filesystem.
 
-Create only pieces the implementation uses:
+## Work and hand off
 
-```text
-agents/
-  shared/             # Host helpers with multiple justified consumers
-  <agent>/
-    setup.sh          # Reviewed installation/update entry point
-    host/             # Trusted orchestration and authorized external writes
-    sandbox/          # Model execution and restricted workspace
-```
+- Use tools actually available in the session. A document does not create a tool, credential, service, or permission.
+- Reuse task authorization. Seek clarification only for missing context or actions outside that scope; continue useful authorized work.
+- Keep runtime files private. Record the ports and processes you start, stop only those you own, and preserve the user's running app.
+- Run the smallest relevant existing checks. Follow the root test rule and the evaluation guide for authorized evaluation work.
+- Return the branch/SHA, changed paths, result, checks, limits, issue/PR links, and processes left running or stopped. Report observations rather than assumed success.
+- The coordinator reviews and integrates through the [release workflow](../docs/processes/RELEASE-WORKFLOW.md). Keep durable guidance under `docs/`, not in temporary task assignments.
 
-- Agents do not import another agent's private implementation. Share code only when its meaning and owner are clear.
-- Confine write credentials to the trusted host. Give a model sandbox only the read access/context it needs; never mount privileged token files into it.
-- The host validates scope, patch, checks, and authorization before applying changes or writing externally. Reuse session authorization; this adds no approval requirement for already authorized work.
-- Document an implemented agent under `docs/ai/` and index it. Do not describe this conditional layout as existing deployment infrastructure.
+If standalone automation is later implemented, keep write credentials in its trusted host and give model execution only scoped access. Never mount privileged token files in the model workspace. The host validates scope, patches, checks, and authorization before external writes. Document the real setup and recovery under `docs/ai/`; do not add unused agent folders or describe a planned system as deployed.

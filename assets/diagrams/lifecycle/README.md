@@ -21,7 +21,7 @@ uv run content_lifecycle_graphviz.py
 
 ## How it is laid out
 
-It reuses the slide language of `../architecture/architecture_graphviz.py`:
+It reuses the slide language of `../architecture/architecture.py`:
 the same palette, the same icon cards (icon on top, bold title, muted
 subtitle), the same quiet rounded panels, and the same 16:9 canvas with the
 render fitted under the header band.

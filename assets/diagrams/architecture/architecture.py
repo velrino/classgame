@@ -11,7 +11,7 @@ exact 16:9 canvas. Nothing is stretched, so type stays readable.
 
 Run from any directory:
 
-    uv run architecture_graphviz.py
+    uv run architecture.py
 
 Outputs beside this file:
 
