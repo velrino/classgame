@@ -1,4 +1,4 @@
-import { ClassesPage } from "@/modules/dashboard/pages/classes-page";
+import { ClassesPage } from "@/modules/classrooms";
 
 export default function DashboardClassesRoute() {
   return <ClassesPage />;

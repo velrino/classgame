@@ -1,6 +1,6 @@
 import posthog, { type Properties } from "posthog-js";
 
-import { CLASSGAME_API_BASE_URL } from "@/backend/api/api.service";
+import { CLASSGAME_API_BASE_URL } from "@/shared/http/client";
 
 const POSTHOG_PROJECT_TOKEN =
   "phc_rSqPFFgY7jqf7XxP7QAXXUhZ76Wt9HtJGKZx4A2EXfz4";
