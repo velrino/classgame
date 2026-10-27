@@ -7,7 +7,7 @@ import (
 	"classgame-api/internal/modules/orchestrator"
 	teacherclass "classgame-api/internal/modules/teacher-class"
 	"classgame-api/internal/modules/users"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 const (
@@ -16,9 +16,9 @@ const (
 )
 
 type TeacherIdentity struct {
-	Provider       sharedfirebase.IdentityProvider
+	Provider       sharedauth.IdentityProvider
 	ProviderUserID string
-	AuthMethod     sharedfirebase.AuthMethod
+	AuthMethod     sharedauth.AuthMethod
 	Email          string
 	EmailVerified  bool
 	DisplayName    string

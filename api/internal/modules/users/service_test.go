@@ -7,7 +7,7 @@ import (
 
 	mission "classgame-api/internal/modules/mission"
 	teacherclass "classgame-api/internal/modules/teacher-class"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 	sharedratelimit "classgame-api/internal/shared/ratelimit"
 )
 
@@ -212,10 +212,10 @@ func activeFakeClassReader() *fakeClassReader {
 	}
 }
 
-func anonymousStudentIdentity() sharedfirebase.Identity {
-	return sharedfirebase.Identity{
-		Provider:       sharedfirebase.IdentityProviderFirebase,
+func anonymousStudentIdentity() sharedauth.Identity {
+	return sharedauth.Identity{
+		Provider:       sharedauth.IdentityProviderFirebase,
 		ProviderUserID: "student-1",
-		AuthMethod:     sharedfirebase.AuthMethodAnonymous,
+		AuthMethod:     sharedauth.AuthMethodAnonymous,
 	}
 }

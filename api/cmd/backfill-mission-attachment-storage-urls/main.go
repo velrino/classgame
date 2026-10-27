@@ -1,454 +1,128 @@
+// This legacy entrypoint is retained as a read-only audit. It never rewrites
+// attachment URLs or grants public storage access.
 package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
-	"mime"
-	"net/url"
 	"os"
-	"path"
-	"sort"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
-	gcs "cloud.google.com/go/storage"
+	"cloud.google.com/go/storage"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
-const (
-	missionsCollection          = "missions"
-	publishedRevisions          = "published_revisions"
-	teacherClassesCollection    = "teacher_classes"
-	storedStatus                = "stored"
-	uploadcareCDNHostSuffix     = ".ucarecd.net"
-	uploadcareOriginalURLField  = "uploadcare_cdn_url"
-	storagePublicURLDescription = "https://storage.googleapis.com/{bucket}/{object_path}"
-)
-
-type counters struct {
-	docsScanned        int
-	docsChanged        int
-	attachmentsChanged int
-}
-
-type storedObjectRef struct {
-	bucket     string
-	objectPath string
-	publicURL  string
-}
-
-type runState struct {
-	sampleLimit int
-	samples     []string
-	objects     map[string]storedObjectRef
-}
-
 func main() {
-	apply := flag.Bool("apply", false, "write updates to Firestore")
-	makePublic := flag.Bool("make-public", false, "grant allUsers read access and inline disposition to stored attachment objects")
-	sampleLimit := flag.Int("sample-limit", 5, "number of public storage URLs to print")
+	_ = godotenv.Load()
+	project := flag.String("project", os.Getenv("FIREBASE_PROJECT_ID"), "Firebase project to audit (read only)")
+	credentials := flag.String("credentials-file", os.Getenv("FIREBASE_CREDENTIALS_FILE"), "Local Google credentials file")
+	inspectACL := flag.Bool("inspect-acl", false, "Read object ACLs and bucket IAM policies; never modify them")
 	flag.Parse()
-
-	_ = godotenv.Load(".env")
-
-	projectID := strings.TrimSpace(os.Getenv("FIREBASE_PROJECT_ID"))
-	if projectID == "" {
-		log.Fatal("FIREBASE_PROJECT_ID is required")
+	if strings.TrimSpace(*project) == "" {
+		log.Fatal("project is required")
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-
 	options := []option.ClientOption{}
-	if credentialsFile := strings.TrimSpace(os.Getenv("FIREBASE_CREDENTIALS_FILE")); credentialsFile != "" {
-		options = append(options, option.WithCredentialsFile(credentialsFile))
+	if *credentials != "" {
+		options = append(options, option.WithCredentialsFile(*credentials))
 	}
-
-	client, err := firestore.NewClient(ctx, projectID, options...)
+	client, err := firestore.NewClient(ctx, *project, options...)
 	if err != nil {
-		log.Fatalf("connect firestore: %v", err)
+		log.Fatal(err)
 	}
 	defer client.Close()
-
-	var storageClient *gcs.Client
-	if *makePublic {
-		storageClient, err = gcs.NewClient(ctx, options...)
-		if err != nil {
-			log.Fatalf("connect cloud storage: %v", err)
-		}
-		defer storageClient.Close()
-	}
-
-	mode := "dry-run"
-	if *apply {
-		mode = "apply"
-	}
-	fmt.Printf("Backfilling mission attachment cdn_url values to %s in %s mode\n", storagePublicURLDescription, mode)
-
-	var total counters
-	state := runState{
-		sampleLimit: *sampleLimit,
-		objects:     make(map[string]storedObjectRef),
-	}
-	if err := scanMissionCollection(ctx, client.Collection(missionsCollection), *apply, &total, &state); err != nil {
-		log.Fatalf("scan top-level missions: %v", err)
-	}
-	if err := scanLegacyMissionCollections(ctx, client, *apply, &total, &state); err != nil {
-		log.Fatalf("scan legacy class missions: %v", err)
-	}
-
-	fmt.Printf("Scanned %d docs, changed %d docs, updated %d attachment URLs\n",
-		total.docsScanned,
-		total.docsChanged,
-		total.attachmentsChanged,
-	)
-	fmt.Printf("Found %d stored object(s)\n", len(state.objects))
-	for _, sample := range state.samples {
-		fmt.Printf("sample: %s\n", sample)
-	}
-
-	if *makePublic {
-		if !*apply {
-			fmt.Printf("Dry-run: would grant public read to %d stored object(s)\n", len(state.objects))
-			return
-		}
-		if err := makeStoredObjectsPublicAndInline(ctx, storageClient, state.objects); err != nil {
-			log.Fatalf("make stored objects public: %v", err)
-		}
-	}
-}
-
-func scanLegacyMissionCollections(
-	ctx context.Context,
-	client *firestore.Client,
-	apply bool,
-	total *counters,
-	state *runState,
-) error {
-	iter := client.Collection(teacherClassesCollection).Documents(ctx)
+	iter := client.CollectionGroup("missions").Documents(ctx)
 	defer iter.Stop()
-
+	objects := map[string]map[string]bool{}
+	legacyURLs, documents := 0, 0
 	for {
 		snapshot, err := iter.Next()
-		if errors.Is(err, iterator.Done) {
+		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("iterate teacher classes: %w", err)
+			log.Fatal(err)
 		}
-		if err := scanMissionCollection(ctx, snapshot.Ref.Collection(missionsCollection), apply, total, state); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func scanMissionCollection(
-	ctx context.Context,
-	collection *firestore.CollectionRef,
-	apply bool,
-	total *counters,
-	state *runState,
-) error {
-	iter := collection.Documents(ctx)
-	defer iter.Stop()
-
-	for {
-		snapshot, err := iter.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("iterate %s: %w", collection.Path, err)
-		}
-		if err := updateMissionDoc(ctx, snapshot, apply, total, state); err != nil {
-			return err
-		}
-		if err := scanPublishedRevisions(ctx, snapshot.Ref, apply, total, state); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func scanPublishedRevisions(
-	ctx context.Context,
-	missionRef *firestore.DocumentRef,
-	apply bool,
-	total *counters,
-	state *runState,
-) error {
-	iter := missionRef.Collection(publishedRevisions).Documents(ctx)
-	defer iter.Stop()
-
-	for {
-		snapshot, err := iter.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("iterate revisions for %s: %w", missionRef.Path, err)
-		}
-		if err := updateRevisionDoc(ctx, snapshot, apply, total, state); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func updateMissionDoc(
-	ctx context.Context,
-	snapshot *firestore.DocumentSnapshot,
-	apply bool,
-	total *counters,
-	state *runState,
-) error {
-	total.docsScanned++
-	data := snapshot.Data()
-
-	updates := make([]firestore.Update, 0, 3)
-	changed := 0
-	if rewritten, count, ok := rewriteAttachments(data["attachments"], state); ok && count > 0 {
-		updates = append(updates, firestore.Update{Path: "attachments", Value: rewritten})
-		changed += count
-	}
-	if draft, ok := data["draft"].(map[string]any); ok {
-		if rewritten, count, ok := rewriteAttachments(draft["attachments"], state); ok && count > 0 {
-			updates = append(updates, firestore.Update{Path: "draft.attachments", Value: rewritten})
-			changed += count
-		}
-	}
-	if published, ok := data["published"].(map[string]any); ok {
-		if rewritten, count, ok := rewriteAttachments(published["attachments"], state); ok && count > 0 {
-			updates = append(updates, firestore.Update{Path: "published.attachments", Value: rewritten})
-			changed += count
-		}
-	}
-
-	return writeUpdates(ctx, snapshot.Ref, updates, changed, apply, total)
-}
-
-func updateRevisionDoc(
-	ctx context.Context,
-	snapshot *firestore.DocumentSnapshot,
-	apply bool,
-	total *counters,
-	state *runState,
-) error {
-	total.docsScanned++
-	data := snapshot.Data()
-
-	updates := make([]firestore.Update, 0, 1)
-	changed := 0
-	if revisionSnapshot, ok := data["snapshot"].(map[string]any); ok {
-		if rewritten, count, ok := rewriteAttachments(revisionSnapshot["attachments"], state); ok && count > 0 {
-			updates = append(updates, firestore.Update{Path: "snapshot.attachments", Value: rewritten})
-			changed += count
-		}
-	}
-
-	return writeUpdates(ctx, snapshot.Ref, updates, changed, apply, total)
-}
-
-func writeUpdates(
-	ctx context.Context,
-	ref *firestore.DocumentRef,
-	updates []firestore.Update,
-	changed int,
-	apply bool,
-	total *counters,
-) error {
-	if changed == 0 {
-		return nil
-	}
-
-	total.docsChanged++
-	total.attachmentsChanged += changed
-	fmt.Printf("%s: %d attachment URL(s)\n", ref.Path, changed)
-	if !apply {
-		return nil
-	}
-
-	if _, err := ref.Update(ctx, updates); err != nil {
-		return fmt.Errorf("update %s: %w", ref.Path, err)
-	}
-
-	return nil
-}
-
-func rewriteAttachments(value any, state *runState) ([]any, int, bool) {
-	values, ok := value.([]any)
-	if !ok {
-		return nil, 0, false
-	}
-
-	rewritten := make([]any, len(values))
-	changed := 0
-	for index, value := range values {
-		attachment, ok := value.(map[string]any)
-		if !ok {
-			rewritten[index] = value
-			continue
-		}
-
-		copy := cloneMap(attachment)
-		storage, _ := copy["storage"].(map[string]any)
-		object := storageObject(storage)
-		publicURL := object.publicURL
-		if publicURL != "" {
-			state.recordStoredObject(object)
-		}
-		if publicURL != "" && asString(copy["cdn_url"]) != publicURL {
-			if originalURL := asString(copy["cdn_url"]); isUploadcareURL(originalURL) && asString(copy[uploadcareOriginalURLField]) == "" {
-				copy[uploadcareOriginalURLField] = originalURL
+		documents++
+		data := snapshot.Data()
+		for _, view := range []map[string]any{data, object(data["draft"]), object(data["published"]), object(data["snapshot"])} {
+			attachments, _ := view["attachments"].([]any)
+			for _, value := range attachments {
+				attachment := object(value)
+				if strings.HasPrefix(text(attachment["cdn_url"]), "https://storage.googleapis.com/") {
+					legacyURLs++
+				}
+				stored := object(attachment["storage"])
+				bucket, path := text(stored["bucket"]), text(stored["object_path"])
+				if gs := text(stored["gs_uri"]); (bucket == "" || path == "") && strings.HasPrefix(gs, "gs://") {
+					bucket, path, _ = strings.Cut(strings.TrimPrefix(gs, "gs://"), "/")
+				}
+				if bucket == "" || !strings.HasPrefix(path, "classes/") {
+					continue
+				}
+				if objects[bucket] == nil {
+					objects[bucket] = map[string]bool{}
+				}
+				objects[bucket][path] = true
 			}
-			copy["cdn_url"] = publicURL
-			changed++
 		}
-
-		rewritten[index] = copy
 	}
-
-	return rewritten, changed, true
-}
-
-func storageObject(storage map[string]any) storedObjectRef {
-	if asString(storage["status"]) != storedStatus {
-		return storedObjectRef{}
+	count := 0
+	for _, paths := range objects {
+		count += len(paths)
 	}
-
-	bucket := strings.TrimSpace(asString(storage["bucket"]))
-	objectPath := strings.Trim(strings.TrimSpace(asString(storage["object_path"])), "/")
-	if (bucket == "" || objectPath == "") && strings.HasPrefix(strings.TrimSpace(asString(storage["gs_uri"])), "gs://") {
-		bucket, objectPath = parseGSURI(asString(storage["gs_uri"]))
-	}
-	if bucket == "" || objectPath == "" {
-		return storedObjectRef{}
-	}
-
-	publicURL := "https://storage.googleapis.com/" + url.PathEscape(bucket) + "/" + escapeObjectPath(objectPath)
-	if version := storageVersion(storage); version != "" {
-		publicURL += "?v=" + url.QueryEscape(version)
-	}
-
-	return storedObjectRef{
-		bucket:     bucket,
-		objectPath: objectPath,
-		publicURL:  publicURL,
-	}
-}
-
-func (state *runState) recordStoredObject(object storedObjectRef) {
-	if state == nil || object.bucket == "" || object.objectPath == "" || object.publicURL == "" {
+	fmt.Printf("Read-only audit: documents=%d stored_objects=%d legacy_public_url_references=%d\n", documents, count, legacyURLs)
+	if !*inspectACL {
+		fmt.Println("ACL/IAM was not inspected. Use --inspect-acl for a read-only access audit.")
 		return
 	}
-
-	key := object.bucket + "/" + object.objectPath
-	if _, exists := state.objects[key]; !exists {
-		state.objects[key] = object
-		if len(state.samples) < state.sampleLimit {
-			state.samples = append(state.samples, object.publicURL)
-		}
-	}
-}
-
-func makeStoredObjectsPublicAndInline(
-	ctx context.Context,
-	client *gcs.Client,
-	objects map[string]storedObjectRef,
-) error {
-	keys := make([]string, 0, len(objects))
-	for key := range objects {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	updated := 0
-	for _, key := range keys {
-		object := objects[key]
-		handle := client.Bucket(object.bucket).Object(object.objectPath)
-		if err := handle.ACL().Set(ctx, gcs.AllUsers, gcs.RoleReader); err != nil {
-			return fmt.Errorf("set public ACL for gs://%s/%s: %w", object.bucket, object.objectPath, err)
-		}
-		if _, err := handle.Update(ctx, gcs.ObjectAttrsToUpdate{
-			ContentDisposition: mime.FormatMediaType("inline", map[string]string{
-				"filename": path.Base(object.objectPath),
-			}),
-		}); err != nil {
-			return fmt.Errorf("set inline disposition for gs://%s/%s: %w", object.bucket, object.objectPath, err)
-		}
-		updated++
-	}
-
-	fmt.Printf("Granted public read and inline disposition to %d stored object(s)\n", updated)
-	return nil
-}
-
-func parseGSURI(value string) (string, string) {
-	path := strings.TrimPrefix(strings.TrimSpace(value), "gs://")
-	bucket, objectPath, _ := strings.Cut(path, "/")
-
-	return strings.TrimSpace(bucket), strings.Trim(strings.TrimSpace(objectPath), "/")
-}
-
-func escapeObjectPath(objectPath string) string {
-	segments := strings.Split(objectPath, "/")
-	for index, segment := range segments {
-		segments[index] = url.PathEscape(segment)
-	}
-
-	return strings.Join(segments, "/")
-}
-
-func cloneMap(input map[string]any) map[string]any {
-	output := make(map[string]any, len(input))
-	for key, value := range input {
-		output[key] = value
-	}
-
-	return output
-}
-
-func asString(value any) string {
-	text, _ := value.(string)
-
-	return strings.TrimSpace(text)
-}
-
-func storageVersion(storage map[string]any) string {
-	for _, key := range []string{"updated_at", "stored_at"} {
-		switch value := storage[key].(type) {
-		case time.Time:
-			if !value.IsZero() {
-				return fmt.Sprintf("%d", value.UTC().Truncate(time.Microsecond).UnixNano())
-			}
-		case string:
-			if parsed, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(value)); err == nil && !parsed.IsZero() {
-				return fmt.Sprintf("%d", parsed.UnixNano())
-			}
-			if trimmed := strings.TrimSpace(value); trimmed != "" {
-				return trimmed
-			}
-		}
-	}
-
-	return ""
-}
-
-func isUploadcareURL(value string) bool {
-	parsed, err := url.Parse(strings.TrimSpace(value))
+	storageClient, err := storage.NewClient(ctx, options...)
 	if err != nil {
-		return false
+		log.Fatal(err)
 	}
-
-	return parsed.Scheme == "https" && strings.HasSuffix(parsed.Hostname(), uploadcareCDNHostSuffix)
+	defer storageClient.Close()
+	publicObjects, publicBuckets, unverified := 0, 0, 0
+	for bucket, paths := range objects {
+		handle := storageClient.Bucket(bucket)
+		policy, err := handle.IAM().Policy(ctx)
+		if err != nil {
+			unverified++
+		} else {
+			public := false
+			for _, role := range policy.Roles() {
+				for _, member := range policy.Members(role) {
+					if member == "allUsers" || member == "allAuthenticatedUsers" {
+						public = true
+					}
+				}
+			}
+			if public {
+				publicBuckets++
+			}
+		}
+		for path := range paths {
+			rules, err := handle.Object(path).ACL().List(ctx)
+			if err != nil {
+				unverified++
+				continue
+			}
+			for _, rule := range rules {
+				if rule.Entity == storage.AllUsers || rule.Entity == storage.AllAuthenticatedUsers {
+					publicObjects++
+					break
+				}
+			}
+		}
+	}
+	fmt.Printf("Read-only access audit: public_object_acls=%d public_bucket_bindings=%d unverified_checks=%d\n", publicObjects, publicBuckets, unverified)
+	fmt.Println("Existing public ACLs and bucket IAM require a separately approved operational remediation. No writes were performed.")
 }
+func object(value any) map[string]any { result, _ := value.(map[string]any); return result }
+func text(value any) string           { result, _ := value.(string); return strings.TrimSpace(result) }

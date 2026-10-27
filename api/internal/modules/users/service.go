@@ -13,7 +13,7 @@ import (
 	"classgame-api/internal/modules/orchestrator"
 	teacherclass "classgame-api/internal/modules/teacher-class"
 	"classgame-api/internal/modules/tenant"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 	sharedratelimit "classgame-api/internal/shared/ratelimit"
 )
 
@@ -111,11 +111,11 @@ func (service *Service) ConfigureClassReader(reader ClassReader) {
 
 func (service *Service) UpsertStudent(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classCode string,
 	studentName string,
 ) (UserDocument, error) {
-	if identity.AuthMethod != sharedfirebase.AuthMethodAnonymous {
+	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return UserDocument{}, ErrStudentRequiresAnonymousAuth
 	}
 
@@ -155,12 +155,12 @@ func (service *Service) ValidateStudentClassCode(
 
 func (service *Service) StartStudentMission(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classCode string,
 	missionID string,
 	studentName string,
 ) (UserDocument, error) {
-	if identity.AuthMethod != sharedfirebase.AuthMethodAnonymous {
+	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return UserDocument{}, ErrStudentRequiresAnonymousAuth
 	}
 	teacherClass, err := service.classByCode(ctx, classCode)
@@ -311,7 +311,7 @@ func (service *Service) missionAtPublishedRevision(
 
 func (service *Service) UpdateStudentPresence(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	missionID string,
 	classCode string,
 	subject string,
@@ -319,7 +319,7 @@ func (service *Service) UpdateStudentPresence(
 	stageName string,
 	status string,
 ) (UserDocument, error) {
-	if identity.AuthMethod != sharedfirebase.AuthMethodAnonymous {
+	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return UserDocument{}, ErrStudentRequiresAnonymousAuth
 	}
 	teacherClass, err := service.classByCode(ctx, classCode)
@@ -344,18 +344,29 @@ func (service *Service) UpdateStudentPresence(
 
 func (service *Service) SaveStudentLearningSnapshot(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	missionID string,
 	status string,
 	snapshot StudentLearningSnapshot,
 ) (StudentMissionAttemptDocument, error) {
-	if identity.AuthMethod != sharedfirebase.AuthMethodAnonymous {
+	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return StudentMissionAttemptDocument{}, ErrStudentRequiresAnonymousAuth
 	}
 	if service.repository == nil {
 		return StudentMissionAttemptDocument{}, errors.New("student learning repository is not configured")
 	}
 
+	current, user, exists, err := service.repository.GetCurrentStudentLearningAttempt(ctx, identity.ProviderUserID, normalizeText(missionID))
+	if err != nil {
+		return StudentMissionAttemptDocument{}, err
+	}
+	if !exists {
+		current = StudentMissionAttemptDocument{StudentID: user.ID, ClassID: user.Student.ClassID, MissionID: normalizeText(missionID), PublishedRevision: user.Activity.CurrentGame.PublishedRevision}
+	}
+	document, err := service.missionForAttempt(ctx, current)
+	if err != nil {
+		return StudentMissionAttemptDocument{}, err
+	}
 	normalizedStatus := strings.ToLower(normalizeText(status))
 	normalizedSnapshot := normalizeLearningSnapshot(snapshot)
 	liveInput := toLearningTraceInput(mission.MissionDocument{
@@ -367,12 +378,14 @@ func (service *Service) SaveStudentLearningSnapshot(
 	liveTrace.Finalized = false
 
 	attempt, _, completionStarted, err := service.repository.SaveStudentLearningSnapshot(ctx, SaveStudentLearningSnapshotInput{
-		Identity:  identity,
-		MissionID: normalizeText(missionID),
-		Status:    normalizedStatus,
-		Snapshot:  normalizedSnapshot,
-		Trace:     liveTrace,
-		Timestamp: time.Now(),
+		Identity:          identity,
+		Mission:           document,
+		PublishedRevision: current.PublishedRevision,
+		MissionID:         normalizeText(missionID),
+		Status:            normalizedStatus,
+		Snapshot:          normalizedSnapshot,
+		Trace:             liveTrace,
+		Timestamp:         time.Now(),
 	})
 	if err != nil {
 		return StudentMissionAttemptDocument{}, err
@@ -381,7 +394,7 @@ func (service *Service) SaveStudentLearningSnapshot(
 		return attempt, nil
 	}
 
-	if normalizedStatus == "completed" {
+	if attempt.Status == "completed" {
 		shouldFinalize := completionStarted || attempt.TraceState == "failed"
 		if !shouldFinalize {
 			return attempt, nil
@@ -397,7 +410,7 @@ func (service *Service) SaveStudentLearningSnapshot(
 		return service.finalizeStudentAttempt(ctx, attempt.StudentID, attempt.ID)
 	}
 
-	if normalizedStatus == "paused" && service.learningTaskEnqueuer != nil {
+	if attempt.Status == "paused" && service.learningTaskEnqueuer != nil {
 		if err := service.learningTaskEnqueuer.EnqueueWatchdog(ctx, attempt); err != nil {
 			slog.Warn("student abandonment watchdog enqueue failed", "error", err, "attempt_id", attempt.ID)
 		}
@@ -408,10 +421,10 @@ func (service *Service) SaveStudentLearningSnapshot(
 
 func (service *Service) GetCurrentStudentLearningAttempt(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	missionID string,
 ) (StudentMissionAttemptDocument, bool, error) {
-	if identity.AuthMethod != sharedfirebase.AuthMethodAnonymous {
+	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return StudentMissionAttemptDocument{}, false, ErrStudentRequiresAnonymousAuth
 	}
 	if service.repository == nil {
@@ -428,10 +441,10 @@ func (service *Service) GetCurrentStudentLearningAttempt(
 
 func (service *Service) SaveStudentTutorTurn(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	input SaveStudentTutorTurnInput,
 ) (StudentTutorTurn, error) {
-	if identity.AuthMethod != sharedfirebase.AuthMethodAnonymous {
+	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return StudentTutorTurn{}, ErrStudentRequiresAnonymousAuth
 	}
 	if service.repository == nil || service.tutorTurnGenerator == nil {

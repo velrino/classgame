@@ -11,6 +11,7 @@ import (
 
 func (config Config) Validate() error {
 	return validation.Errors{
+		"CORS_ALLOWED_ORIGINS": validation.Validate(config.CORSAllowedOrigins, validation.Required, validation.By(validateCORSOrigins(config.AppEnv))),
 		"HOST": validation.Validate(config.Host,
 			validation.Required,
 		),
@@ -71,9 +72,11 @@ func (config Config) Validate() error {
 			validation.Required,
 		),
 		"AUTH_TEACHER_PROVIDERS": validation.Validate(config.AuthTeacherProviders,
+			validation.By(validateAuthProviders("google", "password")),
 			validation.Required,
 		),
 		"AUTH_STUDENT_PROVIDERS": validation.Validate(config.AuthStudentProviders,
+			validation.By(validateAuthProviders("anonymous")),
 			validation.Required,
 		),
 		"DEMO_TEACHER_EMAIL": validation.Validate(config.DemoTeacherEmail,
@@ -338,4 +341,37 @@ func validateRedisCACert(otherValue string) validation.RuleFunc {
 
 func hasPlaceholder(value string) bool {
 	return strings.Contains(value, "<") || strings.Contains(value, ">")
+}
+
+func validateAuthProviders(allowed ...string) validation.RuleFunc {
+	return func(value any) error {
+		configured, _ := value.(string)
+		for _, provider := range strings.Split(configured, ",") {
+			supported := false
+			for _, candidate := range allowed {
+				if strings.TrimSpace(provider) == candidate {
+					supported = true
+				}
+			}
+			if !supported {
+				return fmt.Errorf("unsupported authentication provider %q", strings.TrimSpace(provider))
+			}
+		}
+		return nil
+	}
+}
+func validateCORSOrigins(environment string) validation.RuleFunc {
+	return func(value any) error {
+		origins, _ := value.(string)
+		for _, origin := range strings.Split(origins, ",") {
+			parsed, err := url.Parse(strings.TrimSpace(origin))
+			if err != nil || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Path != "" || strings.Contains(origin, "*") {
+				return fmt.Errorf("CORS origins must be exact HTTP(S) origins")
+			}
+			if parsed.Scheme != "https" && (environment == "production" || parsed.Scheme != "http") {
+				return fmt.Errorf("production CORS origins must use HTTPS")
+			}
+		}
+		return nil
+	}
 }

@@ -145,7 +145,9 @@ func (repository *Repository) UpdateStudentPresence(
 	ref := repository.client.Collection(usersCollectionName).Doc(input.Identity.ProviderUserID)
 	var user UserDocument
 
+	requestedStatus := input.Status
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		input.Status = requestedStatus
 		snapshot, err := tx.Get(ref)
 		if status.Code(err) == codes.NotFound {
 			return ErrStudentNotFound
@@ -172,6 +174,25 @@ func (repository *Repository) UpdateStudentPresence(
 		}
 		if !user.Activity.CurrentGame.StartedAt.IsZero() {
 			startedAt = user.Activity.CurrentGame.StartedAt
+		}
+
+		// Presence cannot award mission completion independently of verified learning.
+		if input.Status == "completed" {
+			recorded, readErr := tx.Get(repository.client.Collection(studentAttemptsCollectionName).Doc(attemptID))
+			verified := false
+			if readErr == nil {
+				var attempt StudentMissionAttemptDocument
+				if err := recorded.DataTo(&attempt); err != nil {
+					return err
+				}
+				verified = attempt.StudentID == user.ID && attempt.Status == "completed"
+			}
+			if readErr != nil && status.Code(readErr) != codes.NotFound {
+				return fmt.Errorf("read presence completion: %w", readErr)
+			}
+			if !verified {
+				input.Status = "learning"
+			}
 		}
 
 		user.Activity.LastSeenAt = input.Timestamp
@@ -212,7 +233,9 @@ func (repository *Repository) SaveStudentLearningSnapshot(
 	var user UserDocument
 	completionStarted := false
 
+	requestedStatus, submittedSnapshot := input.Status, input.Snapshot
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		input.Status, input.Snapshot = requestedStatus, submittedSnapshot
 		completionStarted = false
 		userSnapshot, err := tx.Get(userRef)
 		if status.Code(err) == codes.NotFound {
@@ -228,6 +251,9 @@ func (repository *Repository) SaveStudentLearningSnapshot(
 			user.ID = userRef.ID
 		}
 		if user.Activity.CurrentGame.MissionID != input.MissionID || user.Student.MissionID != input.MissionID {
+			return ErrStudentMissionMismatch
+		}
+		if user.Activity.CurrentGame.PublishedRevision != input.PublishedRevision {
 			return ErrStudentMissionMismatch
 		}
 
@@ -278,8 +304,13 @@ func (repository *Repository) SaveStudentLearningSnapshot(
 				)
 			}
 			if existing.Snapshot.Revision >= input.Snapshot.Revision {
-				attempt = existing
-				return nil
+				if input.Status != "completed" {
+					attempt = existing
+					return nil
+				}
+				// A retried final checkpoint may follow a newly persisted answer turn.
+				// Re-evaluate assessment without replacing a newer UI checkpoint.
+				input.Snapshot = existing.Snapshot
 			}
 			input.Snapshot = mergeLearningSnapshots(existing.Snapshot, input.Snapshot)
 			resumingAbandonedAttempt := existing.Status == "abandoned" && input.Status != "completed"
@@ -293,6 +324,10 @@ func (repository *Repository) SaveStudentLearningSnapshot(
 			return fmt.Errorf("read learning attempt: %w", err)
 		}
 
+		input.Snapshot, input.Status = authoritativeLearningSnapshot(input.Mission, input.Snapshot, tutorTurns, input.Status)
+		liveInput := toLearningTraceInput(input.Mission, input.Snapshot, "in_progress", StudentLearningMemory{})
+		trace = orchestrator.BuildObservedLearningTrace(liveInput, "")
+		trace.Finalized = false
 		if input.Status == "completed" && completedAt.IsZero() {
 			completedAt = input.Timestamp
 			completionStarted = true

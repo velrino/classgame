@@ -14,10 +14,11 @@ import (
 	"classgame-api/internal/modules/orchestrator"
 	teacherclass "classgame-api/internal/modules/teacher-class"
 	"classgame-api/internal/modules/tenant"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 var (
+	ErrInvalidMissionAttachment     = errors.New("mission attachment has no trusted source")
 	ErrMissionNotFound              = errors.New("teacher class mission not found")
 	ErrMissionCodeUnavailable       = errors.New("teacher class mission code is unavailable")
 	ErrMissionCodeGeneration        = errors.New("could not generate a unique mission code")
@@ -41,8 +42,8 @@ type Orchestrator interface {
 }
 
 type TeacherClassService interface {
-	Get(context.Context, sharedfirebase.Identity, string) (teacherclass.TeacherClassDocument, bool, error)
-	TeacherFromIdentity(sharedfirebase.Identity) (teacherclass.TeacherSummary, error)
+	Get(context.Context, sharedauth.Identity, string) (teacherclass.TeacherClassDocument, bool, error)
+	TeacherFromIdentity(sharedauth.Identity) (teacherclass.TeacherSummary, error)
 }
 
 type MissionRepository interface {
@@ -69,6 +70,7 @@ type MissionRepository interface {
 }
 
 type Service struct {
+	attachmentReader    AttachmentReader
 	attachmentEnqueuer  missionattachment.Enqueuer
 	orchestrator        Orchestrator
 	repository          MissionRepository
@@ -105,7 +107,7 @@ func WithAttachmentEnqueuer(enqueuer missionattachment.Enqueuer) ServiceOption {
 
 func (service *Service) Preview(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	input CreateMissionInput,
 ) (MissionDocument, error) {
 	return service.createDraft(ctx, identity, input)
@@ -113,7 +115,7 @@ func (service *Service) Preview(
 
 func (service *Service) Approve(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classID string,
 	missionID string,
 	input ApproveMissionInput,
@@ -206,7 +208,7 @@ func missionGuardrailBlocked(guardrail orchestrator.EducationGuardrail) bool {
 
 func (service *Service) Delete(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classID string,
 	missionID string,
 ) error {
@@ -239,7 +241,7 @@ func (service *Service) Delete(
 
 func (service *Service) GetActive(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classID string,
 ) (MissionDocument, bool, error) {
 	teacherClass, exists, err := service.teacherClassService.Get(ctx, identity, classID)
@@ -258,7 +260,7 @@ func (service *Service) GetActive(
 
 func (service *Service) List(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classID string,
 ) ([]MissionDocument, error) {
 	teacherClass, exists, err := service.teacherClassService.Get(ctx, identity, classID)
@@ -274,7 +276,7 @@ func (service *Service) List(
 
 func (service *Service) createDraft(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	input CreateMissionInput,
 ) (MissionDocument, error) {
 	if service.orchestrator == nil || service.repository == nil || service.teacherClassService == nil {
@@ -338,6 +340,12 @@ func (service *Service) createDraft(
 			return MissionDocument{}, ErrMissionDraftConflict
 		}
 		input.Attachments = inheritStoredAttachments(input.Attachments, existing)
+	}
+
+	for _, attachment := range input.Attachments {
+		if strings.TrimSpace(attachment.CDNURL) == "" && AttachmentStorageURI(attachment.Storage) == "" {
+			return MissionDocument{}, ErrInvalidMissionAttachment
+		}
 	}
 
 	blueprint, err := service.orchestrator.BuildMission(ctx, orchestrator.BuildMissionInput{
@@ -613,7 +621,7 @@ func toOrchestratorAttachments(attachments []MissionAttachment) []orchestrator.A
 			FileName:   attachment.FileName,
 			MimeType:   attachment.MimeType,
 			CDNURL:     attachment.CDNURL,
-			StorageURL: AttachmentStoragePublicURL(attachment.Storage),
+			StorageURL: AttachmentStorageURI(attachment.Storage),
 		})
 	}
 

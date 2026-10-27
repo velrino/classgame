@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 
 	sharedanalytics "classgame-api/internal/shared/analytics"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 const (
@@ -27,13 +27,13 @@ const (
 var classIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{1,39}$`)
 
 type Authenticator interface {
-	AuthenticateBearerToken(context.Context, string) (sharedfirebase.Identity, error)
+	AuthenticateBearerToken(context.Context, string) (sharedauth.Identity, error)
 }
 
 type TeacherClassService interface {
-	Get(context.Context, sharedfirebase.Identity, string) (TeacherClassDocument, bool, error)
-	List(context.Context, sharedfirebase.Identity) ([]TeacherClassDocument, error)
-	Upsert(context.Context, sharedfirebase.Identity, UpsertTeacherClassInput) (TeacherClassDocument, error)
+	Get(context.Context, sharedauth.Identity, string) (TeacherClassDocument, bool, error)
+	List(context.Context, sharedauth.Identity) ([]TeacherClassDocument, error)
+	Upsert(context.Context, sharedauth.Identity, UpsertTeacherClassInput) (TeacherClassDocument, error)
 }
 
 type HandlerOptions struct {
@@ -187,7 +187,7 @@ func (handler *Handler) GetTeacherClass(ctx *echo.Context) error {
 func (handler *Handler) authenticate(
 	ctx context.Context,
 	echoCtx *echo.Context,
-) (sharedfirebase.Identity, bool, error) {
+) (sharedauth.Identity, bool, error) {
 	identity, err := handler.authenticator.AuthenticateBearerToken(
 		ctx,
 		echoCtx.Request().Header.Get(echo.HeaderAuthorization),
@@ -196,13 +196,13 @@ func (handler *Handler) authenticate(
 		return identity, true, nil
 	}
 
-	if errors.Is(err, sharedfirebase.ErrMissingBearerToken) ||
-		errors.Is(err, sharedfirebase.ErrInvalidBearerToken) {
-		return sharedfirebase.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
+	if errors.Is(err, sharedauth.ErrMissingBearerToken) ||
+		errors.Is(err, sharedauth.ErrInvalidBearerToken) {
+		return sharedauth.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
 	}
 
 	slog.Warn("teacher class auth failed", "error", err)
-	return sharedfirebase.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
+	return sharedauth.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
 }
 
 func (handler *Handler) serviceError(ctx *echo.Context, err error) error {

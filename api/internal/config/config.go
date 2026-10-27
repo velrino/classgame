@@ -12,6 +12,7 @@ import (
 )
 
 type Config struct {
+	CORSAllowedOrigins              string
 	Host                            string
 	Port                            string
 	AppEnv                          string
@@ -71,7 +72,12 @@ func Load() (Config, error) {
 	if strings.TrimSpace(cloudTasksAudience) != "" {
 		learningTasksDefaultURL = strings.TrimRight(cloudTasksAudience, "/") + "/internal/tasks/student-learning"
 	}
+	corsDefault := "http://localhost:3000,http://127.0.0.1:3000"
+	if reader.getString("APP_ENV", "development") == "production" {
+		corsDefault = ""
+	}
 	config := Config{
+		CORSAllowedOrigins:              reader.getString("CORS_ALLOWED_ORIGINS", corsDefault),
 		Host:                            reader.getString("HOST", "0.0.0.0"),
 		Port:                            reader.getString("PORT", "4004"),
 		AppEnv:                          reader.getString("APP_ENV", "development"),

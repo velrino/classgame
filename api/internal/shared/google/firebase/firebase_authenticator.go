@@ -1,58 +1,31 @@
 package firebase
 
 import (
+	sharedauth "classgame-api/internal/shared/auth"
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	firebaseauth "firebase.google.com/go/v4/auth"
 )
 
-var (
-	ErrMissingBearerToken = errors.New("missing bearer token")
-	ErrInvalidBearerToken = errors.New("invalid bearer token")
-)
-
-type IdentityProvider string
+// Compatibility aliases keep existing adapters and callers source compatible.
+type Identity = sharedauth.Identity
+type IdentityProvider = sharedauth.IdentityProvider
+type AuthMethod = sharedauth.AuthMethod
 
 const (
-	IdentityProviderFirebase IdentityProvider = "firebase"
+	IdentityProviderFirebase = sharedauth.IdentityProviderFirebase
+	AuthMethodAnonymous      = sharedauth.AuthMethodAnonymous
+	AuthMethodEmail          = sharedauth.AuthMethodEmail
+	AuthMethodGoogle         = sharedauth.AuthMethodGoogle
+	AuthMethodUnknown        = sharedauth.AuthMethodUnknown
 )
 
-type AuthMethod string
+var ErrMissingBearerToken = sharedauth.ErrMissingBearerToken
+var ErrInvalidBearerToken = sharedauth.ErrInvalidBearerToken
 
-const (
-	AuthMethodAnonymous AuthMethod = "anonymous"
-	AuthMethodEmail     AuthMethod = "email"
-	AuthMethodGoogle    AuthMethod = "google"
-	AuthMethodUnknown   AuthMethod = "unknown"
-)
-
-// IsTeacherAuthMethod reports whether a sign-in method is accepted for teachers:
-// Google, or email + password (the shared teacher account). Students are anonymous.
-func IsTeacherAuthMethod(method AuthMethod) bool {
-	return method == AuthMethodGoogle || method == AuthMethodEmail
-}
-
-type Identity struct {
-	Provider       IdentityProvider
-	ProviderUserID string
-	AuthMethod     AuthMethod
-	Email          string
-	EmailVerified  bool
-	DisplayName    string
-	PhotoURL       string
-	Disabled       bool
-	ProviderIDs    []string
-	SignInProvider string
-	CustomClaims   map[string]interface{}
-	TokenAuthTime  int64
-	TokenExpiresAt int64
-	TokenIssuedAt  int64
-	TokenIssuer    string
-	TokenAudience  string
-}
+func IsTeacherAuthMethod(method AuthMethod) bool { return sharedauth.IsTeacherAuthMethod(method) }
 
 type FirebaseAuthenticator struct {
 	client *firebaseauth.Client
@@ -71,6 +44,10 @@ func (authenticator *FirebaseAuthenticator) AuthenticateBearerToken(
 	idToken, err := extractBearerToken(authorizationHeader)
 	if err != nil {
 		return Identity{}, err
+	}
+
+	if authenticator == nil || authenticator.client == nil {
+		return Identity{}, ErrInvalidBearerToken
 	}
 
 	token, err := authenticator.client.VerifyIDTokenAndCheckRevoked(ctx, idToken)
@@ -151,6 +128,11 @@ func resolveFirebaseAuthMethod(input resolveFirebaseAuthMethodInput) AuthMethod 
 		return AuthMethodGoogle
 	case "password":
 		return AuthMethodEmail
+	}
+
+	// Unknown token providers must never inherit linked-account privileges.
+	if strings.TrimSpace(input.SignInProvider) != "" {
+		return AuthMethodUnknown
 	}
 
 	if hasProviderID(input.ProviderIDs, "google.com") {

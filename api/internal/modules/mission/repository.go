@@ -900,7 +900,7 @@ func inheritStoredAttachments(
 	collectStored := func(values []MissionAttachment) {
 		for _, attachment := range values {
 			if attachment.UploadcareUUID == "" || attachment.Storage == nil ||
-				attachment.Storage.Status != AttachmentStorageStored || attachment.Storage.GSURI == "" {
+				attachment.Storage.Status != AttachmentStorageStored || AttachmentStorageURI(attachment.Storage) == "" {
 				continue
 			}
 
@@ -944,7 +944,7 @@ func prepareAttachmentsForPublish(attachments []MissionAttachment, timestamp tim
 
 func attachmentsNeedTransfer(attachments []MissionAttachment) bool {
 	for _, attachment := range attachments {
-		if attachment.Storage == nil || attachment.Storage.Status != AttachmentStorageStored || attachment.Storage.GSURI == "" {
+		if attachment.Storage == nil || attachment.Storage.Status != AttachmentStorageStored || AttachmentStorageURI(attachment.Storage) == "" {
 			return true
 		}
 	}

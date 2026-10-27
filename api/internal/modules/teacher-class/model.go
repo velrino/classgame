@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"classgame-api/internal/modules/tenant"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 const CollectionName = "teacher_classes"
@@ -46,9 +46,9 @@ type UpsertTeacherClassInput struct {
 }
 
 type TeacherIdentity struct {
-	Provider       sharedfirebase.IdentityProvider
+	Provider       sharedauth.IdentityProvider
 	ProviderUserID string
-	AuthMethod     sharedfirebase.AuthMethod
+	AuthMethod     sharedauth.AuthMethod
 	Email          string
 	EmailVerified  bool
 	DisplayName    string
