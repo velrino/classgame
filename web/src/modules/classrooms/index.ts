@@ -28,3 +28,5 @@ export {
 export { ClassesPage } from "./ui/pages/classes-page";
 export { TeacherClassesPage } from "./ui/pages/teacher-classes-page";
 export { StudentSessionGate } from "./ui/student-session-gate";
+
+export { readStudentClassSession } from "./adapters/session-storage";

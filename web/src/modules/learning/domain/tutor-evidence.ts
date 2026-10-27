@@ -13,5 +13,8 @@ export function expectedAnswer(question: Question) {
 }
 
 export function learningEventID(now: number, sequence: number) {
-  return `event-${now}-${sequence}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `event-${now}-${sequence}-${Math.random().toString(36).slice(2)}`
+  );
 }

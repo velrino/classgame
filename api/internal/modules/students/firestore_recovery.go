@@ -50,6 +50,7 @@ func (repository *FirestoreRepository) PrepareFinalizationRedrive(ctx context.Co
 	ref := repository.client.Collection(studentAttemptsCollectionName).Doc(expected.AttemptID)
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		changed = false
+		attempt = StudentMissionAttemptDocument{}
 		snapshot, err := tx.Get(ref)
 		if status.Code(err) == codes.NotFound {
 			return nil

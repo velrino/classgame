@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"classgame-api/internal/auth"
 	"classgame-api/internal/modules/generation"
@@ -27,15 +28,18 @@ type batch struct {
 }
 
 type evalCase struct {
-	ID         string           `json:"id"`
-	Kind       string           `json:"kind"`
-	Tutor      *tutorInput      `json:"tutor,omitempty"`
-	Auth       *authInput       `json:"auth,omitempty"`
-	Projection *projectionInput `json:"projection,omitempty"`
-	Learning   *learningInput   `json:"learning,omitempty"`
-	Scope      *scopeInput      `json:"scope,omitempty"`
-	Memory     *memoryInput     `json:"memory,omitempty"`
-	ObjectPath *objectPathInput `json:"object_path,omitempty"`
+	ID           string             `json:"id"`
+	Kind         string             `json:"kind"`
+	Tutor        *tutorInput        `json:"tutor,omitempty"`
+	Auth         *authInput         `json:"auth,omitempty"`
+	Projection   *projectionInput   `json:"projection,omitempty"`
+	Learning     *learningInput     `json:"learning,omitempty"`
+	Scope        *scopeInput        `json:"scope,omitempty"`
+	Memory       *memoryInput       `json:"memory,omitempty"`
+	ObjectPath   *objectPathInput   `json:"object_path,omitempty"`
+	Evidence     *evidenceInput     `json:"evidence,omitempty"`
+	TutorEvent   *tutorEventInput   `json:"tutor_event,omitempty"`
+	Finalization *finalizationInput `json:"finalization,omitempty"`
 }
 
 type tutorInput struct {
@@ -58,6 +62,66 @@ type learningInput struct {
 	Snapshot        students.StudentLearningSnapshot `json:"snapshot"`
 	Turns           []students.StudentTutorTurn      `json:"turns"`
 	RequestedStatus string                           `json:"requested_status"`
+	AcceptedAnswers []students.AcceptedAnswerFact    `json:"accepted_answers,omitempty"`
+}
+
+// These fixtures map private server state into production types. They do not
+// reproduce the policies under evaluation or open a database connection.
+type evidenceInput struct {
+	Attempt             students.StudentMissionAttemptDocument `json:"attempt"`
+	SchemaVersion       int                                    `json:"schema_version"`
+	GeneratedCount      int64                                  `json:"generated_count"`
+	LegacyIncomplete    bool                                   `json:"legacy_incomplete"`
+	RecentFeedbackCount int                                    `json:"recent_feedback_count"`
+}
+type eventRequest struct {
+	StudentID         string `json:"student_id"`
+	AttemptID         string `json:"attempt_id"`
+	MissionID         string `json:"mission_id"`
+	EventID           string `json:"event_id"`
+	Type              string `json:"type"`
+	QuestionID        string `json:"question_id"`
+	StudentResponse   string `json:"student_response"`
+	ExplicitReasoning string `json:"explicit_reasoning"`
+	Feedback          string `json:"feedback"`
+	Revision          int64  `json:"revision"`
+}
+
+func (fixture eventRequest) input() students.SaveStudentTutorTurnInput {
+	return students.SaveStudentTutorTurnInput{Identity: auth.Identity{ProviderUserID: fixture.StudentID}, ExpectedAttemptID: fixture.AttemptID, ExpectedPublishedRevision: fixture.Revision, MissionID: fixture.MissionID, EventID: fixture.EventID, Type: fixture.Type, QuestionID: fixture.QuestionID, StudentResponse: fixture.StudentResponse, ExplicitReasoning: fixture.ExplicitReasoning, Feedback: fixture.Feedback}
+}
+
+type tutorEventInput struct {
+	Stored       eventRequest              `json:"stored"`
+	Request      *eventRequest             `json:"request,omitempty"`
+	State        string                    `json:"state"`
+	OwnerToken   string                    `json:"owner_token"`
+	RequestOwner string                    `json:"request_owner"`
+	LeaseUntil   time.Time                 `json:"lease_until"`
+	Now          time.Time                 `json:"now"`
+	Turn         students.StudentTutorTurn `json:"turn"`
+}
+type finalizationAttemptInput struct {
+	Attempt            students.StudentMissionAttemptDocument `json:"attempt"`
+	SchemaVersion      int                                    `json:"schema_version"`
+	EvidenceRevision   int64                                  `json:"evidence_revision"`
+	Token              string                                 `json:"token"`
+	LeaseUntil         time.Time                              `json:"lease_until"`
+	DispatchGeneration int64                                  `json:"dispatch_generation"`
+}
+
+func (fixture finalizationAttemptInput) document() students.StudentMissionAttemptDocument {
+	attempt := fixture.Attempt
+	attempt.EvidenceSchemaVersion, attempt.EvidenceRevision = fixture.SchemaVersion, fixture.EvidenceRevision
+	attempt.FinalizationToken, attempt.FinalizationLeaseUntil = fixture.Token, fixture.LeaseUntil
+	attempt.FinalizationDispatchGeneration = fixture.DispatchGeneration
+	return attempt
+}
+
+type finalizationInput struct {
+	Captured finalizationAttemptInput  `json:"captured"`
+	Current  *finalizationAttemptInput `json:"current,omitempty"`
+	Now      time.Time                 `json:"now"`
 }
 
 type scopeInput struct {
@@ -129,7 +193,7 @@ func validateBatch(input batch) error {
 		}
 		seen[candidate.ID] = true
 		count := 0
-		for _, present := range []bool{candidate.Tutor != nil, candidate.Auth != nil, candidate.Projection != nil, candidate.Learning != nil, candidate.Scope != nil, candidate.Memory != nil, candidate.ObjectPath != nil} {
+		for _, present := range []bool{candidate.Tutor != nil, candidate.Auth != nil, candidate.Projection != nil, candidate.Learning != nil, candidate.Scope != nil, candidate.Memory != nil, candidate.ObjectPath != nil, candidate.Evidence != nil, candidate.TutorEvent != nil, candidate.Finalization != nil} {
 			if present {
 				count++
 			}
@@ -165,6 +229,18 @@ func validateBatch(input batch) error {
 		case "object_path":
 			if candidate.ObjectPath == nil {
 				return fmt.Errorf("case %s requires an object path", candidate.ID)
+			}
+		case "evidence":
+			if candidate.Evidence == nil || candidate.Evidence.RecentFeedbackCount < 0 || candidate.Evidence.RecentFeedbackCount > 100 || candidate.Evidence.GeneratedCount < 0 {
+				return fmt.Errorf("case %s requires bounded evidence fixtures", candidate.ID)
+			}
+		case "tutor_event":
+			if candidate.TutorEvent == nil || candidate.TutorEvent.Now.IsZero() {
+				return fmt.Errorf("case %s requires a tutor event and fixed clock", candidate.ID)
+			}
+		case "finalization":
+			if candidate.Finalization == nil || candidate.Finalization.Now.IsZero() {
+				return fmt.Errorf("case %s requires finalization state and fixed clock", candidate.ID)
 			}
 		default:
 			return fmt.Errorf("unknown case kind %q", candidate.Kind)
@@ -227,7 +303,7 @@ func runCase(input batch, candidate evalCase) (map[string]any, error) {
 	case "projection":
 		observation["student_response"] = students.ToStudentTutorTurnResponse(candidate.Projection.Turn)
 	case "learning":
-		snapshot, status := students.AssessLearningSnapshot(input.Mission, candidate.Learning.Snapshot, candidate.Learning.Turns, candidate.Learning.RequestedStatus)
+		snapshot, status := students.AssessLearningSnapshotWithEvidence(input.Mission, candidate.Learning.Snapshot, candidate.Learning.Turns, candidate.Learning.AcceptedAnswers, candidate.Learning.RequestedStatus)
 		observation["learning_snapshot"] = snapshot
 		observation["learning_status"] = status
 	case "scope":
@@ -242,6 +318,39 @@ func runCase(input batch, candidate evalCase) (map[string]any, error) {
 		observation["memory_update_allowed"] = students.CanUpdateLearningMemory(spec.Profile, spec.Attempt, spec.Memory)
 	case "object_path":
 		observation["object_path_allowed"] = objectstorage.ValidateAttachmentObjectPath(candidate.ObjectPath.Path) == nil
+	case "evidence":
+		spec := candidate.Evidence
+		attempt := spec.Attempt
+		attempt.EvidenceSchemaVersion, attempt.GeneratedTurnCount, attempt.LegacyHistoryIncomplete = spec.SchemaVersion, spec.GeneratedCount, spec.LegacyIncomplete
+		for index := 0; index < spec.RecentFeedbackCount; index++ {
+			attempt.TutorTurns = append(attempt.TutorTurns, students.StudentTutorTurn{ID: fmt.Sprintf("synthetic-feedback-%d", index), Sequence: index + 1, Type: "feedback"})
+		}
+		effective := students.EffectiveTutorEvidence(attempt)
+		observation["generation_allowed"] = students.CanGenerateTutorTurn(effective)
+		observation["generated_count"] = effective.GeneratedTurnCount
+		observation["history_incomplete"] = effective.LegacyHistoryIncomplete
+	case "tutor_event":
+		spec := candidate.TutorEvent
+		stored, requested := spec.Stored.input(), spec.Stored.input()
+		if spec.Request != nil {
+			requested = spec.Request.input()
+		}
+		requested.ReservationOwner = spec.RequestOwner
+		record := students.TutorEventDocument{State: spec.State, StudentID: stored.Identity.ProviderUserID, EventID: stored.EventID, Fingerprint: students.TutorEventFingerprint(stored), OwnerToken: spec.OwnerToken, LeaseUntil: spec.LeaseUntil, Turn: spec.Turn}
+		turn, complete, err := students.TutorReplayDecision(record, requested, spec.Now)
+		observation["replay_complete"], observation["replay_turn_id"] = complete, turn.ID
+		observation["event_conflict"], observation["event_pending"] = errors.Is(err, students.ErrTutorEventConflict), errors.Is(err, students.ErrTutorEventPending)
+		observation["reservation_matches"] = students.MatchesTutorReservation(record, requested, spec.Now)
+	case "finalization":
+		spec := candidate.Finalization
+		captured, current := spec.Captured.document(), spec.Captured.document()
+		if spec.Current != nil {
+			current = spec.Current.document()
+		}
+		observation["fence_matches"] = students.MatchesFinalizationFence(current, students.CaptureFinalizationFence(captured))
+		observation["job_matches"] = students.FinalizationJobMatches(current, students.FinalizationJob(captured))
+		observation["eligible"] = students.FinalizationEligible(current)
+		observation["due"] = students.FinalizationDue(current, spec.Now)
 	}
 	return observation, nil
 }

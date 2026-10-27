@@ -20,6 +20,7 @@ func (repository *FirestoreRepository) ClaimStudentFinalization(ctx context.Cont
 	ref := repository.client.Collection(studentAttemptsCollectionName).Doc(job.AttemptID)
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		claimed = false
+		attempt, user = StudentMissionAttemptDocument{}, UserDocument{}
 		snapshot, err := tx.Get(ref)
 		if status.Code(err) == codes.NotFound {
 			return ErrStudentAttemptNotFound

@@ -34,11 +34,14 @@ import {
   toLearningSnapshot,
 } from "@/modules/learning/adapters/checkpoint-mapper";
 import {
-  acknowledgeTutorEvidence,
-  queueTutorEvidence,
+  migrateLegacyEvidence,
   readTutorOutbox,
+  type EvidenceScope,
+  type EvidenceRecord,
   type TutorEvidence,
-} from "@/modules/learning/adapters/tutor-outbox";
+} from "../tutor-outbox";
+import { currentEvidenceScope, useEvidenceSync } from "./use-evidence-sync";
+import type { StudentTutorTurnResponse } from "../types/contracts";
 import type { SessionAction } from "@/modules/learning/domain/session-reducer";
 import type { Dispatch } from "react";
 const snapshotDebounceMilliseconds = 450;
@@ -52,19 +55,22 @@ export function useLearningRecovery(
   const sessionRef = useRef(session);
   const revisionRef = useRef(0);
   const tokenRef = useRef("");
-  const attemptReadyRef = useRef(false);
+  const [evidenceScope, setEvidenceScope] = useState<EvidenceScope | null>(
+    null,
+  );
+  const [completionAcknowledged, setCompletionAcknowledged] = useState(false);
   const hydrationRef = useRef(0);
   const skipLocalSaveRef = useRef(false);
-  const tutorRequestRef = useRef(0);
+  const latestEvidenceRef = useRef<string | null>(null);
   const lastPauseAtRef = useRef(0);
-  const pendingTurnsRef = useRef(new Map<string, Promise<void>>());
-  const flushEvidenceRef = useRef<() => Promise<void>>(async () => undefined);
+
   const resetRecovery = useCallback(() => {
     hydrationRef.current += 1;
-    tutorRequestRef.current += 1;
+    latestEvidenceRef.current = null;
     revisionRef.current = 0;
     tokenRef.current = "";
-    attemptReadyRef.current = false;
+    setEvidenceScope(null);
+    setCompletionAcknowledged(false);
     skipLocalSaveRef.current = false;
     setLearningSyncReady(false);
     setRecoveryError(null);
@@ -78,6 +84,44 @@ export function useLearningRecovery(
       "This mission changed in another tab. Choose it again at the glowing desk to resume the correct version.",
     );
   }, [dispatch, resetRecovery]);
+
+  const onEvidenceTurn = useCallback(
+    (row: EvidenceRecord, response: StudentTutorTurnResponse) => {
+      if (
+        row.evidence.type === "feedback" ||
+        (latestEvidenceRef.current &&
+          latestEvidenceRef.current !== row.evidence.event_id)
+      )
+        return;
+      dispatch({
+        type: "apply-tutor-turn",
+        questionId: row.questionId,
+        message: response.turn.message,
+        whyPrompt: response.turn.why_prompt,
+        explanationSteps: response.turn.explanation_steps,
+        explanationStyle: response.turn.explanation_style,
+        difficultyBias: response.turn.difficulty_bias,
+      });
+    },
+    [dispatch],
+  );
+  const {
+    state: evidenceState,
+    record: recordEvidence,
+    flush: flushEvidence,
+    hasPending,
+    retry: retryStoredEvidence,
+    deletePending,
+  } = useEvidenceSync(evidenceScope, rejectChangedAttempt, onEvidenceTurn);
+  const requestTutorTurn = useCallback(
+    (questionId: string, evidence: TutorEvidence, commit: () => void) =>
+      recordEvidence(questionId, evidence, () => {
+        latestEvidenceRef.current = evidence.event_id;
+        setCompletionAcknowledged(false);
+        commit();
+      }),
+    [recordEvidence],
+  );
 
   useEffect(() => {
     sessionRef.current = session;
@@ -113,6 +157,8 @@ export function useLearningRecovery(
         now: Date.now(),
       });
       setLearningSyncReady(false);
+      setCompletionAcknowledged(false);
+      const candidateScope = currentEvidenceScope();
 
       const user = currentStudentIdentity();
       if (!user?.isAnonymous) {
@@ -143,7 +189,36 @@ export function useLearningRecovery(
           return;
         }
 
-        attemptReadyRef.current = response.attempt !== null;
+        if (!candidateScope) {
+          setRecoveryError(
+            "Open this mission again to save responses in this browser.",
+          );
+          return;
+        }
+        if (
+          !response.attempt &&
+          sessionStorage.getItem(
+            "classgame:tutor-outbox:" + candidateScope.attemptId,
+          )
+        )
+          throw new Error(
+            "Older work needs a confirmed attempt before it can be restored.",
+          );
+        await migrateLegacyEvidence(
+          candidateScope,
+          new Set(
+            missionSession.mission.preview_questions.map(
+              (question) => question.id,
+            ),
+          ),
+        );
+        if (cancelled || generation !== hydrationRef.current) return;
+        setEvidenceScope(candidateScope);
+        const unsent = await readTutorOutbox(candidateScope);
+        latestEvidenceRef.current = unsent.at(-1)?.evidence.event_id ?? null;
+        setCompletionAcknowledged(
+          response.attempt?.status === "completed" && unsent.length === 0,
+        );
         const latestLocal =
           loadStudentRecovery(mission, studentRecoveryID(missionSession)) ??
           local;
@@ -183,7 +258,26 @@ export function useLearningRecovery(
         ) {
           rejectChangedAttempt();
         }
-        // The local recovery remains playable during a network outage.
+        if (
+          !cancelled &&
+          generation === hydrationRef.current &&
+          candidateScope
+        ) {
+          let hasLegacy = true;
+          try {
+            hasLegacy = Boolean(
+              sessionStorage.getItem(
+                "classgame:tutor-outbox:" + candidateScope.attemptId,
+              ),
+            );
+          } catch {}
+          if (!hasLegacy) setEvidenceScope(candidateScope);
+          else
+            setRecoveryError(
+              "Older unsent work could not be restored. Keep this tab open. Allow site data, reconnect, and select Retry.",
+            );
+        }
+        // Offline responses may advance only after the durable queue accepted them.
       } finally {
         if (!cancelled && generation === hydrationRef.current) {
           setLearningSyncReady(true);
@@ -204,11 +298,7 @@ export function useLearningRecovery(
   }, [dispatch, rejectChangedAttempt]);
 
   const syncSnapshot = useCallback(
-    async (
-      statusOverride?: StudentLearningStatus,
-      keepalive = false,
-      flushEvidence = true,
-    ) => {
+    async (statusOverride?: StudentLearningStatus, keepalive = false) => {
       let activeSession = sessionRef.current;
       const missionSession = readStudentMissionSession();
       const user = currentStudentIdentity();
@@ -222,15 +312,17 @@ export function useLearningRecovery(
       }
 
       const generation = hydrationRef.current;
-      if (!keepalive && flushEvidence) {
-        await flushEvidenceRef.current();
-        await Promise.all([...pendingTurnsRef.current.values()]);
-        if (
-          generation !== hydrationRef.current ||
-          readStudentMissionSession()?.missionId !== missionSession.missionId
-        )
-          return false;
+      if (keepalive) {
+        if (await hasPending()) return false;
+      } else {
+        const result = await flushEvidence();
+        if (!result.complete) return false;
       }
+      if (
+        generation !== hydrationRef.current ||
+        readStudentMissionSession()?.missionId !== missionSession.missionId
+      )
+        return false;
 
       let idToken = tokenRef.current;
       if (!keepalive) {
@@ -254,6 +346,7 @@ export function useLearningRecovery(
         generation !== hydrationRef.current
       )
         return false;
+      if (await hasPending()) return false;
       const revision = nextRevision(revisionRef);
       const checkpoint = checkpointFromSession(activeSession);
       saveMemory(
@@ -280,7 +373,14 @@ export function useLearningRecovery(
           },
           { keepalive },
         );
-        attemptReadyRef.current = response.attempt !== null;
+        if (
+          generation !== hydrationRef.current ||
+          readStudentMissionSession()?.missionId !== missionSession.missionId
+        )
+          return false;
+        setCompletionAcknowledged(
+          response.attempt?.status === "completed" && !(await hasPending()),
+        );
         revisionRef.current = Math.max(
           revisionRef.current,
           response.attempt?.snapshot.revision ?? 0,
@@ -296,7 +396,7 @@ export function useLearningRecovery(
         return false;
       }
     },
-    [rejectChangedAttempt],
+    [rejectChangedAttempt, flushEvidence, hasPending],
   );
 
   // Save the exact board phase synchronously on every reducer commit. Notes,
@@ -335,7 +435,7 @@ export function useLearningRecovery(
       snapshotDebounceMilliseconds,
     );
     return () => window.clearTimeout(timer);
-  }, [learningSyncReady, session, syncSnapshot]);
+  }, [learningSyncReady, session, syncSnapshot, evidenceState.pending]);
 
   useEffect(() => {
     if (!learningSyncReady) {
@@ -378,75 +478,6 @@ export function useLearningRecovery(
     };
   }, [syncSnapshot]);
 
-  const requestTutorTurn = useCallback(
-    (renderedQuestionID: string, evidence: TutorEvidence): Promise<void> => {
-      const missionSession = readStudentMissionSession();
-      const user = currentStudentIdentity();
-      if (!missionSession || !user?.isAnonymous) return Promise.resolve();
-      const recoveryId = studentRecoveryID(missionSession);
-      const existing = pendingTurnsRef.current.get(evidence.event_id);
-      if (existing) return existing;
-      queueTutorEvidence(recoveryId, {
-        questionId: renderedQuestionID,
-        evidence,
-      });
-      const requestVersion = ++tutorRequestRef.current;
-      const generation = hydrationRef.current;
-      const pending = (async () => {
-        if (
-          !attemptReadyRef.current &&
-          !(await syncSnapshot("learning", false, false))
-        )
-          return;
-        try {
-          const idToken = await user.getIdToken();
-          tokenRef.current = idToken;
-          const response = await learningApi.studentTutorTurn(idToken, {
-            ...evidence,
-            ...pinnedAttemptScope(missionSession),
-          });
-          acknowledgeTutorEvidence(recoveryId, evidence.event_id);
-          if (
-            evidence.type === "feedback" ||
-            requestVersion !== tutorRequestRef.current ||
-            generation !== hydrationRef.current
-          )
-            return;
-          dispatch({
-            type: "apply-tutor-turn",
-            questionId: renderedQuestionID,
-            message: response.turn.message,
-            whyPrompt: response.turn.why_prompt,
-            explanationSteps: response.turn.explanation_steps,
-            explanationStyle: response.turn.explanation_style,
-            difficultyBias: response.turn.difficulty_bias,
-          });
-        } catch (error) {
-          if (
-            generation === hydrationRef.current &&
-            isAttemptScopeConflict(error)
-          )
-            rejectChangedAttempt();
-          /* Retain scoped evidence for retries; a scope conflict requires mission reselection. */
-        }
-      })().finally(() => pendingTurnsRef.current.delete(evidence.event_id));
-      pendingTurnsRef.current.set(evidence.event_id, pending);
-      return pending;
-    },
-    [dispatch, rejectChangedAttempt, syncSnapshot],
-  );
-
-  useEffect(() => {
-    flushEvidenceRef.current = async () => {
-      const selected = readStudentMissionSession();
-      if (!selected) return;
-      const turns = readTutorOutbox(studentRecoveryID(selected));
-      // Replay sequentially to preserve the conversation order and respect per-student quotas.
-      for (const turn of turns.slice(0, 6))
-        await requestTutorTurn(turn.questionId, turn.evidence);
-    };
-  }, [requestTutorTurn]);
-
   const clearCurrentRecovery = useCallback(() => {
     const selected = readStudentMissionSession();
     clearMemory(
@@ -454,8 +485,38 @@ export function useLearningRecovery(
     );
     revisionRef.current = 0;
   }, []);
+  const retryEvidence = useCallback(async () => {
+    if (!evidenceScope)
+      window.dispatchEvent(new Event(studentSessionReadyEvent));
+    else {
+      await retryStoredEvidence();
+      await syncSnapshot();
+    }
+  }, [evidenceScope, retryStoredEvidence, syncSnapshot]);
+  const deleteUnsentEvidence = useCallback(async () => {
+    try {
+      if (await deletePending()) {
+        const selected = readStudentMissionSession();
+        if (selected) clearMemory(studentRecoveryID(selected));
+        resetRecovery();
+        clearStudentMissionSession();
+        dispatch({ type: "leave-mission" });
+        setRecoveryError(
+          "Unsent work was deleted from this browser. Open the mission again to continue.",
+        );
+      }
+    } catch {
+      setRecoveryError(
+        "Could not delete unsent work. Check browser storage and retry.",
+      );
+    }
+  }, [deletePending, dispatch, resetRecovery]);
   return {
     requestTutorTurn,
+    evidenceState,
+    completionAcknowledged,
+    retryEvidence,
+    deleteUnsentEvidence,
     resetRecovery,
     clearCurrentRecovery,
     recoveryError,
