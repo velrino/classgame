@@ -6,7 +6,7 @@ Optional Go workers use Asynq and a dedicated Redis broker for attachment copies
 
 The diagram shows the current code and optional services. It does not show a live deployment; see [hosting history](../operations/HOSTING-HISTORY.md).
 
-![Current modular architecture](../../assets/diagrams/architecture/architecture-graphviz.svg)
+![Current modular architecture](../../assets/diagrams/architecture/architecture.svg)
 
 ## Learning loop
 

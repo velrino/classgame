@@ -5,7 +5,7 @@ The current diagram shows the modular code and optional services. It does not cl
 ## Files
 
 - `architecture_graphviz.py` — source for the current icon-led diagram.
-- `architecture-graphviz.svg` — self-contained 1920×1080 vector used by the root README and dashboard.
+- `architecture.svg` — self-contained 1920×1080 vector used by the root README and dashboard.
 - `architecture-graphviz.png` — matching 3840×2160 raster for export.
 - `architecture.py` and `architecture.png` — legacy manual renderer and image from the submitted system.
 
@@ -17,7 +17,7 @@ From the repository root:
 uv run assets/diagrams/architecture/architecture_graphviz.py
 ```
 
-Graphviz must be installed. The script writes SVG/PNG and syncs `web/public/assets/diagrams/architecture/architecture-graphviz.svg`. Icons are embedded in the SVG; no external image request is needed. Keep the 16:9 frame and review the render after changes.
+Graphviz must be installed. The script writes SVG/PNG and syncs `web/public/assets/diagrams/architecture/architecture.svg`. Icons are embedded in the SVG; no external image request is needed. Keep the 16:9 frame and review the render after changes.
 
 ## Current boundaries
 
