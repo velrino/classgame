@@ -10,6 +10,13 @@ config:
     rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
     rect.actor[name="Redis"], line.actor-line[name="Redis"] { fill: #a573bc !important; stroke: #a573bc !important; }
     text.actor, text.actor tspan { fill: #FFFFFF !important; }
+    text.actor { font-weight: 700 !important; }
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Teacher"][data-to="API"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="Redis"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="DB"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="Teacher"]),
+    g[data-et="note"] text.noteText:first-of-type,
+    g[data-et="note"] text.noteText:first-of-type tspan { font-weight: 700 !important; }
   themeVariables:
     background: "#FFFFFF"
     primaryColor: "#FFFFFF"
@@ -57,11 +64,11 @@ sequenceDiagram
     API->>DB: Load the teacher class and mission draft
     DB-->>API: Owner, scope, revision and guardrails
     API->>API: Check access, draft revision and content policy
-    Note right of API: Rejected requests stop before enqueue.<br/>400 missing revision, 403 access,<br/>409 stale draft, 422 blocked content
+    Note right of API: Rejected requests stop here.<br/>400 missing revision, 403 access,<br/>409 stale draft, 422 blocked content
 
     opt Files need transfer, draft not already published, jobs enabled
         create participant Redis
-        API->>Redis: Enqueue copy job for class, mission and revision
+        API->>Redis: Enqueue copy job<br/>for class, mission and revision
         Redis-->>API: Job accepted or queue failure
         break Configured queue rejects the job
             API-->>Teacher: 503 attachment_queue_unavailable
@@ -77,7 +84,7 @@ sequenceDiagram
         DB-->>API: Committed or revision conflict
         deactivate DB
     end
-    Note over API,DB: An unchanged publication without inline edits reuses the revision.<br/>Class activation and the student catalog can still refresh.
+    Note over API,DB: Unchanged draft, no inline edits<br/>Reuse the published revision. Class activation<br/>and the student catalog can still refresh.
 
     alt Draft revision changed before commit
         API-->>Teacher: 409 draft_conflict - review the latest draft

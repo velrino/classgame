@@ -13,7 +13,7 @@ Step 01 ends with the saved preview for teacher review. Step 02 ends with the pu
 
 ## Style
 
-Use a white background, normal participant boxes, white participant labels, and Arial. Introduce existing services visually at first use. Keep one short flow per diagram.
+Use a white background, normal participant boxes, white participant labels, and Arial. Introduce existing services visually at first use. Keep one short flow per diagram. Use bold for key actions, responses, and note headings; keep supporting text regular.
 
 ## Palette for future steps
 
