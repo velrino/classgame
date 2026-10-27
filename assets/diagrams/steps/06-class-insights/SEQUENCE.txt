@@ -1,0 +1,99 @@
+---
+title: 06 - Refresh class memory and teacher insights
+config:
+  theme: base
+  look: classic
+  fontFamily: Arial, sans-serif
+  themeCSS: |
+    rect.actor[name="Redis"], line.actor-line[name="Redis"] { fill: #a573bc !important; stroke: #a573bc !important; }
+    rect.actor[name="Worker"], line.actor-line[name="Worker"] { fill: #5fcefd !important; stroke: #5fcefd !important; }
+    rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
+    rect.actor[name="LLM"], line.actor-line[name="LLM"] { fill: #9054af !important; stroke: #9054af !important; }
+    rect.actor[name="Teacher"], line.actor-line[name="Teacher"] { fill: #04c7ff !important; stroke: #04c7ff !important; }
+    rect.actor[name="API"], line.actor-line[name="API"] { fill: #86d5fb !important; stroke: #86d5fb !important; }
+    text.actor, text.actor tspan { fill: #FFFFFF !important; }
+    text.actor { font-weight: 700 !important; }
+    text.messageText:has(+ [data-et="message"][data-from="Redis"][data-to="Worker"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Worker"][data-to="DB"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Worker"][data-to="LLM"]),
+    text.messageText:has(+ [data-et="message"][data-from="Worker"][data-to="Redis"]),
+    text.messageText:has(+ [data-et="message"][data-from="DB"][data-to="Teacher"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Teacher"][data-to="API"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="DB"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="Teacher"]),
+    g[data-et="note"] text.noteText:first-of-type,
+    g[data-et="note"] text.noteText:first-of-type tspan { font-weight: 700 !important; }
+  themeVariables:
+    background: "#FFFFFF"
+    primaryColor: "#FFFFFF"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#111111"
+    actorBkg: "#FFFFFF"
+    actorBorder: "#111111"
+    actorTextColor: "#FFFFFF"
+    actorLineColor: "#111111"
+    signalColor: "#111111"
+    signalTextColor: "#111111"
+    titleColor: "#111111"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#111111"
+    noteTextColor: "#111111"
+    activationBkgColor: "#FFFFFF"
+    activationBorderColor: "#111111"
+    labelBoxBkgColor: "#FFFFFF"
+    labelBoxBorderColor: "#111111"
+    labelTextColor: "#111111"
+    loopTextColor: "#111111"
+    sequenceNumberColor: "#FFFFFF"
+  sequence:
+    useMaxWidth: true
+    diagramMarginX: 20
+    diagramMarginY: 20
+    mirrorActors: false
+    actorMargin: 45
+    messageMargin: 24
+---
+sequenceDiagram
+    %% First-use headers introduce existing participants visually.
+    %% This is the queued success path, followed by an open teacher dashboard.
+    %% The summary event invalidates the page. It is not the API response.
+    autonumber
+    participant Redis
+    Note over Redis: Ready for class refresh<br/>Evidence and pending intent<br/>were saved together.
+
+    create participant Worker
+    Redis->>Worker: Deliver the versioned class refresh job
+    activate Worker
+    create participant DB
+    Worker->>DB: Claim the pending generation<br/>Check class scope and acquire the owner token
+    DB-->>Worker: Claimed generation and tenant scope
+    Note right of DB: Durable refresh intent<br/>class_learning_refreshes/{class_id}<br/>Owner token and 5-minute lease
+
+    Worker->>DB: Read current class evidence<br/>Up to 100 latest finalized students
+    DB-->>Worker: Source-validated student evidence
+    Note over Worker,DB: Pending work survives failures.<br/>Old or completed jobs do no work.<br/>Busy claims retry. Recovery scans pending intents.
+
+    create participant LLM
+    Worker->>LLM: Build a bounded class synthesis<br/>Cluster only the supplied evidence
+    activate LLM
+    LLM-->>Worker: Strength and need clusters plus adaptation
+    deactivate LLM
+    Note right of LLM: Bounded class memory<br/>Up to 4 strengths and 4 needs<br/>Next adaptation: 280 characters<br/>Observed fallback if the model is unavailable
+
+    Worker->>DB: Commit the class summary<br/>Recheck owner, lease, tenant and source generation
+    Note right of DB: Atomic completion<br/>class_learning_summaries/{class_id}<br/>Advance completed_generation with the summary
+    DB-->>Worker: Summary and completed generation saved
+    Worker-->>Redis: Complete delivery
+    deactivate Worker
+
+    create participant Teacher
+    DB-->>Teacher: Summary changed - invalidate the visible page
+    Note over Teacher: Dashboard already open<br/>Realtime invalidation or a visible-page<br/>refresh every 15 seconds
+    create participant API
+    Teacher->>API: Refresh the selected class overview<br/>GET /dashboard/overview/page with class and cursor
+    activate API
+    API->>DB: Check teacher access and read overview<br/>Current roster page, latest evidence and stored summary
+    DB-->>API: Authorized overview records
+    API-->>Teacher: Page-scoped class insights<br/>Strengths, needs and next-step guidance
+    deactivate API
+    Note over Teacher,API: Page-scoped teacher view<br/>Current page evidence drives its patterns.<br/>The legacy route can also use stored synthesis.
