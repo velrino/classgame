@@ -8,38 +8,38 @@ import (
 	"fmt"
 	"time"
 
-	"classgame-api/internal/platform/cloudtasks"
+	"classgame-api/internal/taskqueue"
 )
 
 const defaultScheduleDelay = 2 * time.Second
 
 type TaskQueue interface {
-	Enqueue(context.Context, cloudtasks.Task) error
+	Enqueue(context.Context, taskqueue.Message) error
 }
 
 type Enqueuer interface {
 	Enqueue(context.Context, Job) error
 }
 
-type CloudTaskEnqueuer struct {
+type TaskScheduler struct {
 	queue         TaskQueue
 	scheduleDelay time.Duration
 	now           func() time.Time
 }
 
-func NewCloudTaskEnqueuer(queue TaskQueue, scheduleDelay time.Duration) *CloudTaskEnqueuer {
+func NewTaskScheduler(queue TaskQueue, scheduleDelay time.Duration) *TaskScheduler {
 	if scheduleDelay <= 0 {
 		scheduleDelay = defaultScheduleDelay
 	}
 
-	return &CloudTaskEnqueuer{
+	return &TaskScheduler{
 		queue:         queue,
 		scheduleDelay: scheduleDelay,
 		now:           time.Now,
 	}
 }
 
-func (enqueuer *CloudTaskEnqueuer) Enqueue(ctx context.Context, job Job) error {
+func (enqueuer *TaskScheduler) Enqueue(ctx context.Context, job Job) error {
 	if enqueuer == nil || enqueuer.queue == nil {
 		return fmt.Errorf("mission attachment task queue is not configured")
 	}
@@ -52,10 +52,10 @@ func (enqueuer *CloudTaskEnqueuer) Enqueue(ctx context.Context, job Job) error {
 		return fmt.Errorf("encode mission attachment task: %w", err)
 	}
 
-	return enqueuer.queue.Enqueue(ctx, cloudtasks.Task{
-		ID:           TaskID(job),
-		Body:         body,
-		ScheduleTime: enqueuer.now().Add(enqueuer.scheduleDelay),
+	return enqueuer.queue.Enqueue(ctx, taskqueue.Message{
+		ID:         TaskID(job),
+		Payload:    body,
+		ScheduleAt: enqueuer.now().Add(enqueuer.scheduleDelay),
 	})
 }
 

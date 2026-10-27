@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/platform/cloudtasks"
+	"classgame-api/internal/taskqueue"
 )
 
 const (
@@ -46,7 +46,7 @@ func (job LearningJob) Validate() error {
 }
 
 type LearningTaskQueue interface {
-	Enqueue(context.Context, cloudtasks.Task) error
+	Enqueue(context.Context, taskqueue.Message) error
 }
 
 type LearningTaskEnqueuer interface {
@@ -54,22 +54,22 @@ type LearningTaskEnqueuer interface {
 	EnqueueWatchdog(context.Context, StudentMissionAttemptDocument) error
 }
 
-type CloudLearningTaskEnqueuer struct {
+type LearningTaskScheduler struct {
 	abandonmentWindow time.Duration
 	finalizationDelay time.Duration
 	now               func() time.Time
 	queue             LearningTaskQueue
 }
 
-func NewCloudLearningTaskEnqueuer(
+func NewLearningTaskScheduler(
 	queue LearningTaskQueue,
 	abandonmentWindow time.Duration,
-) *CloudLearningTaskEnqueuer {
+) *LearningTaskScheduler {
 	if abandonmentWindow <= 0 {
 		abandonmentWindow = defaultStudentAbandonmentWindow
 	}
 
-	return &CloudLearningTaskEnqueuer{
+	return &LearningTaskScheduler{
 		abandonmentWindow: abandonmentWindow,
 		finalizationDelay: defaultLearningFinalizationDelay,
 		now:               time.Now,
@@ -77,7 +77,7 @@ func NewCloudLearningTaskEnqueuer(
 	}
 }
 
-func (enqueuer *CloudLearningTaskEnqueuer) EnqueueFinalization(
+func (enqueuer *LearningTaskScheduler) EnqueueFinalization(
 	ctx context.Context,
 	attempt StudentMissionAttemptDocument,
 ) error {
@@ -90,7 +90,7 @@ func (enqueuer *CloudLearningTaskEnqueuer) EnqueueFinalization(
 	return enqueuer.enqueue(ctx, job, enqueuer.now().Add(enqueuer.finalizationDelay))
 }
 
-func (enqueuer *CloudLearningTaskEnqueuer) EnqueueWatchdog(
+func (enqueuer *LearningTaskScheduler) EnqueueWatchdog(
 	ctx context.Context,
 	attempt StudentMissionAttemptDocument,
 ) error {
@@ -108,7 +108,7 @@ func (enqueuer *CloudLearningTaskEnqueuer) EnqueueWatchdog(
 	return enqueuer.enqueue(ctx, job, scheduleAt)
 }
 
-func (enqueuer *CloudLearningTaskEnqueuer) enqueue(
+func (enqueuer *LearningTaskScheduler) enqueue(
 	ctx context.Context,
 	job LearningJob,
 	scheduleAt time.Time,
@@ -124,10 +124,10 @@ func (enqueuer *CloudLearningTaskEnqueuer) enqueue(
 		return fmt.Errorf("encode student learning task: %w", err)
 	}
 
-	return enqueuer.queue.Enqueue(ctx, cloudtasks.Task{
-		ID:           learningTaskID(job),
-		Body:         body,
-		ScheduleTime: scheduleAt,
+	return enqueuer.queue.Enqueue(ctx, taskqueue.Message{
+		ID:         learningTaskID(job),
+		Payload:    body,
+		ScheduleAt: scheduleAt,
 	})
 }
 

@@ -317,9 +317,9 @@ func run() (runErr error) {
 				slog.Error("student learning task queue disconnect failed", "error", err)
 			}
 		}()
-		learningTasks = students.NewCloudLearningTaskEnqueuer(learningTaskQueue, time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
+		learningTasks = students.NewLearningTaskScheduler(learningTaskQueue, time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
 
-		attachmentEnqueuer := attachments.NewCloudTaskEnqueuer(taskQueue, 2*time.Second)
+		attachmentEnqueuer := attachments.NewTaskScheduler(taskQueue, 2*time.Second)
 		missionServiceOptions = append(
 			missionServiceOptions,
 			missions.WithAttachmentEnqueuer(attachmentEnqueuer),

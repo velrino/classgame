@@ -19,6 +19,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"classgame-api/internal/platform/requestmeta"
+	"classgame-api/internal/taskqueue"
 )
 
 const (
@@ -38,13 +39,6 @@ type Options struct {
 	CredentialsFile    string
 	CredentialsJSON    string
 	DispatchDeadline   time.Duration
-}
-
-type Task struct {
-	ID           string
-	Body         []byte
-	Headers      map[string]string
-	ScheduleTime time.Time
 }
 
 type Client struct {
@@ -82,7 +76,7 @@ func Connect(ctx context.Context, input Options) (*Client, error) {
 	}, nil
 }
 
-func (client *Client) Enqueue(ctx context.Context, input Task) error {
+func (client *Client) Enqueue(ctx context.Context, input taskqueue.Message) error {
 	if client == nil || client.client == nil {
 		return errors.New("cloud tasks client is not configured")
 	}
@@ -120,9 +114,9 @@ func (client *Client) Close() error {
 	return client.client.Close()
 }
 
-func (client *Client) buildTask(ctx context.Context, input Task) *taskspb.Task {
-	carrier := make(http.Header, len(input.Headers)+3)
-	for key, value := range input.Headers {
+func (client *Client) buildTask(ctx context.Context, input taskqueue.Message) *taskspb.Task {
+	carrier := make(http.Header, len(input.Metadata)+3)
+	for key, value := range input.Metadata {
 		carrier.Set(key, value)
 	}
 	if carrier.Get("Content-Type") == "" {
@@ -138,7 +132,7 @@ func (client *Client) buildTask(ctx context.Context, input Task) *taskspb.Task {
 		Url:        client.targetURL,
 		HttpMethod: taskspb.HttpMethod_POST,
 		Headers:    headers,
-		Body:       input.Body,
+		Body:       input.Payload,
 		AuthorizationHeader: &taskspb.HttpRequest_OidcToken{
 			OidcToken: &taskspb.OidcToken{
 				ServiceAccountEmail: client.oidcServiceAccount,
@@ -154,8 +148,8 @@ func (client *Client) buildTask(ctx context.Context, input Task) *taskspb.Task {
 		},
 		DispatchDeadline: durationpb.New(client.dispatchDeadline),
 	}
-	if !input.ScheduleTime.IsZero() {
-		task.ScheduleTime = timestamppb.New(input.ScheduleTime)
+	if !input.ScheduleAt.IsZero() {
+		task.ScheduleTime = timestamppb.New(input.ScheduleAt)
 	}
 
 	return task
@@ -215,7 +209,7 @@ func validateHTTPSURL(value string) error {
 	return nil
 }
 
-func validateTask(input Task) error {
+func validateTask(input taskqueue.Message) error {
 	if strings.TrimSpace(input.ID) == "" {
 		return errors.New("cloud task id is required")
 	}
@@ -230,7 +224,7 @@ func validateTask(input Task) error {
 			return errors.New("cloud task id contains an invalid character")
 		}
 	}
-	if len(input.Body) > 100*1024 {
+	if len(input.Payload) > 100*1024 {
 		return errors.New("cloud task body cannot be larger than 100 KB")
 	}
 
