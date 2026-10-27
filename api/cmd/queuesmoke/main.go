@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 
 	"classgame-api/internal/platform/redisqueue"
@@ -120,11 +121,6 @@ func runBasic(raw, queue string) error {
 		}
 		return nil
 	}
-	worker, err := client.Worker(redisqueue.WorkerOptions{Concurrency: 2, Handlers: map[string]redisqueue.Handler{"synthetic:nop": handler}, RetryDelay: time.Second, CheckInterval: 50 * time.Millisecond, ShutdownTimeout: time.Second})
-	if err != nil {
-		return err
-	}
-	defer worker.Shutdown()
 	destination := client.Destination("synthetic:nop")
 	enqueue := func(id string, schedule time.Time, ctx context.Context) error {
 		return destination.Enqueue(ctx, taskqueue.Message{ID: id, Payload: []byte(`{"synthetic":true}`), ScheduleAt: schedule})
@@ -138,6 +134,29 @@ func runBasic(raw, queue string) error {
 	if err := destination.Enqueue(ctx, taskqueue.Message{ID: "nop", Payload: []byte(`{"synthetic":false}`)}); !errors.Is(err, redisqueue.ErrIDConflict) {
 		return fmt.Errorf("changed-body replay must conflict: %v", err)
 	}
+	// Hold the existing immediate job briefly before starting workers. This is
+	// one controlled pending-age sample, not a traffic percentile or an SLO.
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(100 * time.Millisecond):
+	}
+	connection, err := asynq.ParseRedisURI(raw)
+	if err != nil {
+		return err
+	}
+	inspector := asynq.NewInspector(connection)
+	defer inspector.Close()
+	queueInfo, err := inspector.GetQueueInfo(queue)
+	if err != nil || queueInfo.Pending != 1 {
+		return fmt.Errorf("pending-age observation requires one pending job: %v", err)
+	}
+	queueAge := map[string]any{"oldest_pending_age_us": queueInfo.Latency.Microseconds(), "pending_jobs": queueInfo.Pending, "samples": 1, "worker_held_ms": 100, "source": "asynq.Inspector.GetQueueInfo.Latency", "scope": "controlled local sample; not a traffic percentile or an SLO"}
+	worker, err := client.Worker(redisqueue.WorkerOptions{Concurrency: 2, Handlers: map[string]redisqueue.Handler{"synthetic:nop": handler}, RetryDelay: time.Second, CheckInterval: 50 * time.Millisecond, ShutdownTimeout: time.Second})
+	if err != nil {
+		return err
+	}
+	defer worker.Shutdown()
 	delayUntil := time.Now().Add(2 * time.Second)
 	for _, id := range []string{"retry", "terminal", "delayed"} {
 		scheduled := time.Time{}
@@ -176,7 +195,7 @@ func runBasic(raw, queue string) error {
 	if counts["nop"] != 1 || counts["retry"] != 2 || counts["terminal"] != 1 || !correlation || processed["delayed"].Before(delayUntil.Add(-time.Second)) {
 		return fmt.Errorf("unexpected execution counts/correlation/delay: %v", counts)
 	}
-	return json.NewEncoder(os.Stdout).Encode(map[string]any{"status": "passed", "checks": []string{"completion", "canonical-replay", "changed-payload-conflict", "scheduled-delivery", "retry", "terminal-archive", "request-trace-correlation", "archived-replay-rejected"}, "handler_calls": counts, "real_provider_calls": 0, "database_calls": 0})
+	return json.NewEncoder(os.Stdout).Encode(map[string]any{"status": "passed", "checks": []string{"completion", "canonical-replay", "changed-payload-conflict", "scheduled-delivery", "retry", "terminal-archive", "request-trace-correlation", "archived-replay-rejected"}, "handler_calls": counts, "queue_age": queueAge, "real_provider_calls": 0, "database_calls": 0})
 }
 
 // These helpers use Redis only as an observable synthetic effect counter.
