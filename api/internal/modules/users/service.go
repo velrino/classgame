@@ -60,7 +60,26 @@ type ClassLearningGenerator interface {
 	BuildClassLearningSynthesis(context.Context, orchestrator.BuildClassLearningSynthesisInput) (orchestrator.ClassLearningSynthesis, error)
 }
 
+// Dependencies explicitly supplies each workflow capability. Tasks are optional
+// for local inline processing; no capability is inferred from another interface.
+type Dependencies struct {
+	Sessions          SessionStore
+	Learning          LearningStore
+	ClassLearning     ClassLearningStore
+	Missions          MissionReader
+	Revisions         MissionRevisionReader
+	Classes           ClassReader
+	TraceGenerator    LearningTraceGenerator
+	TutorGenerator    TutorTurnGenerator
+	ClassGenerator    ClassLearningGenerator
+	Tasks             LearningTaskEnqueuer
+	GenerationLimiter sharedratelimit.Limiter
+	AbandonmentWindow time.Duration
+}
 type Service struct {
+	sessions                  SessionStore
+	learning                  LearningStore
+	classLearning             ClassLearningStore
 	abandonmentWindow         time.Duration
 	learningTaskEnqueuer      LearningTaskEnqueuer
 	learningGenerationLimiter sharedratelimit.Limiter
@@ -69,44 +88,18 @@ type Service struct {
 	classLearningGenerator    ClassLearningGenerator
 	classReader               ClassReader
 	missionReader             MissionReader
-	repository                *Repository
+	revisionReader            MissionRevisionReader
 }
 
-func NewService(
-	repository *Repository,
-	missionReader MissionReader,
-	learningTraceGenerators ...LearningTraceGenerator,
-) *Service {
-	service := &Service{
-		abandonmentWindow: defaultStudentAbandonmentWindow,
-		missionReader:     missionReader,
-		repository:        repository,
+func NewService(dependencies Dependencies) *Service {
+	window := dependencies.AbandonmentWindow
+	if window <= 0 {
+		window = defaultStudentAbandonmentWindow
 	}
-	if len(learningTraceGenerators) > 0 {
-		service.learningTraceGenerator = learningTraceGenerators[0]
-		service.tutorTurnGenerator, _ = learningTraceGenerators[0].(TutorTurnGenerator)
-		service.classLearningGenerator, _ = learningTraceGenerators[0].(ClassLearningGenerator)
-	}
-
-	return service
-}
-
-func (service *Service) ConfigureLearningTasks(
-	enqueuer LearningTaskEnqueuer,
-	abandonmentWindow time.Duration,
-) {
-	service.learningTaskEnqueuer = enqueuer
-	if abandonmentWindow > 0 {
-		service.abandonmentWindow = abandonmentWindow
-	}
-}
-
-func (service *Service) ConfigureLearningGenerationLimiter(limiter sharedratelimit.Limiter) {
-	service.learningGenerationLimiter = limiter
-}
-
-func (service *Service) ConfigureClassReader(reader ClassReader) {
-	service.classReader = reader
+	return &Service{sessions: dependencies.Sessions, learning: dependencies.Learning, classLearning: dependencies.ClassLearning,
+		abandonmentWindow: window, learningTaskEnqueuer: dependencies.Tasks, learningGenerationLimiter: dependencies.GenerationLimiter,
+		learningTraceGenerator: dependencies.TraceGenerator, tutorTurnGenerator: dependencies.TutorGenerator, classLearningGenerator: dependencies.ClassGenerator,
+		classReader: dependencies.Classes, missionReader: dependencies.Missions, revisionReader: dependencies.Revisions}
 }
 
 func (service *Service) UpsertStudent(
@@ -124,7 +117,7 @@ func (service *Service) UpsertStudent(
 		return UserDocument{}, err
 	}
 
-	user, err := service.repository.UpsertStudent(ctx, UpsertStudentInput{
+	user, err := service.sessions.UpsertStudent(ctx, UpsertStudentInput{
 		Identity: identity,
 		Scope: tenant.Scope{
 			OrganizationID: teacherClass.OrganizationID,
@@ -175,7 +168,7 @@ func (service *Service) StartStudentMission(
 	if err != nil {
 		return UserDocument{}, err
 	}
-	user, err := service.repository.UpsertStudent(ctx, UpsertStudentInput{
+	user, err := service.sessions.UpsertStudent(ctx, UpsertStudentInput{
 		Identity: identity,
 		Scope: tenant.Scope{
 			OrganizationID: teacherClass.OrganizationID,
@@ -285,8 +278,8 @@ func (service *Service) missionAtPublishedRevision(
 		return current, nil
 	}
 
-	revisionReader, ok := service.missionReader.(MissionRevisionReader)
-	if !ok {
+	revisionReader := service.revisionReader
+	if revisionReader == nil {
 		return mission.MissionDocument{}, ErrMissionRevisionNotFound
 	}
 	published, exists, err := revisionReader.GetPublishedRevision(
@@ -331,7 +324,7 @@ func (service *Service) UpdateStudentPresence(
 		return UserDocument{}, err
 	}
 
-	return service.repository.UpdateStudentPresence(ctx, UpdateStudentPresenceInput{
+	return service.sessions.UpdateStudentPresence(ctx, UpdateStudentPresenceInput{
 		Identity:  identity,
 		MissionID: normalizedMissionID,
 		Subject:   normalizeText(subject),
@@ -352,11 +345,11 @@ func (service *Service) SaveStudentLearningSnapshot(
 	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return StudentMissionAttemptDocument{}, ErrStudentRequiresAnonymousAuth
 	}
-	if service.repository == nil {
+	if service.learning == nil || service.sessions == nil {
 		return StudentMissionAttemptDocument{}, errors.New("student learning repository is not configured")
 	}
 
-	current, user, exists, err := service.repository.GetCurrentStudentLearningAttempt(ctx, identity.ProviderUserID, normalizeText(missionID))
+	current, user, exists, err := service.sessions.GetCurrentStudentLearningAttempt(ctx, identity.ProviderUserID, normalizeText(missionID))
 	if err != nil {
 		return StudentMissionAttemptDocument{}, err
 	}
@@ -377,7 +370,7 @@ func (service *Service) SaveStudentLearningSnapshot(
 	liveTrace := orchestrator.BuildObservedLearningTrace(liveInput, "")
 	liveTrace.Finalized = false
 
-	attempt, _, completionStarted, err := service.repository.SaveStudentLearningSnapshot(ctx, SaveStudentLearningSnapshotInput{
+	attempt, _, completionStarted, err := service.learning.SaveStudentLearningSnapshot(ctx, SaveStudentLearningSnapshotInput{
 		Identity:          identity,
 		Mission:           document,
 		PublishedRevision: current.PublishedRevision,
@@ -427,11 +420,11 @@ func (service *Service) GetCurrentStudentLearningAttempt(
 	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return StudentMissionAttemptDocument{}, false, ErrStudentRequiresAnonymousAuth
 	}
-	if service.repository == nil {
+	if service.learning == nil || service.sessions == nil {
 		return StudentMissionAttemptDocument{}, false, errors.New("student learning repository is not configured")
 	}
 
-	attempt, _, exists, err := service.repository.GetCurrentStudentLearningAttempt(
+	attempt, _, exists, err := service.sessions.GetCurrentStudentLearningAttempt(
 		ctx,
 		identity.ProviderUserID,
 		normalizeText(missionID),
@@ -447,14 +440,14 @@ func (service *Service) SaveStudentTutorTurn(
 	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return StudentTutorTurn{}, ErrStudentRequiresAnonymousAuth
 	}
-	if service.repository == nil || service.tutorTurnGenerator == nil {
+	if service.learning == nil || service.sessions == nil || service.tutorTurnGenerator == nil {
 		return StudentTutorTurn{}, errors.New("student tutor dependencies are not configured")
 	}
 
 	input = normalizeStudentTutorTurnInput(input)
 	input.Identity = identity
 	input.Timestamp = time.Now()
-	attempt, user, exists, err := service.repository.GetCurrentStudentLearningAttempt(
+	attempt, user, exists, err := service.sessions.GetCurrentStudentLearningAttempt(
 		ctx,
 		identity.ProviderUserID,
 		input.MissionID,
@@ -539,14 +532,14 @@ func (service *Service) SaveStudentTutorTurn(
 		}
 	}
 
-	return service.repository.AppendStudentTutorTurn(ctx, input, tutor)
+	return service.learning.AppendStudentTutorTurn(ctx, input, tutor)
 }
 
 func (service *Service) classTutorContext(
 	ctx context.Context,
 	classID string,
 ) (orchestrator.TutorClassContext, error) {
-	attempts, err := service.repository.ListLatestFinalizedAttemptsByClassID(ctx, classID, 40)
+	attempts, err := service.classLearning.ListLatestFinalizedAttemptsByClassID(ctx, classID, 40)
 	if err != nil {
 		return orchestrator.TutorClassContext{}, err
 	}
@@ -572,7 +565,7 @@ func (service *Service) ProcessLearningJob(ctx context.Context, job LearningJob)
 		_, err := service.finalizeStudentAttempt(ctx, job.StudentID, job.AttemptID)
 		return err
 	case LearningJobWatchdog:
-		attempt, marked, err := service.repository.MarkStudentAttemptAbandoned(
+		attempt, marked, err := service.learning.MarkStudentAttemptAbandoned(
 			ctx,
 			job.StudentID,
 			job.AttemptID,
@@ -600,10 +593,10 @@ func (service *Service) finalizeStudentAttempt(
 	studentID string,
 	attemptID string,
 ) (StudentMissionAttemptDocument, error) {
-	if service.repository == nil {
+	if service.learning == nil || service.sessions == nil {
 		return StudentMissionAttemptDocument{}, errors.New("student learning repository is not configured")
 	}
-	attempt, user, exists, err := service.repository.GetStudentLearningAttempt(ctx, studentID, attemptID)
+	attempt, user, exists, err := service.learning.GetStudentLearningAttempt(ctx, studentID, attemptID)
 	if err != nil {
 		return StudentMissionAttemptDocument{}, err
 	}
@@ -616,7 +609,7 @@ func (service *Service) finalizeStudentAttempt(
 	if attempt.Status != "completed" && attempt.Status != "abandoned" {
 		return attempt, nil
 	}
-	if err := service.repository.SetStudentAttemptTraceState(ctx, attempt.ID, "processing", time.Now()); err != nil {
+	if err := service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "processing", time.Now()); err != nil {
 		return StudentMissionAttemptDocument{}, err
 	}
 
@@ -625,7 +618,7 @@ func (service *Service) finalizeStudentAttempt(
 		attempt,
 	)
 	if err != nil {
-		_ = service.repository.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
+		_ = service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
 		return StudentMissionAttemptDocument{}, err
 	}
 	traceInput := toLearningTraceInput(
@@ -639,7 +632,7 @@ func (service *Service) finalizeStudentAttempt(
 		if service.allowLearningGeneration(ctx, attempt.ClassID) {
 			trace, err = service.learningTraceGenerator.BuildLearningTrace(ctx, traceInput)
 			if err != nil {
-				_ = service.repository.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
+				_ = service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
 				return StudentMissionAttemptDocument{}, err
 			}
 		} else {
@@ -657,7 +650,7 @@ func (service *Service) finalizeStudentAttempt(
 		EvidenceAt:           studentAttemptEvidenceTime(attempt),
 	}
 
-	finalized, err := service.repository.FinalizeStudentLearningTrace(
+	finalized, err := service.learning.FinalizeStudentLearningTrace(
 		ctx,
 		user.ID,
 		attempt.ID,
@@ -666,7 +659,7 @@ func (service *Service) finalizeStudentAttempt(
 		time.Now(),
 	)
 	if err != nil {
-		_ = service.repository.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
+		_ = service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
 		return StudentMissionAttemptDocument{}, err
 	}
 	if err := service.refreshClassLearningSynthesis(ctx, finalized.ClassID); err != nil {
@@ -683,7 +676,7 @@ func (service *Service) refreshClassLearningSynthesis(ctx context.Context, class
 	if !service.allowLearningGeneration(ctx, classID) {
 		return nil
 	}
-	attempts, err := service.repository.ListLatestFinalizedAttemptsByClassID(ctx, classID, 100)
+	attempts, err := service.classLearning.ListLatestFinalizedAttemptsByClassID(ctx, classID, 100)
 	if err != nil {
 		return err
 	}
@@ -719,7 +712,7 @@ func (service *Service) refreshClassLearningSynthesis(ctx context.Context, class
 		return err
 	}
 
-	return service.repository.SaveClassLearningSynthesis(ctx, ClassLearningSynthesisDocument{
+	return service.classLearning.SaveClassLearningSynthesis(ctx, ClassLearningSynthesisDocument{
 		OrganizationID:    scope.OrganizationID,
 		DistrictID:        scope.DistrictID,
 		SchoolID:          scope.SchoolID,
@@ -753,7 +746,7 @@ func (service *Service) missionForAttempt(
 	ctx context.Context,
 	attempt StudentMissionAttemptDocument,
 ) (mission.MissionDocument, error) {
-	if revisionReader, ok := service.missionReader.(MissionRevisionReader); ok && attempt.PublishedRevision > 0 {
+	if revisionReader := service.revisionReader; revisionReader != nil && attempt.PublishedRevision > 0 {
 		published, exists, err := revisionReader.GetPublishedRevision(
 			ctx,
 			attempt.ClassID,
@@ -778,8 +771,8 @@ func (service *Service) missionForAttempt(
 		return view, nil
 	}
 
-	// Compatibility path for repository fakes and legacy deployments without
-	// immutable revision reads.
+	// Explicit legacy-reader compatibility is limited to the configured reader;
+	// production wiring always supplies immutable revision access.
 	current, err := service.publishedMissionByID(ctx, attempt.ClassID, attempt.MissionID)
 	if err != nil {
 		return mission.MissionDocument{}, err

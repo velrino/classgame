@@ -144,7 +144,7 @@ func run() (runErr error) {
 		}
 	}()
 
-	usersRepository := users.NewRepository(firebaseConnection.FirestoreClient())
+	usersRepository := users.NewFirestoreRepository(firebaseConnection.FirestoreClient())
 	genAIClient, err := sharedgenai.Connect(context.Background(), sharedgenai.Options{
 		Enabled:         cfg.GenAIEnabled,
 		Backend:         cfg.GenAIBackend,
@@ -175,12 +175,10 @@ func run() (runErr error) {
 		}
 	}()
 
-	orchestratorService := orchestrator.NewService(genAIClient, storageConnection)
-	teacherClassRepository := teacherclass.NewRepository(firebaseConnection.FirestoreClient())
+	orchestratorService := orchestrator.NewService(orchestrator.Dependencies{Client: genAIClient, Attachments: storageConnection})
+	teacherClassRepository := teacherclass.NewFirestoreRepository(firebaseConnection.FirestoreClient())
 	teacherClassService := teacherclass.NewService(teacherClassRepository)
-	missionRepository := mission.NewRepository(firebaseConnection.FirestoreClient())
-	usersService := users.NewService(usersRepository, missionRepository, orchestratorService)
-	usersService.ConfigureClassReader(teacherClassRepository)
+	missionRepository := mission.NewFirestoreRepository(firebaseConnection.FirestoreClient())
 
 	missionGenerationPerTeacherMinuteLimiter, err := sharedratelimit.NewRedisFixedWindow(
 		redisConnection.Client(),
@@ -270,11 +268,12 @@ func run() (runErr error) {
 	if err != nil {
 		return fmt.Errorf("initialize student learning generation rate limiter: %w", err)
 	}
-	usersService.ConfigureLearningGenerationLimiter(studentLearningPerClassHourLimiter)
 
 	missionServiceOptions := []mission.ServiceOption{mission.WithAttachmentReader(storageConnection)}
 	var missionAttachmentHandler http.Handler
 	var studentLearningTaskHandler http.Handler
+	var learningTasks users.LearningTaskEnqueuer
+	var taskAuthenticator *missionattachment.OIDCAuthenticator
 	if cfg.CloudTasksEnabled {
 
 		storageCopier, err := missionattachment.NewStorageCopier(missionattachment.StorageCopierOptions{
@@ -320,13 +319,7 @@ func run() (runErr error) {
 				slog.Error("student learning task queue disconnect failed", "error", err)
 			}
 		}()
-		usersService.ConfigureLearningTasks(
-			users.NewCloudLearningTaskEnqueuer(
-				learningTaskQueue,
-				time.Duration(cfg.StudentAbandonmentSeconds)*time.Second,
-			),
-			time.Duration(cfg.StudentAbandonmentSeconds)*time.Second,
-		)
+		learningTasks = users.NewCloudLearningTaskEnqueuer(learningTaskQueue, time.Duration(cfg.StudentAbandonmentSeconds)*time.Second)
 
 		attachmentEnqueuer := missionattachment.NewCloudTaskEnqueuer(taskQueue, 2*time.Second)
 		missionServiceOptions = append(
@@ -338,7 +331,7 @@ func run() (runErr error) {
 		if err != nil {
 			return fmt.Errorf("initialize mission attachment processor: %w", err)
 		}
-		attachmentAuthenticator, err := missionattachment.NewOIDCAuthenticator(
+		taskAuthenticator, err = missionattachment.NewOIDCAuthenticator(
 			context.Background(),
 			cfg.CloudTasksOIDCAudience,
 			cfg.CloudTasksServiceAccount,
@@ -347,14 +340,25 @@ func run() (runErr error) {
 			return fmt.Errorf("initialize mission attachment task authentication: %w", err)
 		}
 		missionAttachmentHandler, err = missionattachment.NewHTTPHandler(
-			attachmentAuthenticator,
+			taskAuthenticator,
 			attachmentProcessor,
 		)
 		if err != nil {
 			return fmt.Errorf("initialize mission attachment task handler: %w", err)
 		}
+
+	}
+
+	usersService := users.NewService(users.Dependencies{
+		Sessions: usersRepository, Learning: usersRepository, ClassLearning: usersRepository,
+		Missions: missionRepository, Revisions: missionRepository, Classes: teacherClassRepository,
+		TraceGenerator: orchestratorService, TutorGenerator: orchestratorService, ClassGenerator: orchestratorService,
+		Tasks: learningTasks, GenerationLimiter: studentLearningPerClassHourLimiter,
+		AbandonmentWindow: time.Duration(cfg.StudentAbandonmentSeconds) * time.Second,
+	})
+	if cfg.CloudTasksEnabled {
 		studentLearningTaskHandler, err = users.NewLearningTaskHTTPHandler(
-			attachmentAuthenticator,
+			taskAuthenticator,
 			usersService,
 		)
 		if err != nil {
@@ -368,7 +372,7 @@ func run() (runErr error) {
 		orchestratorService,
 		missionServiceOptions...,
 	)
-	dashboardRepository := dashboard.NewRepository(firebaseConnection.FirestoreClient())
+	dashboardRepository := dashboard.NewFirestoreRepository(firebaseConnection.FirestoreClient())
 	dashboardService := dashboard.NewService(dashboardRepository, teacherClassService, missionService)
 	authenticator := sharedfirebase.NewFirebaseAuthenticator(firebaseConnection.AuthClient())
 	teacherAuthenticator, err := sharedauth.RestrictProviders(authenticator, cfg.AuthTeacherProviders)
@@ -419,6 +423,7 @@ func run() (runErr error) {
 		},
 		StartedAt: startedAt,
 		Users: users.HandlerOptions{
+			StudentLearningService: usersService, StudentTutorService: usersService,
 			StudentClassReader: usersService,
 			Analytics:          analyticsClient,
 			Authenticator:      studentAuthenticator,

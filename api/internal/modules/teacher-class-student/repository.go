@@ -13,17 +13,17 @@ import (
 	teacherclass "classgame-api/internal/modules/teacher-class"
 )
 
-type Repository struct {
+type FirestoreRepository struct {
 	client *firestore.Client
 }
 
-func NewRepository(client *firestore.Client) *Repository {
-	return &Repository{
+func NewFirestoreRepository(client *firestore.Client) *FirestoreRepository {
+	return &FirestoreRepository{
 		client: client,
 	}
 }
 
-func (repository *Repository) Get(
+func (repository *FirestoreRepository) Get(
 	ctx context.Context,
 	classID string,
 	studentID string,
@@ -47,7 +47,7 @@ func (repository *Repository) Get(
 	return student, true, nil
 }
 
-func (repository *Repository) UpsertMissionSummary(
+func (repository *FirestoreRepository) UpsertMissionSummary(
 	ctx context.Context,
 	input UpsertStudentMissionSummaryInput,
 ) (ClassStudentDocument, error) {
@@ -106,7 +106,7 @@ func (repository *Repository) UpsertMissionSummary(
 	return student, nil
 }
 
-func (repository *Repository) documentRef(classID string, studentID string) *firestore.DocumentRef {
+func (repository *FirestoreRepository) documentRef(classID string, studentID string) *firestore.DocumentRef {
 	return repository.client.Collection(teacherclass.CollectionName).
 		Doc(normalizeCode(classID)).
 		Collection(CollectionName).

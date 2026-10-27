@@ -195,13 +195,8 @@ type ErrorResponseBody struct {
 
 func RegisterRoutes(server *echo.Echo, options HandlerOptions) {
 	studentLearningService := options.StudentLearningService
-	if studentLearningService == nil {
-		studentLearningService, _ = options.UsersService.(StudentLearningService)
-	}
 	studentTutorService := options.StudentTutorService
-	if studentTutorService == nil {
-		studentTutorService, _ = options.UsersService.(StudentTutorService)
-	}
+
 	handler := &Handler{
 		studentClassReader:     options.StudentClassReader,
 		analytics:              options.Analytics,

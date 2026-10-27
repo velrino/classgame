@@ -26,17 +26,17 @@ const (
 	maxTutorTurnsPerAttempt          = 80
 )
 
-type Repository struct {
+type FirestoreRepository struct {
 	client *firestore.Client
 }
 
-func NewRepository(client *firestore.Client) *Repository {
-	return &Repository{
+func NewFirestoreRepository(client *firestore.Client) *FirestoreRepository {
+	return &FirestoreRepository{
 		client: client,
 	}
 }
 
-func (repository *Repository) UpsertStudent(
+func (repository *FirestoreRepository) UpsertStudent(
 	ctx context.Context,
 	input UpsertStudentInput,
 ) (UserDocument, error) {
@@ -138,7 +138,7 @@ func (repository *Repository) UpsertStudent(
 	return user, nil
 }
 
-func (repository *Repository) UpdateStudentPresence(
+func (repository *FirestoreRepository) UpdateStudentPresence(
 	ctx context.Context,
 	input UpdateStudentPresenceInput,
 ) (UserDocument, error) {
@@ -224,7 +224,7 @@ func (repository *Repository) UpdateStudentPresence(
 	return user, nil
 }
 
-func (repository *Repository) SaveStudentLearningSnapshot(
+func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 	ctx context.Context,
 	input SaveStudentLearningSnapshotInput,
 ) (StudentMissionAttemptDocument, UserDocument, bool, error) {
@@ -324,7 +324,7 @@ func (repository *Repository) SaveStudentLearningSnapshot(
 			return fmt.Errorf("read learning attempt: %w", err)
 		}
 
-		input.Snapshot, input.Status = authoritativeLearningSnapshot(input.Mission, input.Snapshot, tutorTurns, input.Status)
+		input.Snapshot, input.Status = AssessLearningSnapshot(input.Mission, input.Snapshot, tutorTurns, input.Status)
 		liveInput := toLearningTraceInput(input.Mission, input.Snapshot, "in_progress", StudentLearningMemory{})
 		trace = orchestrator.BuildObservedLearningTrace(liveInput, "")
 		trace.Finalized = false
@@ -403,7 +403,7 @@ func (repository *Repository) SaveStudentLearningSnapshot(
 	return attempt, user, completionStarted, nil
 }
 
-func (repository *Repository) studentMissionCompletionRef(
+func (repository *FirestoreRepository) studentMissionCompletionRef(
 	studentID string,
 	attemptID string,
 ) *firestore.DocumentRef {
@@ -425,7 +425,7 @@ func studentMissionCompletionMap(attempt StudentMissionAttemptDocument) map[stri
 	}
 }
 
-func (repository *Repository) GetCurrentStudentLearningAttempt(
+func (repository *FirestoreRepository) GetCurrentStudentLearningAttempt(
 	ctx context.Context,
 	identityProviderUserID string,
 	missionID string,
@@ -476,7 +476,7 @@ func (repository *Repository) GetCurrentStudentLearningAttempt(
 	return attempt, user, true, nil
 }
 
-func (repository *Repository) AppendStudentTutorTurn(
+func (repository *FirestoreRepository) AppendStudentTutorTurn(
 	ctx context.Context,
 	input SaveStudentTutorTurnInput,
 	tutor orchestrator.TutorTurnBlueprint,
@@ -574,7 +574,7 @@ func (repository *Repository) AppendStudentTutorTurn(
 	return result, nil
 }
 
-func (repository *Repository) GetStudentLearningAttempt(
+func (repository *FirestoreRepository) GetStudentLearningAttempt(
 	ctx context.Context,
 	studentID string,
 	attemptID string,
@@ -615,7 +615,7 @@ func (repository *Repository) GetStudentLearningAttempt(
 	return attempt, user, true, nil
 }
 
-func (repository *Repository) MarkStudentAttemptAbandoned(
+func (repository *FirestoreRepository) MarkStudentAttemptAbandoned(
 	ctx context.Context,
 	studentID string,
 	attemptID string,
@@ -678,7 +678,7 @@ func (repository *Repository) MarkStudentAttemptAbandoned(
 	return attempt, marked, nil
 }
 
-func (repository *Repository) SetStudentAttemptTraceState(
+func (repository *FirestoreRepository) SetStudentAttemptTraceState(
 	ctx context.Context,
 	attemptID string,
 	state string,
@@ -695,7 +695,7 @@ func (repository *Repository) SetStudentAttemptTraceState(
 	return nil
 }
 
-func (repository *Repository) ListLatestFinalizedAttemptsByClassID(
+func (repository *FirestoreRepository) ListLatestFinalizedAttemptsByClassID(
 	ctx context.Context,
 	classID string,
 	limit int,
@@ -743,7 +743,7 @@ func (repository *Repository) ListLatestFinalizedAttemptsByClassID(
 	return result, nil
 }
 
-func (repository *Repository) SaveClassLearningSynthesis(
+func (repository *FirestoreRepository) SaveClassLearningSynthesis(
 	ctx context.Context,
 	document ClassLearningSynthesisDocument,
 ) error {
@@ -782,7 +782,7 @@ func (repository *Repository) SaveClassLearningSynthesis(
 	return nil
 }
 
-func (repository *Repository) FinalizeStudentLearningTrace(
+func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 	ctx context.Context,
 	studentID string,
 	attemptID string,
@@ -1099,4 +1099,20 @@ func learningAttemptFirestoreMap(attempt StudentMissionAttemptDocument) map[stri
 		"created_at":            attempt.CreatedAt,
 		"updated_at":            attempt.UpdatedAt,
 	}
+}
+
+// GetStudentClassMembership returns the minimal persisted class association.
+func (repository *FirestoreRepository) GetStudentClassMembership(ctx context.Context, studentID string) (string, string, error) {
+	snapshot, err := repository.client.Collection(usersCollectionName).Doc(studentID).Get(ctx)
+	if status.Code(err) == codes.NotFound {
+		return "", "", ErrStudentNotFound
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("read student class membership: %w", err)
+	}
+	var user UserDocument
+	if err := snapshot.DataTo(&user); err != nil {
+		return "", "", fmt.Errorf("decode student class membership: %w", err)
+	}
+	return user.Student.ClassID, user.Student.ClassCode, nil
 }

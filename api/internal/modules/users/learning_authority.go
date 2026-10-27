@@ -4,9 +4,9 @@ import (
 	"classgame-api/internal/modules/mission"
 )
 
-// authoritativeLearningSnapshot derives assessment from server-recorded tutor
+// AssessLearningSnapshot derives assessment from server-recorded tutor
 // turns on the pinned revision. Browser checkpoints remain presentation state.
-func authoritativeLearningSnapshot(document mission.MissionDocument, snapshot StudentLearningSnapshot, turns []StudentTutorTurn, requestedStatus string) (StudentLearningSnapshot, string) {
+func AssessLearningSnapshot(document mission.MissionDocument, snapshot StudentLearningSnapshot, turns []StudentTutorTurn, requestedStatus string) (StudentLearningSnapshot, string) {
 	questions := studentSessionMissionFromDocument(document).PreviewQuestions
 	byID := map[string]int{}
 	stageOrder := []string{}

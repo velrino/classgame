@@ -108,15 +108,13 @@ type Service struct {
 	genAI            GenAIClient
 }
 
-func NewService(genAI GenAIClient, readers ...AttachmentReader) *Service {
-	var reader AttachmentReader
-	if len(readers) > 0 {
-		reader = readers[0]
-	}
-	return &Service{
-		genAI:            genAI,
-		attachmentReader: reader,
-	}
+type Dependencies struct {
+	Client      GenAIClient
+	Attachments AttachmentReader
+}
+
+func NewService(dependencies Dependencies) *Service {
+	return &Service{genAI: dependencies.Client, attachmentReader: dependencies.Attachments}
 }
 
 func (service *Service) BuildMission(

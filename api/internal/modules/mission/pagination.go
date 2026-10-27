@@ -18,7 +18,7 @@ func (service *Service) ListPage(ctx context.Context, identity sharedauth.Identi
 	return service.repository.ListPage(ctx, class.ClassID, page)
 }
 
-func (repository *Repository) ListPage(ctx context.Context, classID string, page pagination.Params) ([]MissionDocument, string, error) {
+func (repository *FirestoreRepository) ListPage(ctx context.Context, classID string, page pagination.Params) ([]MissionDocument, string, error) {
 	queries := []firestore.Query{
 		repository.legacyClassMissionsQuery(classID).Query,
 		repository.client.Collection(MissionsCollectionName).Where("class_id", "==", classID),

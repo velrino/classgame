@@ -41,7 +41,7 @@ func Ensure(
 		return Result{}, errors.New("firebase bootstrap clients are not configured")
 	}
 
-	hierarchyResult, err := tenant.NewRepository(firestoreClient).EnsureHierarchy(
+	hierarchyResult, err := tenant.NewFirestoreRepository(firestoreClient).EnsureHierarchy(
 		ctx,
 		options.Hierarchy,
 		time.Now().UTC(),

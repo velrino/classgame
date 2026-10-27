@@ -48,13 +48,8 @@ func (service *Service) DownloadAttachment(ctx context.Context, identity shareda
 	}
 	attachments := draftView(document).Attachments
 	if revision > 0 {
-		reader, ok := service.repository.(interface {
-			GetPublishedRevision(context.Context, string, string, int64) (MissionPublishedRevisionDocument, bool, error)
-		})
-		if !ok {
-			return AttachmentDownload{}, ErrMissionNotFound
-		}
-		published, exists, err := reader.GetPublishedRevision(ctx, classID, missionID, revision)
+
+		published, exists, err := service.repository.GetPublishedRevision(ctx, classID, missionID, revision)
 		if err != nil {
 			return AttachmentDownload{}, err
 		}

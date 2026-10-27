@@ -12,18 +12,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Repository struct {
+type FirestoreRepository struct {
 	client *firestore.Client
 }
 
-func NewRepository(client *firestore.Client) *Repository {
-	return &Repository{client: client}
+func NewFirestoreRepository(client *firestore.Client) *FirestoreRepository {
+	return &FirestoreRepository{client: client}
 }
 
 // EnsureHierarchy creates only missing hierarchy documents. Existing tenant,
 // district, and school records are preserved so this is safe on every startup
 // and when several API instances start concurrently.
-func (repository *Repository) EnsureHierarchy(
+func (repository *FirestoreRepository) EnsureHierarchy(
 	ctx context.Context,
 	hierarchy Hierarchy,
 	timestamp time.Time,

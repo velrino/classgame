@@ -21,17 +21,17 @@ var (
 	ErrClassNotFound              = errors.New("teacher class not found")
 )
 
-type Repository struct {
+type FirestoreRepository struct {
 	client *firestore.Client
 }
 
-func NewRepository(client *firestore.Client) *Repository {
-	return &Repository{
+func NewFirestoreRepository(client *firestore.Client) *FirestoreRepository {
+	return &FirestoreRepository{
 		client: client,
 	}
 }
 
-func (repository *Repository) Get(
+func (repository *FirestoreRepository) Get(
 	ctx context.Context,
 	classID string,
 ) (TeacherClassDocument, bool, error) {
@@ -55,7 +55,7 @@ func (repository *Repository) Get(
 	return teacherClass, true, nil
 }
 
-func (repository *Repository) ListByTeacherID(
+func (repository *FirestoreRepository) ListByTeacherID(
 	ctx context.Context,
 	teacherID string,
 ) ([]TeacherClassDocument, error) {
@@ -93,7 +93,7 @@ func (repository *Repository) ListByTeacherID(
 	return teacherClasses, nil
 }
 
-func (repository *Repository) Upsert(
+func (repository *FirestoreRepository) Upsert(
 	ctx context.Context,
 	input UpsertTeacherClassInput,
 ) (TeacherClassDocument, error) {
@@ -143,7 +143,7 @@ func (repository *Repository) Upsert(
 	return teacherClass, nil
 }
 
-func (repository *Repository) Create(
+func (repository *FirestoreRepository) Create(
 	ctx context.Context,
 	input UpsertTeacherClassInput,
 ) (TeacherClassDocument, error) {
@@ -168,7 +168,7 @@ func (repository *Repository) Create(
 	return teacherClass, nil
 }
 
-func (repository *Repository) SetActiveMission(
+func (repository *FirestoreRepository) SetActiveMission(
 	ctx context.Context,
 	classID string,
 	teacherID string,

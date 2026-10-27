@@ -20,8 +20,7 @@ func TestValidateStudentClassCodeAcceptsActiveClass(t *testing.T) {
 		},
 		exists: true,
 	}
-	service := NewService(nil, nil)
-	service.ConfigureClassReader(reader)
+	service := NewService(Dependencies{Classes: reader})
 
 	if err := service.ValidateStudentClassCode(context.Background(), " 123456 "); err != nil {
 		t.Fatalf("validate student class code: %v", err)
@@ -32,8 +31,7 @@ func TestValidateStudentClassCodeAcceptsActiveClass(t *testing.T) {
 }
 
 func TestValidateStudentClassCodeRejectsMissingClass(t *testing.T) {
-	service := NewService(nil, nil)
-	service.ConfigureClassReader(&fakeClassReader{})
+	service := NewService(Dependencies{Classes: &fakeClassReader{}})
 
 	err := service.ValidateStudentClassCode(context.Background(), "123456")
 	if !errors.Is(err, ErrClassCodeNotFound) {
@@ -42,15 +40,14 @@ func TestValidateStudentClassCodeRejectsMissingClass(t *testing.T) {
 }
 
 func TestValidateStudentClassCodeRejectsInactiveClass(t *testing.T) {
-	service := NewService(nil, nil)
-	service.ConfigureClassReader(&fakeClassReader{
+	service := NewService(Dependencies{Classes: &fakeClassReader{
 		teacherClass: teacherclass.TeacherClassDocument{
 			ClassID:   "123456",
 			ClassCode: "123456",
 			Status:    "deleted",
 		},
 		exists: true,
-	})
+	}})
 
 	err := service.ValidateStudentClassCode(context.Background(), "123456")
 	if !errors.Is(err, ErrClassCodeNotFound) {
@@ -59,8 +56,7 @@ func TestValidateStudentClassCodeRejectsInactiveClass(t *testing.T) {
 }
 
 func TestUpdateStudentPresenceRejectsDeletedMission(t *testing.T) {
-	service := NewService(nil, &fakeMissionReader{})
-	service.ConfigureClassReader(activeFakeClassReader())
+	service := NewService(Dependencies{Missions: &fakeMissionReader{}, Classes: activeFakeClassReader()})
 
 	_, err := service.UpdateStudentPresence(
 		context.Background(),
@@ -78,8 +74,7 @@ func TestUpdateStudentPresenceRejectsDeletedMission(t *testing.T) {
 }
 
 func TestUpdateStudentPresenceRejectsMissingClass(t *testing.T) {
-	service := NewService(nil, &fakeMissionReader{})
-	service.ConfigureClassReader(&fakeClassReader{})
+	service := NewService(Dependencies{Missions: &fakeMissionReader{}, Classes: &fakeClassReader{}})
 
 	_, err := service.UpdateStudentPresence(
 		context.Background(),

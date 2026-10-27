@@ -17,17 +17,17 @@ import (
 	"classgame-api/internal/modules/tenant"
 )
 
-type Repository struct {
+type FirestoreRepository struct {
 	client *firestore.Client
 }
 
-func NewRepository(client *firestore.Client) *Repository {
-	return &Repository{
+func NewFirestoreRepository(client *firestore.Client) *FirestoreRepository {
+	return &FirestoreRepository{
 		client: client,
 	}
 }
 
-func (repository *Repository) Create(
+func (repository *FirestoreRepository) Create(
 	ctx context.Context,
 	input CreateMissionInput,
 ) (MissionDocument, error) {
@@ -74,7 +74,7 @@ func (repository *Repository) Create(
 	return mission, nil
 }
 
-func (repository *Repository) GetByCode(
+func (repository *FirestoreRepository) GetByCode(
 	ctx context.Context,
 	missionCode string,
 ) (MissionDocument, bool, error) {
@@ -102,7 +102,7 @@ func (repository *Repository) GetByCode(
 	return published, exists, nil
 }
 
-func (repository *Repository) Get(
+func (repository *FirestoreRepository) Get(
 	ctx context.Context,
 	classID string,
 	missionID string,
@@ -117,7 +117,7 @@ func (repository *Repository) Get(
 	return MissionDocument{}, false, nil
 }
 
-func (repository *Repository) List(
+func (repository *FirestoreRepository) List(
 	ctx context.Context,
 	classID string,
 	limit int,
@@ -164,7 +164,7 @@ func (repository *Repository) List(
 	return missions, nil
 }
 
-func (repository *Repository) UpdateDraft(
+func (repository *FirestoreRepository) UpdateDraft(
 	ctx context.Context,
 	input CreateMissionInput,
 ) (MissionDocument, error) {
@@ -214,7 +214,7 @@ func (repository *Repository) UpdateDraft(
 	return mission, nil
 }
 
-func (repository *Repository) Publish(
+func (repository *FirestoreRepository) Publish(
 	ctx context.Context,
 	classID string,
 	missionID string,
@@ -380,7 +380,7 @@ func applyDraftEdits(
 	mission.applySnapshot(draft)
 }
 
-func (repository *Repository) GetPublishedRevision(
+func (repository *FirestoreRepository) GetPublishedRevision(
 	ctx context.Context,
 	classID string,
 	missionID string,
@@ -411,7 +411,7 @@ func (repository *Repository) GetPublishedRevision(
 	return MissionPublishedRevisionDocument{}, false, nil
 }
 
-func (repository *Repository) SoftDelete(
+func (repository *FirestoreRepository) SoftDelete(
 	ctx context.Context,
 	classID string,
 	missionID string,
@@ -671,7 +671,7 @@ func missionCodeFirestoreMap(mission MissionDocument) map[string]any {
 	}
 }
 
-func (repository *Repository) studentMissionCatalogRef(
+func (repository *FirestoreRepository) studentMissionCatalogRef(
 	classID string,
 	missionID string,
 ) *firestore.DocumentRef {
@@ -681,7 +681,7 @@ func (repository *Repository) studentMissionCatalogRef(
 		Doc(missionID)
 }
 
-func (repository *Repository) syncStudentMissionCatalog(
+func (repository *FirestoreRepository) syncStudentMissionCatalog(
 	tx *firestore.Transaction,
 	mission MissionDocument,
 ) error {
@@ -741,7 +741,7 @@ func collectMissionDocuments(
 	return nil
 }
 
-func (repository *Repository) getMissionAtRef(
+func (repository *FirestoreRepository) getMissionAtRef(
 	ctx context.Context,
 	ref *firestore.DocumentRef,
 	classID string,
@@ -765,7 +765,7 @@ func (repository *Repository) getMissionAtRef(
 	return mission, true, nil
 }
 
-func (repository *Repository) getMissionInTransaction(
+func (repository *FirestoreRepository) getMissionInTransaction(
 	tx *firestore.Transaction,
 	classID string,
 	missionID string,

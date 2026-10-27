@@ -10,10 +10,10 @@ import (
 var ErrInvalidStudentMissionSummary = errors.New("invalid student mission summary")
 
 type Service struct {
-	repository *Repository
+	repository NotebookStore
 }
 
-func NewService(repository *Repository) *Service {
+func NewService(repository NotebookStore) *Service {
 	return &Service{
 		repository: repository,
 	}

@@ -16,17 +16,17 @@ import (
 	"classgame-api/internal/modules/users"
 )
 
-type Repository struct {
+type FirestoreRepository struct {
 	client *firestore.Client
 }
 
-func NewRepository(client *firestore.Client) *Repository {
-	return &Repository{
+func NewFirestoreRepository(client *firestore.Client) *FirestoreRepository {
+	return &FirestoreRepository{
 		client: client,
 	}
 }
 
-func (repository *Repository) UpsertTeacher(
+func (repository *FirestoreRepository) UpsertTeacher(
 	ctx context.Context,
 	identity TeacherIdentity,
 	timestamp time.Time,
@@ -106,7 +106,7 @@ func (repository *Repository) UpsertTeacher(
 	return summary, nil
 }
 
-func (repository *Repository) ListStudentsByClassID(
+func (repository *FirestoreRepository) ListStudentsByClassID(
 	ctx context.Context,
 	classID string,
 ) ([]studentUserDocument, error) {
@@ -142,7 +142,7 @@ func (repository *Repository) ListStudentsByClassID(
 	return students, nil
 }
 
-func (repository *Repository) ListLearningAttemptsByClassID(
+func (repository *FirestoreRepository) ListLearningAttemptsByClassID(
 	ctx context.Context,
 	classID string,
 ) ([]users.StudentMissionAttemptDocument, error) {
@@ -174,7 +174,7 @@ func (repository *Repository) ListLearningAttemptsByClassID(
 	return attempts, nil
 }
 
-func (repository *Repository) GetClassLearningSynthesis(
+func (repository *FirestoreRepository) GetClassLearningSynthesis(
 	ctx context.Context,
 	classID string,
 ) (users.ClassLearningSynthesisDocument, bool, error) {

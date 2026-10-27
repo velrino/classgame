@@ -18,7 +18,7 @@ import (
 	shareduploadcare "classgame-api/internal/shared/uploadcare"
 )
 
-func (repository *Repository) Prepare(
+func (repository *FirestoreRepository) Prepare(
 	ctx context.Context,
 	job missionattachment.Job,
 ) (missionattachment.TransferPlan, error) {
@@ -90,7 +90,7 @@ func (repository *Repository) Prepare(
 	return plan, nil
 }
 
-func (repository *Repository) MarkStored(
+func (repository *FirestoreRepository) MarkStored(
 	ctx context.Context,
 	job missionattachment.Job,
 	target missionattachment.AttachmentSnapshot,
@@ -119,7 +119,7 @@ func (repository *Repository) MarkStored(
 	})
 }
 
-func (repository *Repository) MarkFailed(
+func (repository *FirestoreRepository) MarkFailed(
 	ctx context.Context,
 	job missionattachment.Job,
 	target missionattachment.AttachmentSnapshot,
@@ -136,7 +136,7 @@ func (repository *Repository) MarkFailed(
 	})
 }
 
-func (repository *Repository) Complete(ctx context.Context, job missionattachment.Job) error {
+func (repository *FirestoreRepository) Complete(ctx context.Context, job missionattachment.Job) error {
 	if repository == nil || repository.client == nil {
 		return errors.New("mission attachment repository is not configured")
 	}
@@ -169,7 +169,7 @@ func (repository *Repository) Complete(ctx context.Context, job missionattachmen
 	})
 }
 
-func (repository *Repository) updateRevisionAttachment(
+func (repository *FirestoreRepository) updateRevisionAttachment(
 	ctx context.Context,
 	job missionattachment.Job,
 	target missionattachment.AttachmentSnapshot,
@@ -214,7 +214,7 @@ func (repository *Repository) updateRevisionAttachment(
 	})
 }
 
-func (repository *Repository) findRevisionForTransfer(
+func (repository *FirestoreRepository) findRevisionForTransfer(
 	tx *firestore.Transaction,
 	job missionattachment.Job,
 ) (MissionPublishedRevisionDocument, *firestore.DocumentRef, *firestore.DocumentRef, bool, error) {
@@ -242,7 +242,7 @@ func (repository *Repository) findRevisionForTransfer(
 	return MissionPublishedRevisionDocument{}, nil, nil, false, nil
 }
 
-func (repository *Repository) classifyMissingRevision(
+func (repository *FirestoreRepository) classifyMissingRevision(
 	tx *firestore.Transaction,
 	classID string,
 	missionID string,
@@ -287,18 +287,18 @@ func readMissionForTransfer(
 	return mission, true, nil
 }
 
-func (repository *Repository) missionRef(classID string, missionID string) *firestore.DocumentRef {
+func (repository *FirestoreRepository) missionRef(classID string, missionID string) *firestore.DocumentRef {
 	return repository.client.Collection(MissionsCollectionName).Doc(missionID)
 }
 
-func (repository *Repository) legacyMissionRef(classID string, missionID string) *firestore.DocumentRef {
+func (repository *FirestoreRepository) legacyMissionRef(classID string, missionID string) *firestore.DocumentRef {
 	return repository.client.Collection(teacherclass.CollectionName).
 		Doc(classID).
 		Collection(MissionsCollectionName).
 		Doc(missionID)
 }
 
-func (repository *Repository) missionRefs(classID string, missionID string) []*firestore.DocumentRef {
+func (repository *FirestoreRepository) missionRefs(classID string, missionID string) []*firestore.DocumentRef {
 	return []*firestore.DocumentRef{
 		repository.missionRef(classID, missionID),
 		repository.legacyMissionRef(classID, missionID),
@@ -310,7 +310,7 @@ type missionRevisionRefs struct {
 	revisionRef *firestore.DocumentRef
 }
 
-func (repository *Repository) missionRevisionRefs(
+func (repository *FirestoreRepository) missionRevisionRefs(
 	classID string,
 	missionID string,
 	revision int64,
@@ -328,7 +328,7 @@ func (repository *Repository) missionRevisionRefs(
 	return output
 }
 
-func (repository *Repository) legacyClassMissionsQuery(classID string) *firestore.CollectionRef {
+func (repository *FirestoreRepository) legacyClassMissionsQuery(classID string) *firestore.CollectionRef {
 	return repository.client.Collection(teacherclass.CollectionName).
 		Doc(classID).
 		Collection(MissionsCollectionName)

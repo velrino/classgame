@@ -17,7 +17,7 @@ func (service *Service) ListPage(ctx context.Context, identity sharedauth.Identi
 	return service.repository.ListPageByTeacherID(ctx, teacher.ProviderUserID, page)
 }
 
-func (repository *Repository) ListPageByTeacherID(ctx context.Context, teacherID string, page pagination.Params) ([]TeacherClassDocument, string, error) {
+func (repository *FirestoreRepository) ListPageByTeacherID(ctx context.Context, teacherID string, page pagination.Params) ([]TeacherClassDocument, string, error) {
 	query := repository.client.Collection(CollectionName).Where("teacher_id", "==", teacherID).
 		OrderBy(firestore.DocumentID, firestore.Asc).Limit(page.Limit + 1)
 	if page.After != "" {

@@ -32,12 +32,12 @@ type MissionReader interface {
 
 type Service struct {
 	missionReader      MissionReader
-	repository         *Repository
+	repository         InsightStore
 	teacherClassReader TeacherClassReader
 }
 
 func NewService(
-	repository *Repository,
+	repository InsightStore,
 	teacherClassReader TeacherClassReader,
 	missionReader MissionReader,
 ) *Service {

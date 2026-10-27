@@ -3,13 +3,10 @@ package users
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	sharedauth "classgame-api/internal/shared/auth"
 	"github.com/labstack/echo/v5"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type StudentClassReader interface {
@@ -25,25 +22,18 @@ func (service *Service) GetStudentClass(ctx context.Context, identity sharedauth
 	if identity.AuthMethod != sharedauth.AuthMethodAnonymous {
 		return StudentClassView{}, ErrStudentRequiresAnonymousAuth
 	}
-	if service.repository == nil {
+	if service.sessions == nil {
 		return StudentClassView{}, errors.New("student repository is not configured")
 	}
-	snapshot, err := service.repository.client.Collection(usersCollectionName).Doc(identity.ProviderUserID).Get(ctx)
-	if status.Code(err) == codes.NotFound {
-		return StudentClassView{}, ErrStudentNotFound
-	}
-	if err != nil {
-		return StudentClassView{}, fmt.Errorf("read student class session: %w", err)
-	}
-	var user UserDocument
-	if err := snapshot.DataTo(&user); err != nil {
-		return StudentClassView{}, err
-	}
-	class, err := service.classByCode(ctx, user.Student.ClassCode)
+	classID, classCode, err := service.sessions.GetStudentClassMembership(ctx, identity.ProviderUserID)
 	if err != nil {
 		return StudentClassView{}, err
 	}
-	if class.ClassID != user.Student.ClassID {
+	class, err := service.classByCode(ctx, classCode)
+	if err != nil {
+		return StudentClassView{}, err
+	}
+	if class.ClassID != classID {
 		return StudentClassView{}, ErrClassCodeNotFound
 	}
 	return StudentClassView{StudentSessionClass: studentSessionClassFromDocument(class), Status: class.Status, ActiveMissionID: class.ActiveMissionID}, nil

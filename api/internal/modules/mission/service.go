@@ -48,6 +48,7 @@ type TeacherClassService interface {
 }
 
 type MissionRepository interface {
+	GetPublishedRevision(context.Context, string, string, int64) (MissionPublishedRevisionDocument, bool, error)
 	Create(context.Context, CreateMissionInput) (MissionDocument, error)
 	Get(context.Context, string, string) (MissionDocument, bool, error)
 	List(context.Context, string, int) ([]MissionDocument, error)
