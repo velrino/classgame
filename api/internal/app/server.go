@@ -16,6 +16,7 @@ import (
 	teacherclass "classgame-api/internal/modules/teacher-class"
 	"classgame-api/internal/modules/users"
 	sharedanalytics "classgame-api/internal/shared/analytics"
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const defaultRequestBodyLimitBytes int64 = 256 * 1024
@@ -41,6 +42,7 @@ func New(options Options) *echo.Echo {
 	} else {
 		server.IPExtractor = echo.ExtractIPDirect()
 	}
+	server.Use(requestMetadataMiddleware)
 
 	if options.Analytics != nil && options.Analytics.Enabled() {
 		server.Use(serverErrorCaptureMiddleware(options.Analytics))
@@ -58,11 +60,14 @@ func New(options Options) *echo.Echo {
 		origins[index] = strings.TrimSpace(origins[index])
 	}
 	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		ExposeHeaders: []string{requestmeta.RequestIDHeader, "traceparent"},
 		AllowHeaders: []string{
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,
 			echo.HeaderContentType,
 			echo.HeaderOrigin,
+			requestmeta.RequestIDHeader,
+			"traceparent",
 			"X-PostHog-Distinct-Id",
 			"X-PostHog-Session-Id",
 			"X-PostHog-Window-Id",

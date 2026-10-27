@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"google.golang.org/api/idtoken"
+
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const (
@@ -129,6 +131,11 @@ func (handler *HTTPHandler) ServeHTTP(response http.ResponseWriter, request *htt
 		return
 	}
 
+	slog.InfoContext(request.Context(), "process mission attachment task",
+		"request_id", requestmeta.RequestID(request.Context()),
+		"trace_id", requestmeta.TraceID(request.Context()),
+		"class_id", job.ClassID, "mission_id", job.MissionID, "revision", job.Revision,
+	)
 	err := handler.processor.Process(request.Context(), job)
 	switch {
 	case err == nil, errors.Is(err, ErrRevisionObsolete), IsPermanent(err):
