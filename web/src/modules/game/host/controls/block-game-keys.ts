@@ -11,13 +11,14 @@ export const blockedGameKeyCodes = new Set([
   "Space",
 ]);
 
-export function isEditableTarget(target: EventTarget | null) {
+export function isInteractiveTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false;
   }
 
   return (
     target.isContentEditable ||
+    Boolean(target.closest("button, a[href], [role='button'], [role='dialog']")) ||
     target instanceof HTMLInputElement ||
     target instanceof HTMLSelectElement ||
     target instanceof HTMLTextAreaElement
@@ -25,5 +26,11 @@ export function isEditableTarget(target: EventTarget | null) {
 }
 
 export function shouldBlockGameKeyEvent(event: KeyboardEvent) {
-  return blockedGameKeyCodes.has(event.code) && !isEditableTarget(event.target);
+  return (
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    blockedGameKeyCodes.has(event.code) &&
+    !isInteractiveTarget(event.target)
+  );
 }

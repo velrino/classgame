@@ -122,6 +122,38 @@ export type StudentRecovery = {
   readonly revision: number;
 };
 
+/** JSON and older local records can contain null for empty fields. */
+export function normalizeSessionCheckpoint(value: unknown): StudentSessionCheckpoint | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const checkpoint = value as Record<string, unknown>;
+  const text = (key: string) => typeof checkpoint[key] === "string" ? checkpoint[key] as string : "";
+  const index = (key: string) => typeof checkpoint[key] === "number" && Number.isFinite(checkpoint[key])
+    ? Math.max(0, Math.floor(checkpoint[key] as number)) : 0;
+  const stageId = text("stageId") as PodId;
+  if (!POD_ORDER.includes(stageId) || !text("questionId") || checkpoint.seated !== true) return null;
+  const decisionAction = text("decisionAction");
+  const decisionTarget = text("decisionTarget") as PodId;
+  return {
+    stageId,
+    questionId: text("questionId"),
+    phase: text("phase"),
+    stepIndex: index("stepIndex"),
+    explainIndex: index("explainIndex"),
+    lines: Array.isArray(checkpoint.lines) ? checkpoint.lines.filter((line): line is string => typeof line === "string") : [],
+    wrongChoice: text("wrongChoice"),
+    wrongMisconceptionId: text("wrongMisconceptionId"),
+    decisionAction: ["next", "complete", "redirect", "mission-complete", "erase-note"].includes(decisionAction)
+      ? decisionAction as DecisionAction : "",
+    decisionTarget: POD_ORDER.includes(decisionTarget) ? decisionTarget : "",
+    decisionMessage: text("decisionMessage"),
+    decisionWhy: text("decisionWhy"),
+    tutorMessage: text("tutorMessage"),
+    whyPrompt: text("whyPrompt"),
+    clean: checkpoint.clean === true,
+    seated: true,
+  };
+}
+
 export function createInitialMemory(
   mission: GameMission = FALLBACK_GAME_MISSION,
 ): StudentMemory {
@@ -188,6 +220,28 @@ export function normalizeStudentMemory(
     returnTo: value.returnTo ?? null,
     lastPod: value.lastPod ?? null,
   };
+}
+
+// Older local checkpoints could mark remediation as complete without a correct
+// answer. Reopen that practice; server-confirmed historical state uses its own mapper.
+export function repairUnansweredCompletion(
+  memory: StudentMemory,
+  mission: GameMission,
+): StudentMemory {
+  const progress = { ...memory.progress };
+  for (const pod of POD_ORDER) {
+    const current = progress[pod];
+    if (current.status === "complete" && current.correct < current.required) {
+      progress[pod] = {
+        ...current,
+        status: "ready",
+        queue: current.queue.length
+          ? [...current.queue]
+          : [...mission.stages[pod].primary],
+      };
+    }
+  }
+  return { ...memory, progress };
 }
 
 /** The pod the tutor should be standing at for this memory. */

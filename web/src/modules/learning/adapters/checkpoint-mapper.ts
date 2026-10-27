@@ -6,6 +6,7 @@ import type {
 
 import {
   createInitialMemory,
+  normalizeSessionCheckpoint,
   normalizeStudentMemory,
   type StudentMemory,
   type StudentSessionCheckpoint,
@@ -153,19 +154,22 @@ export function memoryFromLearningAttempt(
 ): StudentMemory {
   const initial = createInitialMemory(mission);
   const progress = { ...initial.progress };
-  for (const stage of attempt.snapshot.progress) {
-    const pod = slotForStageID(mission, stage.stage_id);
+  for (const stage of attempt.snapshot.progress ?? []) {
+    const pod = slotForStageID(mission, stage.stage_id ?? "");
     if (!pod) {
       continue;
     }
     progress[pod] = {
       status: isPodStatus(stage.status) ? stage.status : progress[pod].status,
-      queue: stage.queue.filter((id) =>
-        mission.questions.some((question) => question.id === id),
-      ),
-      pool: stage.pool.filter((id) =>
-        mission.questions.some((question) => question.id === id),
-      ),
+      queue: [...new Set((stage.queue ?? []).flatMap((id) =>
+        mission.questions
+          .filter((question) => question.skill === pod &&
+            (question.id === id || mission.sourceQuestionIds[question.id] === id))
+          .map((question) => question.id),
+      ))],
+      // The API's pool is the full allowed question set, including accepted
+      // answers; it is not a fresh-question queue and must not award repeat credit.
+      pool: [],
       correct: stage.correct,
       required: stage.required,
     };
@@ -186,8 +190,8 @@ export function memoryFromLearningAttempt(
       },
       eventSequence: attempt.last_event_sequence,
       redirected: attempt.snapshot.redirected,
-      returnTo: slotForStageID(mission, attempt.snapshot.return_to),
-      lastPod: slotForStageID(mission, attempt.snapshot.last_pod),
+      returnTo: slotForStageID(mission, attempt.snapshot.return_to ?? ""),
+      lastPod: slotForStageID(mission, attempt.snapshot.last_pod ?? ""),
     },
     mission,
   );
@@ -198,14 +202,21 @@ export function checkpointFromLearningAttempt(
   mission: GameMission,
 ): StudentSessionCheckpoint | null {
   const checkpoint = attempt.snapshot.checkpoint;
-  const stage = slotForStageID(mission, checkpoint.stage_id);
+  if (!checkpoint) return null;
+  const stage = slotForStageID(mission, checkpoint.stage_id ?? "");
   if (!stage || !checkpoint.seated || !checkpoint.question_id) {
     return null;
   }
 
-  return {
+  const questionId = mission.questions.find((question) =>
+    question.skill === stage &&
+    (question.id === checkpoint.question_id ||
+      mission.sourceQuestionIds[question.id] === checkpoint.question_id),
+  )?.id;
+  if (!questionId) return null;
+  return normalizeSessionCheckpoint({
     stageId: stage,
-    questionId: checkpoint.question_id,
+    questionId,
     phase: checkpoint.phase,
     stepIndex: checkpoint.step_index,
     explainIndex: checkpoint.explain_index,
@@ -215,14 +226,14 @@ export function checkpointFromLearningAttempt(
     decisionAction: isDecisionAction(checkpoint.decision_action)
       ? checkpoint.decision_action
       : "",
-    decisionTarget: slotForStageID(mission, checkpoint.decision_target) ?? "",
+    decisionTarget: slotForStageID(mission, checkpoint.decision_target ?? "") ?? "",
     decisionMessage: checkpoint.decision_message,
     decisionWhy: checkpoint.decision_why,
     tutorMessage: checkpoint.tutor_message,
     whyPrompt: checkpoint.why_prompt,
     clean: checkpoint.clean,
     seated: checkpoint.seated,
-  };
+  });
 }
 
 export function nextRevision(reference: { current: number }) {

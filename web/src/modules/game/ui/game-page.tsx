@@ -419,12 +419,14 @@ export function GamePage({
             tutorPod={session.tutorPod}
             tutorLine={session.hydrated ? session.tutorLine : ""}
             nearSeat={report.nearSeat}
+            walkingToDesk={report.walking}
             avatarPresetId={avatarPresetId}
             musicEnabled={musicEnabled}
             musicWaitingForGesture={musicWaitingForGesture}
             onSelectAvatar={handlers.selectAvatar}
             onToggleMusic={setMusicEnabled}
             onSelectMission={startMission}
+            onWalkToDesk={handlers.walk}
             onEndSession={leaveClass}
           />
         )}

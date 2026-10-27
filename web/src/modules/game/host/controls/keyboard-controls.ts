@@ -38,8 +38,15 @@ export function createKeyboardControls(target: Window) {
     pressed.delete(event.code);
   }
 
+  function clearPressed() {
+    pressed.clear();
+    interactRequested = false;
+  }
+
   target.addEventListener("keydown", handleKeyDown);
   target.addEventListener("keyup", handleKeyUp);
+  target.addEventListener("blur", clearPressed);
+  target.document.addEventListener("visibilitychange", clearPressed);
 
   return {
     consumeInteract() {
@@ -50,6 +57,8 @@ export function createKeyboardControls(target: Window) {
     dispose() {
       target.removeEventListener("keydown", handleKeyDown);
       target.removeEventListener("keyup", handleKeyUp);
+      target.removeEventListener("blur", clearPressed);
+      target.document.removeEventListener("visibilitychange", clearPressed);
     },
     getMovement(): MovementInput {
       return {

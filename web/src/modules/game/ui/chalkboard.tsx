@@ -576,7 +576,7 @@ function DecisionPhase({
           onClick={onContinue}
           className={`${chalkPrimary} w-full text-[1.3em]`}
         >
-          {leaves ? "Stand up →" : "Continue →"}
+          {leaves ? "Stand up →" : decision.action === "next" ? "Try again →" : "Continue →"}
         </button>
       </div>
     </>

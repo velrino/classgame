@@ -1,5 +1,6 @@
 import {
   createInitialMemory,
+  normalizeSessionCheckpoint,
   pickTutorPod,
   type LearningEvent,
   type PodProgress,
@@ -203,8 +204,9 @@ function startLesson(
 
 function restoreLesson(
   mission: GameMission,
-  checkpoint: StudentSessionCheckpoint | null | undefined,
+  input: StudentSessionCheckpoint | null | undefined,
 ): Lesson | null {
+  const checkpoint = normalizeSessionCheckpoint(input);
   if (!checkpoint?.seated || !isPodId(checkpoint.stageId)) {
     return null;
   }
@@ -263,18 +265,21 @@ function requeueCurrent(
   progress: PodProgress,
   bias: -1 | 0 | 1,
 ): PodProgress {
-  const [current, ...rest] = progress.queue;
+  const [current, ...pending] = progress.queue;
 
   if (!current) {
     return progress;
   }
-
-  if (rest.length === 0 && progress.pool.length > 0) {
-    const [fresh, ...pool] = sortByBias(mission, progress.pool, bias);
+  const rest = [...new Set(pending)].filter((id) => id !== current);
+  const available = [...new Set(progress.pool)].filter((id) =>
+    id !== current && !rest.includes(id),
+  );
+  if (rest.length === 0 && available.length > 0) {
+    const [fresh, ...pool] = sortByBias(mission, available, bias);
     return { ...progress, queue: [fresh, current], pool };
   }
 
-  return { ...progress, queue: [...rest, current] };
+  return { ...progress, queue: [...rest, current], pool: available };
 }
 
 function mergeNote(
@@ -435,7 +440,18 @@ export function sessionReducer(
   switch (action.type) {
     case "hydrate": {
       const memory = action.memory ?? createInitialMemory(action.mission);
-      const restoredLesson = restoreLesson(action.mission, action.checkpoint);
+      let restoredLesson = restoreLesson(action.mission, action.checkpoint);
+      if (restoredLesson?.decision &&
+          ["complete", "mission-complete"].includes(restoredLesson.decision.action) &&
+          POD_ORDER.some((pod) => memory.progress[pod].status !== "complete")) {
+        const current = memory.progress[restoredLesson.pod];
+        restoredLesson = current.correct < current.required
+          ? startLesson(action.mission, memory, restoredLesson.pod).lesson
+          : {
+              ...restoredLesson,
+              decision: decideAfterPodComplete(action.mission, memory, restoredLesson.pod),
+            };
+      }
       const tutorPod = restoredLesson?.pod ?? pickTutorPod(memory);
 
       return {
@@ -788,7 +804,7 @@ export function sessionReducer(
           questionId: lesson.question.id,
           title: "Student rated Mia's explanation",
           detail: `Feedback: ${action.value}.`,
-          outcome: action.value === "helpful" ? "correct" : "support",
+          outcome: "support",
           occurredAt: action.now,
         },
         action.eventId,
@@ -831,8 +847,11 @@ export function sessionReducer(
       // A clean answer: count it, and either move on or let the tutor close the pod.
       if (lesson.phase === "correct") {
         const progress = memory.progress[lesson.pod];
-        const [, ...rest] = progress.queue;
-        const correct = lesson.clean ? progress.correct + 1 : progress.correct;
+        const questionWasPending = progress.queue.includes(lesson.question.id);
+        const rest = progress.queue.filter((id) => id !== lesson.question.id);
+        const correct = lesson.clean && questionWasPending
+          ? progress.correct + 1
+          : progress.correct;
         let updated: PodProgress = { ...progress, queue: rest, correct };
 
         if (correct >= progress.required) {
@@ -874,55 +893,6 @@ export function sessionReducer(
       switch (decision.action) {
         case "next": {
           const current = memory.progress[lesson.pod];
-          const hasAlternative =
-            current.queue.length > 1 || current.pool.length > 0;
-
-          // A generated mission currently has one question per visible stage.
-          // Once Mia has explained a missed answer, repeating that same question
-          // only loops over an answer the student has already seen. Record the
-          // remediation and advance, preserving the incorrect result as evidence.
-          if (!hasAlternative) {
-            const nextIndex = POD_ORDER.indexOf(lesson.pod) + 1;
-            const target = memory.returnTo ?? POD_ORDER[nextIndex] ?? null;
-            const progress = {
-              ...memory.progress,
-              [lesson.pod]: {
-                ...current,
-                status: "complete" as const,
-                queue: [],
-              },
-            };
-
-            if (target && progress[target].status === "locked") {
-              progress[target] = { ...progress[target], status: "ready" };
-            }
-
-            const nextMemory = appendLearningEvent(
-              { ...memory, progress, returnTo: null },
-              {
-                type: "adaptation",
-                stageId: lesson.pod,
-                questionId: lesson.question.id,
-                title: "Guided remediation completed",
-                detail:
-                  "Moving on after explaining the stage's only question; the incorrect answer remains recorded.",
-                outcome: "support",
-                occurredAt: action.now,
-              },
-            );
-
-            if (!target) {
-              return leaveSeat(
-                session,
-                nextMemory,
-                lesson.pod,
-                roamingLine(session.mission, nextMemory, lesson.pod, false),
-              );
-            }
-
-            return continueSeated(session, nextMemory, target);
-          }
-
           const progress = requeueCurrent(session.mission, current, bias);
           const nextMemory: StudentMemory = {
             ...memory,
@@ -973,7 +943,24 @@ export function sessionReducer(
 
         case "complete":
         case "mission-complete": {
-          const target = decision.target;
+          const current = memory.progress[lesson.pod];
+          if (current.correct < current.required) {
+            const retryMemory = {
+              ...memory,
+              progress: {
+                ...memory.progress,
+                [lesson.pod]: {
+                  ...current,
+                  status: "ready" as const,
+                  queue: current.queue.length
+                    ? current.queue
+                    : [...session.mission.stages[lesson.pod].primary],
+                },
+              },
+            };
+            return continueSeated(session, retryMemory, lesson.pod);
+          }
+          const target = decideAfterPodComplete(session.mission, memory, lesson.pod).target;
           const progress = {
             ...memory.progress,
             [lesson.pod]: {
