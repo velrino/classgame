@@ -9,6 +9,7 @@ Review the intended environment before operational writes. Local startup does no
 | [Cloud Run](CLOUD-RUN.md) | Deployment inputs, identities, workers, and verification |
 | [Hosting history](HOSTING-HISTORY.md) | Dated shutdown record; former URLs are historical |
 | [Release safety](RELEASE-SAFETY.md) | Compatibility, recovery, and rollout checks |
+| [Retention and recovery](RETENTION-RECOVERY.md) | Manual policy, encrypted scope export, and guarded restore |
 | [Durable evidence](DURABLE-EVIDENCE.md) | Replay, claims, finalizer fences, and recovery |
 | [Release validation](RELEASE-VALIDATION.md) | Dated local evidence and remaining checks |
 

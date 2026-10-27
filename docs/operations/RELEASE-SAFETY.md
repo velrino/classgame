@@ -36,9 +36,9 @@ Record measured latency/read counts, fallback rates, and remaining delivery gaps
 
 ## Retention and deletion decisions
 
-Before production use, assign an owner and explicit retention/deletion rules for uploads, immutable mission revisions, checkpoints/events, tutor output, student memory, class summaries, logs, and backups. Record purpose, access, retention window, and deletion behavior rather than inventing a universal duration.
+The [retention and recovery policy](RETENTION-RECOVERY.md) assigns owners and explicit manual defaults for uploads, immutable revisions, attempts/replay, profiles, private projections, logs, queue records, and encrypted backups. It includes a read-only plan/export command and guarded local delete/restore verification. No automatic live deletion or hosted backup policy is enabled.
 
-A deletion procedure must cover derived projections and stored objects, prevent delayed jobs from recreating deleted data, and state what retained history/backups still contain. These decisions and existing public-object remediation remain operational work; this release does not claim they have run.
+A deletion procedure must cover derived projections and stored objects, prevent delayed jobs from recreating deleted data, and state what retained history/backups still contain. The policy and local restore evidence are implemented. Applying hosted retention, backup schedules, or old public-object remediation remains a separately reviewed operational action; this release does not claim they ran.
 
 ## Rollback and recovery
 
