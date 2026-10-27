@@ -71,7 +71,7 @@ func (repository *FirestoreRepository) UpsertStudent(
 		if err := classSnapshot.DataTo(&class); err != nil {
 			return err
 		}
-		if class.ClassCode != input.ClassCode || !classrooms.MayEnroll(class, existingMember, now) || tenancy.NormalizeScope(tenancy.Scope{OrganizationID: class.OrganizationID, DistrictID: class.DistrictID, SchoolID: class.SchoolID}) != tenancy.NormalizeScope(input.Scope) {
+		if class.ClassCode != input.ClassCode || !classrooms.MayEnroll(class, existingMember, classSnapshot.ReadTime) || tenancy.NormalizeScope(tenancy.Scope{OrganizationID: class.OrganizationID, DistrictID: class.DistrictID, SchoolID: class.SchoolID}) != tenancy.NormalizeScope(input.Scope) {
 			return ErrClassCodeNotFound
 		}
 		if loginCount <= 0 {
