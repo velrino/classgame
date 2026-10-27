@@ -2,6 +2,8 @@ package students
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"log/slog"
 	"strings"
@@ -17,7 +19,7 @@ func (service *Service) ProcessLearningJob(ctx context.Context, job LearningJob)
 	}
 	switch job.Kind {
 	case LearningJobFinalize:
-		_, err := service.finalizeStudentAttempt(ctx, job.StudentID, job.AttemptID)
+		_, err := service.finalizeStudentAttempt(ctx, job)
 		return err
 	case LearningJobWatchdog:
 		attempt, marked, err := service.learning.MarkStudentAttemptAbandoned(
@@ -34,7 +36,7 @@ func (service *Service) ProcessLearningJob(ctx context.Context, job LearningJob)
 		if !marked && (attempt.Status != "abandoned" || attempt.Trace.Finalized) {
 			return nil
 		}
-		_, err = service.finalizeStudentAttempt(ctx, attempt.StudentID, attempt.ID)
+		_, err = service.finalizeStudentAttempt(ctx, FinalizationJob(attempt))
 		return err
 	default:
 		return errors.New("unsupported student learning job")
@@ -43,49 +45,52 @@ func (service *Service) ProcessLearningJob(ctx context.Context, job LearningJob)
 
 func (service *Service) finalizeStudentAttempt(
 	ctx context.Context,
-	studentID string,
-	attemptID string,
+	job LearningJob,
 ) (StudentMissionAttemptDocument, error) {
 	if service.learning == nil || service.sessions == nil {
 		return StudentMissionAttemptDocument{}, errors.New("student learning repository is not configured")
 	}
-	attempt, user, exists, err := service.learning.GetStudentLearningAttempt(ctx, studentID, attemptID)
+
+	ownerBytes := make([]byte, 16)
+	if _, err := rand.Read(ownerBytes); err != nil {
+		return StudentMissionAttemptDocument{}, err
+	}
+	now := time.Now()
+	attempt, user, claimed, err := service.learning.ClaimStudentFinalization(ctx, job, hex.EncodeToString(ownerBytes), now, now.Add(finalizationLeaseDuration))
 	if err != nil {
-		return StudentMissionAttemptDocument{}, err
+		return attempt, err
 	}
-	if !exists {
-		return StudentMissionAttemptDocument{}, ErrStudentAttemptNotFound
-	}
-	if attempt.Trace.Finalized {
+	if !claimed {
 		return attempt, nil
 	}
-	if attempt.Status != "completed" && attempt.Status != "abandoned" {
-		return attempt, nil
-	}
-	if err := service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "processing", time.Now()); err != nil {
-		return StudentMissionAttemptDocument{}, err
-	}
+	fence := CaptureFinalizationFence(attempt)
 
 	missionDocument, err := service.missionForAttempt(
 		ctx,
 		attempt,
 	)
 	if err != nil {
-		_ = service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
+		_ = service.learning.FailStudentFinalization(ctx, fence, time.Now())
 		return StudentMissionAttemptDocument{}, err
+	}
+	evidence := EffectiveTutorEvidence(attempt)
+	safeSnapshot, _ := AssessLearningSnapshotWithEvidence(missionDocument, attempt.Snapshot, attempt.TutorTurns, evidence.AcceptedAnswers, attempt.Status)
+	memoryContext := user.Student.LearningMemory
+	if !sameStudentClass(user.Student, attempt) {
+		memoryContext = StudentLearningMemory{}
 	}
 	traceInput := toLearningTraceInput(
 		missionDocument,
-		attempt.Snapshot,
+		safeSnapshot,
 		attempt.Status,
-		user.Student.LearningMemory,
+		memoryContext,
 	)
 	trace := generation.BuildObservedLearningTrace(traceInput, "learning trace generator is not configured")
 	if service.learningTraceGenerator != nil {
 		if service.allowLearningGeneration(ctx, attempt.ClassID) {
 			trace, err = service.learningTraceGenerator.BuildLearningTrace(ctx, traceInput)
 			if err != nil {
-				_ = service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
+				_ = service.learning.FailStudentFinalization(ctx, fence, time.Now())
 				return StudentMissionAttemptDocument{}, err
 			}
 		} else {
@@ -93,7 +98,7 @@ func (service *Service) finalizeStudentAttempt(
 		}
 	}
 	trace.Finalized = true
-	trace.EventCount = len(attempt.Snapshot.Events)
+	trace.EventCount = len(safeSnapshot.Events)
 	memory := StudentLearningMemory{
 		Strengths:            trace.Strengths,
 		ImprovementAreas:     trace.ImprovementAreas,
@@ -105,14 +110,16 @@ func (service *Service) finalizeStudentAttempt(
 
 	finalized, err := service.learning.FinalizeStudentLearningTrace(
 		ctx,
-		user.ID,
-		attempt.ID,
+		fence,
 		trace,
 		memory,
 		time.Now(),
 	)
+	if errors.Is(err, ErrStaleFinalization) {
+		return finalized, nil
+	}
 	if err != nil {
-		_ = service.learning.SetStudentAttemptTraceState(ctx, attempt.ID, "failed", time.Now())
+		_ = service.learning.FailStudentFinalization(ctx, fence, time.Now())
 		return StudentMissionAttemptDocument{}, err
 	}
 	if err := service.refreshClassLearningSynthesis(ctx, finalized.ClassID); err != nil {

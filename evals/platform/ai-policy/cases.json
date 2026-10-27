@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "suite": "ai-policy",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "synthetic": true,
   "tutor_context": {
     "mission": {
@@ -1082,6 +1082,824 @@
           "learning_snapshot.events.0.type": "feedback",
           "learning_snapshot.events.0.detail": "confusing",
           "learning_snapshot.events.0.outcome": "support"
+        }
+      }
+    },
+    {
+      "id": "learning-durable-answers-after-window-v1",
+      "kind": "learning",
+      "learning": {
+        "snapshot": {},
+        "turns": [],
+        "accepted_answers": [
+          {
+            "question_id": "fraction-one",
+            "student_response": "1/2",
+            "published_revision": 1
+          },
+          {
+            "question_id": "fraction-two",
+            "student_response": "2/4",
+            "published_revision": 1
+          }
+        ],
+        "requested_status": "completed"
+      },
+      "expected": {
+        "equals": {
+          "learning_status": "completed",
+          "learning_snapshot.progress.0.correct": 2
+        }
+      }
+    },
+    {
+      "id": "learning-durable-facts-revalidate-v1",
+      "kind": "learning",
+      "learning": {
+        "snapshot": {},
+        "turns": [],
+        "accepted_answers": [
+          {
+            "question_id": "fraction-one",
+            "student_response": "1/3",
+            "published_revision": 1
+          },
+          {
+            "question_id": "fraction-two",
+            "student_response": "2/4",
+            "published_revision": 2
+          }
+        ],
+        "requested_status": "completed"
+      },
+      "expected": {
+        "equals": {
+          "learning_status": "learning",
+          "learning_snapshot.progress.0.correct": 0
+        }
+      }
+    },
+    {
+      "id": "evidence-window-keeps-budget-35-v1",
+      "kind": "evidence",
+      "evidence": {
+        "attempt": {},
+        "schema_version": 1,
+        "generated_count": 35,
+        "recent_feedback_count": 80
+      },
+      "expected": {
+        "equals": {
+          "generation_allowed": true,
+          "generated_count": 35,
+          "history_incomplete": false
+        }
+      }
+    },
+    {
+      "id": "evidence-window-keeps-budget-36-v1",
+      "kind": "evidence",
+      "evidence": {
+        "attempt": {},
+        "schema_version": 1,
+        "generated_count": 36,
+        "recent_feedback_count": 80
+      },
+      "expected": {
+        "equals": {
+          "generation_allowed": false,
+          "generated_count": 36,
+          "history_incomplete": false
+        }
+      }
+    },
+    {
+      "id": "evidence-legacy-truncated-fails-closed-v1",
+      "kind": "evidence",
+      "evidence": {
+        "attempt": {},
+        "schema_version": 0,
+        "generated_count": 0,
+        "recent_feedback_count": 80
+      },
+      "expected": {
+        "equals": {
+          "generation_allowed": false,
+          "generated_count": 0,
+          "history_incomplete": true
+        }
+      }
+    },
+    {
+      "id": "event-durable-exact-replay-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "complete",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        }
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": true,
+          "replay_turn_id": "stored-turn-older-than-window",
+          "event_conflict": false,
+          "event_pending": false,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "event-changed-student-response-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "complete",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "request": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/3",
+          "revision": 1
+        }
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": false,
+          "event_conflict": true,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "event-changed-explicit-reasoning-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "complete",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "request": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1,
+          "explicit_reasoning": "changed explanation"
+        }
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": false,
+          "event_conflict": true,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "event-changed-attempt-id-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "complete",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "request": {
+          "student_id": "synthetic-student",
+          "attempt_id": "another-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        }
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": false,
+          "event_conflict": true,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "event-changed-student-id-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "complete",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "request": {
+          "student_id": "another-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        }
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": false,
+          "event_conflict": true,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "event-changed-revision-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "complete",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "request": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 2
+        }
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": false,
+          "event_conflict": true,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "event-active-lease-busy-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "processing",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "owner_token": "owner-1",
+        "request_owner": "owner-1",
+        "lease_until": "2026-01-01T00:02:00Z"
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": false,
+          "event_conflict": false,
+          "event_pending": true,
+          "reservation_matches": true
+        }
+      }
+    },
+    {
+      "id": "event-wrong-owner-cannot-commit-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "processing",
+        "now": "2026-01-01T00:00:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "owner_token": "owner-1",
+        "request_owner": "owner-2",
+        "lease_until": "2026-01-01T00:02:00Z"
+      },
+      "expected": {
+        "equals": {
+          "event_pending": true,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "event-expired-lease-retry-v1",
+      "kind": "tutor_event",
+      "tutor_event": {
+        "stored": {
+          "student_id": "synthetic-student",
+          "attempt_id": "synthetic-attempt",
+          "mission_id": "synthetic-mission",
+          "event_id": "synthetic-event",
+          "type": "answer",
+          "question_id": "fraction-one",
+          "student_response": "1/2",
+          "revision": 1
+        },
+        "state": "processing",
+        "now": "2026-01-01T00:03:00Z",
+        "turn": {
+          "id": "stored-turn-older-than-window",
+          "type": "answer"
+        },
+        "owner_token": "owner-1",
+        "request_owner": "owner-1",
+        "lease_until": "2026-01-01T00:02:00Z"
+      },
+      "expected": {
+        "equals": {
+          "replay_complete": false,
+          "event_conflict": false,
+          "event_pending": false,
+          "reservation_matches": false
+        }
+      }
+    },
+    {
+      "id": "finalizer-current-fence-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:00:00Z"
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": true,
+          "job_matches": true,
+          "eligible": true,
+          "due": false
+        }
+      }
+    },
+    {
+      "id": "finalizer-rejects-new-evidence-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:00:00Z",
+        "current": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 6,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        }
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": false,
+          "job_matches": false,
+          "eligible": true,
+          "due": false
+        }
+      }
+    },
+    {
+      "id": "finalizer-rejects-new-owner-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:00:00Z",
+        "current": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-2",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        }
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": false,
+          "job_matches": true,
+          "eligible": true,
+          "due": false
+        }
+      }
+    },
+    {
+      "id": "finalizer-rejects-new-status-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:00:00Z",
+        "current": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "abandoned",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        }
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": false,
+          "job_matches": false,
+          "eligible": true,
+          "due": false
+        }
+      }
+    },
+    {
+      "id": "finalizer-rejects-new-dispatch-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:00:00Z",
+        "current": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 1
+        }
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": false,
+          "job_matches": false,
+          "eligible": true,
+          "due": false
+        }
+      }
+    },
+    {
+      "id": "finalizer-rejects-already-finalized-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:00:00Z",
+        "current": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing",
+            "trace": {
+              "finalized": true
+            }
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        }
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": false,
+          "job_matches": true,
+          "eligible": false,
+          "due": false
+        }
+      }
+    },
+    {
+      "id": "finalizer-expired-lease-recoverable-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:06:00Z"
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": true,
+          "job_matches": true,
+          "eligible": true,
+          "due": true
+        }
+      }
+    },
+    {
+      "id": "finalizer-legacy-completion-no-backfill-v1",
+      "kind": "finalization",
+      "finalization": {
+        "captured": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "processing"
+          },
+          "schema_version": 1,
+          "evidence_revision": 5,
+          "token": "finalizer-1",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        },
+        "now": "2026-01-01T00:00:00Z",
+        "current": {
+          "attempt": {
+            "id": "synthetic-attempt",
+            "student_id": "synthetic-student",
+            "class_id": "synthetic-class",
+            "mission_id": "synthetic-mission",
+            "status": "completed",
+            "published_revision": 1,
+            "snapshot": {
+              "revision": 7
+            },
+            "trace_state": "pending"
+          },
+          "schema_version": 0,
+          "evidence_revision": 5,
+          "token": "",
+          "lease_until": "2026-01-01T00:05:00Z",
+          "dispatch_generation": 0
+        }
+      },
+      "expected": {
+        "equals": {
+          "fence_matches": false,
+          "job_matches": true,
+          "eligible": false,
+          "due": false
         }
       }
     }

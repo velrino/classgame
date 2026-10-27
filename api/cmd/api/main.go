@@ -349,6 +349,7 @@ func run() (runErr error) {
 	}
 
 	usersService := students.NewService(students.Dependencies{
+		Recovery: usersRepository,
 		Sessions: usersRepository, Learning: usersRepository, ClassLearning: usersRepository,
 		Missions: missionRepository, Revisions: missionRepository, Classes: teacherClassRepository,
 		TraceGenerator: orchestratorService, TutorGenerator: orchestratorService, ClassGenerator: orchestratorService,
