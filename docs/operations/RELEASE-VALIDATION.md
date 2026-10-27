@@ -9,7 +9,7 @@ The [release PR](https://github.com/velrino/classgame/pull/16) records integrati
 | API policies | 49 synthetic cases pass through production Go rules |
 | Browser evidence policies | 30 synthetic cases pass through production TypeScript rules |
 | Firestore transactions | 10 local emulator cases pass, including concurrent claims, durable facts, replay, stale writes, resume, and bounded recovery |
-| Queue delivery | Local synthetic Redis checks pass; see the queue report linked in the PR |
+| Queue delivery | 11 synthetic Redis checks pass, including two worker processes, worker kill/recovery, and a stopped broker |
 | Docs and assets | Local links, UPPERCASE Markdown names, folder indexes, exact Product tour, and original SVG pass |
 
 The evaluation runs make no real model calls. Firestore checks use a loopback emulator, a `demo-` project, and synthetic records. Queue checks use a temporary local Redis. Shared Firebase data, rules, storage permissions, and cloud services are not changed.
@@ -24,4 +24,4 @@ Local entry pages and Scalar are checked separately from an authenticated teache
 - [Shared AI budgets](https://github.com/velrino/classgame/issues/33): event claims are shared, while provider concurrency limits remain per process. Unknown provider outcomes do not allow exactly-once billing claims.
 - [Retention and restore](https://github.com/velrino/classgame/issues/35): owners, keep times, deletion, backups, and restore targets need a separate decision.
 
-No GCP deployment, new hosted worker, cloud permission change, shared-data bootstrap, or data deletion is included.
+No GCP deployment, new hosted worker, cloud permission change, shared-data bootstrap, or shared-data deletion is included.
