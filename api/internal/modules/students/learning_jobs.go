@@ -6,11 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"log/slog"
-	"strings"
 	"time"
 
 	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/modules/tenancy"
 )
 
 func (service *Service) ProcessLearningJob(ctx context.Context, job LearningJob) error {
@@ -18,6 +16,8 @@ func (service *Service) ProcessLearningJob(ctx context.Context, job LearningJob)
 		return err
 	}
 	switch job.Kind {
+	case LearningJobClassRefresh:
+		return service.processClassLearningRefresh(ctx, job)
 	case LearningJobFinalize:
 		_, err := service.finalizeStudentAttempt(ctx, job)
 		return err
@@ -61,6 +61,9 @@ func (service *Service) finalizeStudentAttempt(
 		return attempt, err
 	}
 	if !claimed {
+		if attempt.Trace.Finalized {
+			service.requestClassLearningRefresh(ctx, attempt.ClassID)
+		}
 		return attempt, nil
 	}
 	fence := CaptureFinalizationFence(attempt)
@@ -122,66 +125,9 @@ func (service *Service) finalizeStudentAttempt(
 		_ = service.learning.FailStudentFinalization(ctx, fence, time.Now())
 		return StudentMissionAttemptDocument{}, err
 	}
-	if err := service.refreshClassLearningSynthesis(ctx, finalized.ClassID); err != nil {
-		slog.Warn("class learning synthesis refresh failed", "error", err, "class_id", finalized.ClassID)
-	}
+	service.requestClassLearningRefresh(ctx, finalized.ClassID)
 
 	return finalized, nil
-}
-
-func (service *Service) refreshClassLearningSynthesis(ctx context.Context, classID string) error {
-	if service.classLearningGenerator == nil || strings.TrimSpace(classID) == "" {
-		return nil
-	}
-	if !service.allowLearningGeneration(ctx, classID) {
-		return nil
-	}
-	attempts, err := service.classLearning.ListLatestFinalizedAttemptsByClassID(ctx, classID, 100)
-	if err != nil {
-		return err
-	}
-	evidence := make([]generation.ClassLearningStudentEvidence, 0, len(attempts))
-	evidenceUpdatedAt := time.Time{}
-	scope := tenancy.DefaultScope()
-	for _, attempt := range attempts {
-		if attempt.OrganizationID != "" || attempt.DistrictID != "" || attempt.SchoolID != "" {
-			scope = tenancy.NormalizeScope(tenancy.Scope{
-				OrganizationID: attempt.OrganizationID,
-				DistrictID:     attempt.DistrictID,
-				SchoolID:       attempt.SchoolID,
-			})
-		}
-		evidence = append(evidence, generation.ClassLearningStudentEvidence{
-			StudentID:        attempt.StudentID,
-			StudentName:      attempt.StudentName,
-			Strengths:        attempt.Trace.Strengths,
-			ImprovementAreas: attempt.Trace.ImprovementAreas,
-		})
-		if studentAttemptEvidenceTime(attempt).After(evidenceUpdatedAt) {
-			evidenceUpdatedAt = studentAttemptEvidenceTime(attempt)
-		}
-	}
-	synthesis, err := service.classLearningGenerator.BuildClassLearningSynthesis(
-		ctx,
-		generation.BuildClassLearningSynthesisInput{
-			ClassID:  classID,
-			Evidence: evidence,
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	return service.classLearning.SaveClassLearningSynthesis(ctx, ClassLearningSynthesisDocument{
-		OrganizationID:    scope.OrganizationID,
-		DistrictID:        scope.DistrictID,
-		SchoolID:          scope.SchoolID,
-		ClassID:           classID,
-		Synthesis:         synthesis,
-		AttemptCount:      len(attempts),
-		EvidenceUpdatedAt: evidenceUpdatedAt,
-		UpdatedAt:         time.Now(),
-	})
 }
 
 func (service *Service) allowLearningGeneration(ctx context.Context, classID string) bool {
