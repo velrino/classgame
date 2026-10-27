@@ -7,9 +7,24 @@ import (
 	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+
+	"classgame-api/internal/platform/firebase/emulator"
 )
 
 func (config Config) Validate() error {
+	if config.FirebaseEmulatorsEnabled && (config.GenAIEnabled || config.PostHogEnabled) {
+		return fmt.Errorf("Firebase emulator mode requires GENAI_ENABLED=false and POSTHOG_ENABLED=false")
+	}
+	if err := (emulator.Options{
+		Enabled:               config.FirebaseEmulatorsEnabled,
+		Environment:           config.AppEnv,
+		ProjectID:             config.FirebaseProjectID,
+		AuthHost:              config.FirebaseAuthEmulatorHost,
+		FirestoreHost:         config.FirestoreEmulatorHost,
+		CredentialsConfigured: config.FirebaseCredentialsFile != "" || config.FirebaseCredentialsJSON != "",
+	}).Validate(); err != nil {
+		return err
+	}
 	return validation.Errors{
 		"CORS_ALLOWED_ORIGINS": validation.Validate(config.CORSAllowedOrigins, validation.Required, validation.By(validateCORSOrigins(config.AppEnv))),
 		"HOST": validation.Validate(config.Host,
@@ -31,10 +46,10 @@ func (config Config) Validate() error {
 			validation.Required,
 		),
 		"FIREBASE_CREDENTIALS_FILE": validation.Validate(config.FirebaseCredentialsFile,
-			validation.By(validateFirebaseCredentials(config.FirebaseCredentialsJSON)),
+			validation.When(!config.FirebaseEmulatorsEnabled, validation.By(validateFirebaseCredentials(config.FirebaseCredentialsJSON))),
 		),
 		"FIREBASE_CREDENTIALS_JSON": validation.Validate(config.FirebaseCredentialsJSON,
-			validation.By(validateFirebaseCredentials(config.FirebaseCredentialsFile)),
+			validation.When(!config.FirebaseEmulatorsEnabled, validation.By(validateFirebaseCredentials(config.FirebaseCredentialsFile))),
 		),
 		"FIREBASE_PING_TIMEOUT_SECONDS": validation.Validate(config.FirebasePingTimeoutSeconds,
 			validation.Required,
