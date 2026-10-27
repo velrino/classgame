@@ -10,7 +10,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 	sharedratelimit "classgame-api/internal/shared/ratelimit"
 )
 
@@ -250,11 +250,11 @@ type fakeStudentAuthenticator struct{}
 func (fakeStudentAuthenticator) AuthenticateBearerToken(
 	context.Context,
 	string,
-) (sharedfirebase.Identity, error) {
-	return sharedfirebase.Identity{
-		Provider:       sharedfirebase.IdentityProviderFirebase,
+) (sharedauth.Identity, error) {
+	return sharedauth.Identity{
+		Provider:       sharedauth.IdentityProviderFirebase,
 		ProviderUserID: "student-1",
-		AuthMethod:     sharedfirebase.AuthMethodAnonymous,
+		AuthMethod:     sharedauth.AuthMethodAnonymous,
 	}, nil
 }
 
@@ -278,7 +278,7 @@ type fakeStudentTutorService struct {
 
 func (service *fakeStudentTutorService) SaveStudentTutorTurn(
 	context.Context,
-	sharedfirebase.Identity,
+	sharedauth.Identity,
 	SaveStudentTutorTurnInput,
 ) (StudentTutorTurn, error) {
 	service.called = true
@@ -294,7 +294,7 @@ type fakeUsersService struct {
 
 func (service *fakeUsersService) UpsertStudent(
 	context.Context,
-	sharedfirebase.Identity,
+	sharedauth.Identity,
 	string,
 	string,
 ) (UserDocument, error) {
@@ -312,7 +312,7 @@ func (service *fakeUsersService) ValidateStudentClassCode(
 
 func (service *fakeUsersService) StartStudentMission(
 	context.Context,
-	sharedfirebase.Identity,
+	sharedauth.Identity,
 	string,
 	string,
 	string,
@@ -322,7 +322,7 @@ func (service *fakeUsersService) StartStudentMission(
 
 func (service *fakeUsersService) UpdateStudentPresence(
 	context.Context,
-	sharedfirebase.Identity,
+	sharedauth.Identity,
 	string,
 	string,
 	string,

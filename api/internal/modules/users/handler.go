@@ -16,7 +16,7 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 
 	sharedanalytics "classgame-api/internal/shared/analytics"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 	sharedratelimit "classgame-api/internal/shared/ratelimit"
 )
 
@@ -32,13 +32,13 @@ const (
 var classCodePattern = regexp.MustCompile(`^[0-9]{6}$`)
 
 type Authenticator interface {
-	AuthenticateBearerToken(context.Context, string) (sharedfirebase.Identity, error)
+	AuthenticateBearerToken(context.Context, string) (sharedauth.Identity, error)
 }
 
 type UsersService interface {
 	UpsertStudent(
 		context.Context,
-		sharedfirebase.Identity,
+		sharedauth.Identity,
 		string,
 		string,
 	) (UserDocument, error)
@@ -48,14 +48,14 @@ type UsersService interface {
 	) error
 	StartStudentMission(
 		context.Context,
-		sharedfirebase.Identity,
+		sharedauth.Identity,
 		string,
 		string,
 		string,
 	) (UserDocument, error)
 	UpdateStudentPresence(
 		context.Context,
-		sharedfirebase.Identity,
+		sharedauth.Identity,
 		string,
 		string,
 		string,
@@ -68,14 +68,14 @@ type UsersService interface {
 type StudentLearningService interface {
 	SaveStudentLearningSnapshot(
 		context.Context,
-		sharedfirebase.Identity,
+		sharedauth.Identity,
 		string,
 		string,
 		StudentLearningSnapshot,
 	) (StudentMissionAttemptDocument, error)
 	GetCurrentStudentLearningAttempt(
 		context.Context,
-		sharedfirebase.Identity,
+		sharedauth.Identity,
 		string,
 	) (StudentMissionAttemptDocument, bool, error)
 }
@@ -83,7 +83,7 @@ type StudentLearningService interface {
 type StudentTutorService interface {
 	SaveStudentTutorTurn(
 		context.Context,
-		sharedfirebase.Identity,
+		sharedauth.Identity,
 		SaveStudentTutorTurnInput,
 	) (StudentTutorTurn, error)
 }
@@ -96,6 +96,7 @@ type TutorRateLimiters struct {
 }
 
 type HandlerOptions struct {
+	StudentClassReader             StudentClassReader
 	Analytics                      sharedanalytics.Tracker
 	Authenticator                  Authenticator
 	StudentSessionTimeout          time.Duration
@@ -110,6 +111,7 @@ type HandlerOptions struct {
 }
 
 type Handler struct {
+	studentClassReader     StudentClassReader
 	analytics              sharedanalytics.Tracker
 	authenticator          Authenticator
 	studentSessionTimeout  time.Duration
@@ -201,6 +203,7 @@ func RegisterRoutes(server *echo.Echo, options HandlerOptions) {
 		studentTutorService, _ = options.UsersService.(StudentTutorService)
 	}
 	handler := &Handler{
+		studentClassReader:     options.StudentClassReader,
 		analytics:              options.Analytics,
 		authenticator:          options.Authenticator,
 		studentSessionTimeout:  resolveStudentSessionTimeout(options.StudentSessionTimeout),
@@ -212,6 +215,7 @@ func RegisterRoutes(server *echo.Echo, options HandlerOptions) {
 	}
 
 	sessionRateLimiter := studentSessionRateLimiter(options)
+	server.GET("/users/student-class", handler.GetStudentClass, studentPresenceRateLimiter())
 	server.POST(
 		"/users/student-session/validate",
 		handler.PostStudentSessionValidation,
@@ -507,7 +511,7 @@ func (handler *Handler) PostStudentLearning(ctx *echo.Context) error {
 	if err != nil {
 		return handler.studentLearningError(ctx, err)
 	}
-	if strings.EqualFold(request.Status, "completed") {
+	if strings.EqualFold(attempt.Status, "completed") {
 		sharedanalytics.Track(
 			handler.analytics,
 			requestContext,
@@ -578,7 +582,7 @@ func (handler *Handler) PostStudentTutorTurn(ctx *echo.Context) error {
 func (handler *Handler) limitTutorGeneration(
 	ctx context.Context,
 	echoCtx *echo.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 ) (bool, error) {
 	studentIdentifier := string(identity.Provider) + ":" + identity.ProviderUserID
 	ipIdentifier := "ip:" + echoCtx.RealIP()
@@ -628,7 +632,7 @@ func (handler *Handler) studentLearningError(ctx *echo.Context, err error) error
 func (handler *Handler) authenticate(
 	ctx context.Context,
 	echoCtx *echo.Context,
-) (sharedfirebase.Identity, bool, error) {
+) (sharedauth.Identity, bool, error) {
 	identity, err := handler.authenticator.AuthenticateBearerToken(
 		ctx,
 		echoCtx.Request().Header.Get(echo.HeaderAuthorization),
@@ -637,12 +641,12 @@ func (handler *Handler) authenticate(
 		return identity, true, nil
 	}
 
-	if !errors.Is(err, sharedfirebase.ErrMissingBearerToken) &&
-		!errors.Is(err, sharedfirebase.ErrInvalidBearerToken) {
+	if !errors.Is(err, sharedauth.ErrMissingBearerToken) &&
+		!errors.Is(err, sharedauth.ErrInvalidBearerToken) {
 		slog.Warn("student auth failed", "error", err)
 	}
 
-	return sharedfirebase.Identity{}, false, jsonError(
+	return sharedauth.Identity{}, false, jsonError(
 		echoCtx,
 		http.StatusUnauthorized,
 		"unauthorized",

@@ -13,7 +13,7 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 
 	teacherclass "classgame-api/internal/modules/teacher-class"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 const (
@@ -26,11 +26,11 @@ const (
 var classIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{1,39}$`)
 
 type Authenticator interface {
-	AuthenticateBearerToken(context.Context, string) (sharedfirebase.Identity, error)
+	AuthenticateBearerToken(context.Context, string) (sharedauth.Identity, error)
 }
 
 type DashboardService interface {
-	GetOverview(context.Context, sharedfirebase.Identity, string) (DashboardOverview, error)
+	GetOverview(context.Context, sharedauth.Identity, string) (DashboardOverview, error)
 }
 
 type HandlerOptions struct {
@@ -100,7 +100,7 @@ func (handler *Handler) GetOverview(ctx *echo.Context) error {
 func (handler *Handler) authenticate(
 	ctx context.Context,
 	echoCtx *echo.Context,
-) (sharedfirebase.Identity, bool, error) {
+) (sharedauth.Identity, bool, error) {
 	identity, err := handler.authenticator.AuthenticateBearerToken(
 		ctx,
 		echoCtx.Request().Header.Get(echo.HeaderAuthorization),
@@ -109,13 +109,13 @@ func (handler *Handler) authenticate(
 		return identity, true, nil
 	}
 
-	if errors.Is(err, sharedfirebase.ErrMissingBearerToken) ||
-		errors.Is(err, sharedfirebase.ErrInvalidBearerToken) {
-		return sharedfirebase.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
+	if errors.Is(err, sharedauth.ErrMissingBearerToken) ||
+		errors.Is(err, sharedauth.ErrInvalidBearerToken) {
+		return sharedauth.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
 	}
 
 	slog.Warn("dashboard auth failed", "error", err)
-	return sharedfirebase.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
+	return sharedauth.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
 }
 
 func (handler *Handler) serviceError(ctx *echo.Context, err error) error {

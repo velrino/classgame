@@ -149,26 +149,21 @@ func AttachmentStorageWithPublicURL(storage *MissionAttachmentStorage) *MissionA
 	return &output
 }
 
-func AttachmentStoragePublicURL(storage *MissionAttachmentStorage) string {
+// AttachmentStoragePublicURL is retained for source compatibility. Stored
+// worksheets are private and must be downloaded through the authenticated API.
+func AttachmentStoragePublicURL(storage *MissionAttachmentStorage) string { return "" }
+
+func AttachmentStorageURI(storage *MissionAttachmentStorage) string {
 	if storage == nil || storage.Status != AttachmentStorageStored {
 		return ""
 	}
-
-	bucket := strings.TrimSpace(storage.Bucket)
-	objectPath := strings.Trim(strings.TrimSpace(storage.ObjectPath), "/")
-	if (bucket == "" || objectPath == "") && strings.HasPrefix(strings.TrimSpace(storage.GSURI), "gs://") {
-		bucket, objectPath = parseGSURI(storage.GSURI)
+	if strings.HasPrefix(strings.TrimSpace(storage.GSURI), "gs://") {
+		return strings.TrimSpace(storage.GSURI)
 	}
-	if bucket == "" || objectPath == "" {
+	if storage.Bucket == "" || storage.ObjectPath == "" {
 		return ""
 	}
-
-	publicURL := "https://storage.googleapis.com/" + url.PathEscape(bucket) + "/" + escapeObjectPath(objectPath)
-	if version := attachmentStoragePublicURLVersion(storage); version != "" {
-		publicURL += "?v=" + url.QueryEscape(version)
-	}
-
-	return publicURL
+	return "gs://" + storage.Bucket + "/" + strings.Trim(storage.ObjectPath, "/")
 }
 
 func attachmentsWithPublicStorageURLs(attachments []MissionAttachment) []MissionAttachment {
@@ -176,7 +171,7 @@ func attachmentsWithPublicStorageURLs(attachments []MissionAttachment) []Mission
 	copy(output, attachments)
 
 	for index := range output {
-		output[index].Storage = AttachmentStorageWithPublicURL(output[index].Storage)
+		output[index] = PrivateAttachmentResponse(output[index])
 	}
 
 	return output
@@ -223,4 +218,13 @@ func toTeacherResponse(teacher teacherclass.TeacherSummary) teacherclass.Teacher
 		Email:          teacher.Email,
 		PhotoURL:       teacher.PhotoURL,
 	}
+}
+
+// PrivateAttachmentResponse never advertises legacy public GCS object URLs.
+func PrivateAttachmentResponse(attachment MissionAttachment) MissionAttachment {
+	attachment.Storage = AttachmentStorageWithPublicURL(attachment.Storage)
+	if attachment.Storage != nil && attachment.Storage.Status == AttachmentStorageStored {
+		attachment.CDNURL = attachment.UploadcareCDNURL
+	}
+	return attachment
 }

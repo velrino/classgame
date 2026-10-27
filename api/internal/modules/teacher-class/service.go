@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 const (
@@ -35,7 +35,7 @@ func NewService(repository *Repository) *Service {
 
 func (service *Service) Get(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classID string,
 ) (TeacherClassDocument, bool, error) {
 	teacher, err := service.teacher(identity)
@@ -56,7 +56,7 @@ func (service *Service) Get(
 
 func (service *Service) List(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 ) ([]TeacherClassDocument, error) {
 	teacher, err := service.teacher(identity)
 	if err != nil {
@@ -68,7 +68,7 @@ func (service *Service) List(
 
 func (service *Service) Upsert(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	input UpsertTeacherClassInput,
 ) (TeacherClassDocument, error) {
 	teacher, err := service.teacher(identity)
@@ -129,7 +129,7 @@ func (service *Service) createWithGeneratedCode(
 
 func (service *Service) SetActiveMission(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classID string,
 	missionID string,
 ) error {
@@ -147,12 +147,12 @@ func (service *Service) SetActiveMission(
 	)
 }
 
-func (service *Service) TeacherFromIdentity(identity sharedfirebase.Identity) (TeacherSummary, error) {
+func (service *Service) TeacherFromIdentity(identity sharedauth.Identity) (TeacherSummary, error) {
 	return service.teacher(identity)
 }
 
-func (service *Service) teacher(identity sharedfirebase.Identity) (TeacherSummary, error) {
-	if !sharedfirebase.IsTeacherAuthMethod(identity.AuthMethod) {
+func (service *Service) teacher(identity sharedauth.Identity) (TeacherSummary, error) {
+	if !sharedauth.IsTeacherAuthMethod(identity.AuthMethod) {
 		return TeacherSummary{}, ErrTeacherRequiresGoogleAuth
 	}
 

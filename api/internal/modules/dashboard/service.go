@@ -15,7 +15,7 @@ import (
 	teacherclass "classgame-api/internal/modules/teacher-class"
 	"classgame-api/internal/modules/tenant"
 	"classgame-api/internal/modules/users"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 )
 
 var ErrTeacherRequiresGoogleAuth = errors.New("dashboard requires google auth")
@@ -23,11 +23,11 @@ var ErrTeacherRequiresGoogleAuth = errors.New("dashboard requires google auth")
 const studentOnlineWindow = 45 * time.Second
 
 type TeacherClassReader interface {
-	Get(context.Context, sharedfirebase.Identity, string) (teacherclass.TeacherClassDocument, bool, error)
+	Get(context.Context, sharedauth.Identity, string) (teacherclass.TeacherClassDocument, bool, error)
 }
 
 type MissionReader interface {
-	GetActive(context.Context, sharedfirebase.Identity, string) (mission.MissionDocument, bool, error)
+	GetActive(context.Context, sharedauth.Identity, string) (mission.MissionDocument, bool, error)
 }
 
 type Service struct {
@@ -50,7 +50,7 @@ func NewService(
 
 func (service *Service) GetOverview(
 	ctx context.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 	classID string,
 ) (DashboardOverview, error) {
 	teacher, err := service.teacher(ctx, identity)
@@ -176,8 +176,8 @@ func (service *Service) GetOverview(
 	}, nil
 }
 
-func (service *Service) teacher(ctx context.Context, identity sharedfirebase.Identity) (TeacherSummary, error) {
-	if !sharedfirebase.IsTeacherAuthMethod(identity.AuthMethod) {
+func (service *Service) teacher(ctx context.Context, identity sharedauth.Identity) (TeacherSummary, error) {
+	if !sharedauth.IsTeacherAuthMethod(identity.AuthMethod) {
 		return TeacherSummary{}, ErrTeacherRequiresGoogleAuth
 	}
 

@@ -20,8 +20,8 @@ import (
 	"classgame-api/internal/modules/orchestrator"
 	teacherclass "classgame-api/internal/modules/teacher-class"
 	sharedanalytics "classgame-api/internal/shared/analytics"
+	sharedauth "classgame-api/internal/shared/auth"
 	sharedcontentpolicy "classgame-api/internal/shared/contentpolicy"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
 	sharedratelimit "classgame-api/internal/shared/ratelimit"
 	shareduploadcare "classgame-api/internal/shared/uploadcare"
 )
@@ -38,7 +38,7 @@ const (
 var classIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{1,39}$`)
 
 type Authenticator interface {
-	AuthenticateBearerToken(context.Context, string) (sharedfirebase.Identity, error)
+	AuthenticateBearerToken(context.Context, string) (sharedauth.Identity, error)
 }
 
 type GenerationRateLimiters struct {
@@ -48,13 +48,14 @@ type GenerationRateLimiters struct {
 }
 
 type MissionService interface {
-	Approve(context.Context, sharedfirebase.Identity, string, string, ApproveMissionInput) (MissionDocument, error)
-	Delete(context.Context, sharedfirebase.Identity, string, string) error
-	ListPage(context.Context, sharedfirebase.Identity, string, pagination.Params) ([]MissionDocument, string, error)
-	Preview(context.Context, sharedfirebase.Identity, CreateMissionInput) (MissionDocument, error)
+	Approve(context.Context, sharedauth.Identity, string, string, ApproveMissionInput) (MissionDocument, error)
+	Delete(context.Context, sharedauth.Identity, string, string) error
+	ListPage(context.Context, sharedauth.Identity, string, pagination.Params) ([]MissionDocument, string, error)
+	Preview(context.Context, sharedauth.Identity, CreateMissionInput) (MissionDocument, error)
 }
 
 type HandlerOptions struct {
+	AttachmentService       AttachmentService
 	Analytics               sharedanalytics.Tracker
 	Authenticator           Authenticator
 	GenerationRateLimiters  GenerationRateLimiters
@@ -66,6 +67,7 @@ type HandlerOptions struct {
 }
 
 type Handler struct {
+	attachmentService  AttachmentService
 	analytics          sharedanalytics.Tracker
 	missionService     MissionService
 	missionTimeout     time.Duration
@@ -118,6 +120,7 @@ type ErrorResponseBody struct {
 
 func RegisterRoutes(server *echo.Echo, options HandlerOptions) {
 	handler := &Handler{
+		attachmentService:  options.AttachmentService,
 		analytics:          options.Analytics,
 		missionService:     options.MissionService,
 		missionTimeout:     resolveMissionTimeout(options.MissionTimeout),
@@ -128,6 +131,7 @@ func RegisterRoutes(server *echo.Echo, options HandlerOptions) {
 	group := server.Group("/teacher-classes/:class_id/missions")
 	generationRateLimiter := missionRateLimiter(options)
 	group.GET("", handler.ListMissions)
+	group.GET("/:mission_id/attachments/:uploadcare_uuid", handler.GetMissionAttachment)
 	group.POST("/preview", handler.PostMissionPreview, generationRateLimiter)
 	group.POST("/preview/stream", handler.PostMissionPreviewStream, generationRateLimiter)
 	group.POST("/:mission_id/approve", handler.PostMissionApprove)
@@ -450,7 +454,7 @@ func writeSSE(ctx *echo.Context, event string, data any) error {
 func (handler *Handler) authenticate(
 	ctx context.Context,
 	echoCtx *echo.Context,
-) (sharedfirebase.Identity, bool, error) {
+) (sharedauth.Identity, bool, error) {
 	identity, err := handler.authenticator.AuthenticateBearerToken(
 		ctx,
 		echoCtx.Request().Header.Get(echo.HeaderAuthorization),
@@ -459,16 +463,19 @@ func (handler *Handler) authenticate(
 		return identity, true, nil
 	}
 
-	if errors.Is(err, sharedfirebase.ErrMissingBearerToken) ||
-		errors.Is(err, sharedfirebase.ErrInvalidBearerToken) {
-		return sharedfirebase.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
+	if errors.Is(err, sharedauth.ErrMissingBearerToken) ||
+		errors.Is(err, sharedauth.ErrInvalidBearerToken) {
+		return sharedauth.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
 	}
 
 	slog.Warn("teacher mission auth failed", "error", err)
-	return sharedfirebase.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
+	return sharedauth.Identity{}, false, jsonError(echoCtx, http.StatusUnauthorized, "unauthorized", "Invalid Firebase ID token.")
 }
 
 func (handler *Handler) serviceError(ctx *echo.Context, err error) error {
+	if errors.Is(err, ErrInvalidMissionAttachment) {
+		return jsonError(ctx, http.StatusBadRequest, "invalid_attachment", "New attachments need an Uploadcare URL; stored files must belong to this mission.")
+	}
 	if errors.Is(err, teacherclass.ErrTeacherRequiresGoogleAuth) {
 		return jsonError(ctx, http.StatusForbidden, "forbidden", "Teacher missions require Google sign in.")
 	}
@@ -501,7 +508,7 @@ func (handler *Handler) serviceError(ctx *echo.Context, err error) error {
 func (handler *Handler) limitGeneration(
 	ctx context.Context,
 	echoCtx *echo.Context,
-	identity sharedfirebase.Identity,
+	identity sharedauth.Identity,
 ) (bool, error) {
 	teacherIdentifier := "teacher:" + string(identity.Provider) + ":" + identity.ProviderUserID
 	policy, err := sharedratelimit.Evaluate(ctx,
@@ -762,15 +769,29 @@ func validateAttachments(value any) error {
 		if attachment.SizeBytes < 0 || attachment.SizeBytes > maxMissionAttachmentSizeBytes {
 			return errors.New("each attachment must be 20 MB or smaller")
 		}
-		if attachmentUUID == "" || strings.TrimSpace(attachment.CDNURL) == "" {
-			return errors.New("each attachment requires uploadcare_uuid and cdn_url")
+		if matched, _ := regexp.MatchString(`^[A-Za-z0-9_-]{1,120}$`, attachmentUUID); !matched {
+			return errors.New("each attachment requires a valid uploadcare_uuid")
 		}
 		if _, exists := seen[attachmentUUID]; exists {
 			return errors.New("attachments cannot contain duplicate uploadcare_uuid values")
 		}
 		seen[attachmentUUID] = struct{}{}
-		if err := validateMissionAttachmentURL(attachment.CDNURL, attachmentUUID); err != nil {
-			return err
+		if strings.TrimSpace(attachment.CDNURL) != "" {
+			if err := validateMissionAttachmentURL(attachment.CDNURL, attachmentUUID); err != nil {
+				return err
+			}
+		}
+		if source := strings.TrimSpace(attachment.UploadcareCDNURL); source != "" {
+			parsed, err := url.Parse(source)
+			if err != nil {
+				return errors.New("invalid Uploadcare source URL")
+			}
+			if err := shareduploadcare.ValidateCDNURL(parsed); err != nil {
+				return err
+			}
+			if err := validateMissionUploadcareURL(parsed, attachmentUUID); err != nil {
+				return err
+			}
 		}
 		if err := validation.Validate(attachment.FileName, validation.Required, validation.Length(1, 255)); err != nil {
 			return errors.New("each attachment requires a valid file_name")

@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"classgame-api/internal/pagination"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 	"cloud.google.com/go/firestore"
 )
 
-func (service *Service) ListPage(ctx context.Context, identity sharedfirebase.Identity, page pagination.Params) ([]TeacherClassDocument, string, error) {
+func (service *Service) ListPage(ctx context.Context, identity sharedauth.Identity, page pagination.Params) ([]TeacherClassDocument, string, error) {
 	teacher, err := service.teacher(identity)
 	if err != nil {
 		return nil, "", err

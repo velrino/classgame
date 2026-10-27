@@ -12,7 +12,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"classgame-api/internal/modules/orchestrator"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 	sharedratelimit "classgame-api/internal/shared/ratelimit"
 )
 
@@ -127,11 +127,11 @@ type fakeMissionAuthenticator struct{}
 func (fakeMissionAuthenticator) AuthenticateBearerToken(
 	context.Context,
 	string,
-) (sharedfirebase.Identity, error) {
-	return sharedfirebase.Identity{
-		Provider:       sharedfirebase.IdentityProviderFirebase,
+) (sharedauth.Identity, error) {
+	return sharedauth.Identity{
+		Provider:       sharedauth.IdentityProviderFirebase,
 		ProviderUserID: "teacher-1",
-		AuthMethod:     sharedfirebase.AuthMethodGoogle,
+		AuthMethod:     sharedauth.AuthMethodGoogle,
 	}, nil
 }
 
@@ -152,7 +152,7 @@ type fakeMissionService struct {
 
 func (*fakeMissionService) Approve(
 	context.Context,
-	sharedfirebase.Identity,
+	sharedauth.Identity,
 	string,
 	string,
 	ApproveMissionInput,
@@ -162,20 +162,20 @@ func (*fakeMissionService) Approve(
 
 func (*fakeMissionService) Delete(
 	context.Context,
-	sharedfirebase.Identity,
+	sharedauth.Identity,
 	string,
 	string,
 ) error {
 	return nil
 }
 
-func (*fakeMissionService) ListPage(context.Context, sharedfirebase.Identity, string, pagination.Params) ([]MissionDocument, string, error) {
+func (*fakeMissionService) ListPage(context.Context, sharedauth.Identity, string, pagination.Params) ([]MissionDocument, string, error) {
 	return nil, "", nil
 }
 
 func (service *fakeMissionService) Preview(
 	_ context.Context,
-	_ sharedfirebase.Identity,
+	_ sharedauth.Identity,
 	input CreateMissionInput,
 ) (MissionDocument, error) {
 	service.previewCalled = true

@@ -6,11 +6,11 @@ import (
 	"sort"
 
 	"classgame-api/internal/pagination"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	sharedauth "classgame-api/internal/shared/auth"
 	"cloud.google.com/go/firestore"
 )
 
-func (service *Service) ListPage(ctx context.Context, identity sharedfirebase.Identity, classID string, page pagination.Params) ([]MissionDocument, string, error) {
+func (service *Service) ListPage(ctx context.Context, identity sharedauth.Identity, classID string, page pagination.Params) ([]MissionDocument, string, error) {
 	class, exists, err := service.teacherClassService.Get(ctx, identity, classID)
 	if err != nil || !exists {
 		return []MissionDocument{}, "", err
