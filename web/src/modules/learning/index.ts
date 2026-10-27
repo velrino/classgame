@@ -37,3 +37,5 @@ export type {
   PodStatus,
 } from "./domain/types";
 export { useLearningSession } from "./hooks/use-learning-session";
+
+export { EvidenceSyncStatus } from "./ui/evidence-sync-status";

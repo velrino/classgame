@@ -74,7 +74,7 @@ export type Session = {
   readonly walkRequest: { readonly token: number } | null;
 };
 
-export type SessionAction =
+type SessionActionBody =
   | {
       type: "hydrate";
       memory: StudentMemory | null;
@@ -108,6 +108,10 @@ export type SessionAction =
     }
   | { type: "leave-mission" }
   | { type: "reset"; now: number };
+export type SessionAction = SessionActionBody & {
+  eventId?: string;
+  questionId?: string;
+};
 
 export function createInitialSession(
   mission: GameMission = FALLBACK_GAME_MISSION,
@@ -337,11 +341,12 @@ function logDecision(
 function appendLearningEvent(
   memory: StudentMemory,
   event: Omit<LearningEvent, "id" | "sequence">,
+  eventId?: string,
 ): StudentMemory {
   const sequence = memory.eventSequence + 1;
   const nextEvent: LearningEvent = {
     ...event,
-    id: `event-${event.occurredAt}-${sequence}`,
+    id: eventId ?? `event-${event.occurredAt}-${sequence}`,
     sequence,
   };
 
@@ -425,6 +430,8 @@ export function sessionReducer(
   session: Session,
   action: SessionAction,
 ): Session {
+  if (action.questionId && session.lesson?.question.id !== action.questionId)
+    return session;
   switch (action.type) {
     case "hydrate": {
       const memory = action.memory ?? createInitialMemory(action.mission);
@@ -504,30 +511,38 @@ export function sessionReducer(
       if (option.correct) {
         return {
           ...session,
-          memory: appendLearningEvent(session.memory, {
-            type: "answer",
-            stageId: lesson.pod,
-            questionId: lesson.question.id,
-            title: limitedEventText(questionLabel(lesson.question), 150),
-            detail: limitedEventText(`Selected "${option.text}".`),
-            outcome: "correct",
-            occurredAt: action.now,
-          }),
+          memory: appendLearningEvent(
+            session.memory,
+            {
+              type: "answer",
+              stageId: lesson.pod,
+              questionId: lesson.question.id,
+              title: limitedEventText(questionLabel(lesson.question), 150),
+              detail: limitedEventText(`Selected "${option.text}".`),
+              outcome: "correct",
+              occurredAt: action.now,
+            },
+            action.eventId,
+          ),
           lesson: { ...lesson, phase: "correct" },
         };
       }
 
       return {
         ...session,
-        memory: appendLearningEvent(session.memory, {
-          type: "answer",
-          stageId: lesson.pod,
-          questionId: lesson.question.id,
-          title: limitedEventText(questionLabel(lesson.question), 150),
-          detail: limitedEventText(`Selected "${option.text}".`),
-          outcome: "incorrect",
-          occurredAt: action.now,
-        }),
+        memory: appendLearningEvent(
+          session.memory,
+          {
+            type: "answer",
+            stageId: lesson.pod,
+            questionId: lesson.question.id,
+            title: limitedEventText(questionLabel(lesson.question), 150),
+            detail: limitedEventText(`Selected "${option.text}".`),
+            outcome: "incorrect",
+            occurredAt: action.now,
+          },
+          action.eventId,
+        ),
         lesson: {
           ...lesson,
           phase: "why",
@@ -559,30 +574,38 @@ export function sessionReducer(
       if (choiceAnswerIsCorrect(lesson.question, answer)) {
         return {
           ...session,
-          memory: appendLearningEvent(session.memory, {
-            type: "answer",
-            stageId: lesson.pod,
-            questionId: lesson.question.id,
-            title: limitedEventText(questionLabel(lesson.question), 150),
-            detail: limitedEventText(`Wrote "${answer}".`),
-            outcome: "correct",
-            occurredAt: action.now,
-          }),
+          memory: appendLearningEvent(
+            session.memory,
+            {
+              type: "answer",
+              stageId: lesson.pod,
+              questionId: lesson.question.id,
+              title: limitedEventText(questionLabel(lesson.question), 150),
+              detail: limitedEventText(`Wrote "${answer}".`),
+              outcome: "correct",
+              occurredAt: action.now,
+            },
+            action.eventId,
+          ),
           lesson: { ...lesson, phase: "correct" },
         };
       }
 
       return {
         ...session,
-        memory: appendLearningEvent(session.memory, {
-          type: "answer",
-          stageId: lesson.pod,
-          questionId: lesson.question.id,
-          title: limitedEventText(questionLabel(lesson.question), 150),
-          detail: limitedEventText(`Wrote "${answer}".`),
-          outcome: "incorrect",
-          occurredAt: action.now,
-        }),
+        memory: appendLearningEvent(
+          session.memory,
+          {
+            type: "answer",
+            stageId: lesson.pod,
+            questionId: lesson.question.id,
+            title: limitedEventText(questionLabel(lesson.question), 150),
+            detail: limitedEventText(`Wrote "${answer}".`),
+            outcome: "incorrect",
+            occurredAt: action.now,
+          },
+          action.eventId,
+        ),
         lesson: {
           ...lesson,
           phase: "why",
@@ -620,17 +643,21 @@ export function sessionReducer(
 
         return {
           ...session,
-          memory: appendLearningEvent(session.memory, {
-            type: "answer",
-            stageId: lesson.pod,
-            questionId: lesson.question.id,
-            title: limitedEventText(questionLabel(lesson.question), 150),
-            detail: limitedEventText(
-              `Applied "${move.op}" and reached "${move.result}".`,
-            ),
-            outcome: "correct",
-            occurredAt: action.now,
-          }),
+          memory: appendLearningEvent(
+            session.memory,
+            {
+              type: "answer",
+              stageId: lesson.pod,
+              questionId: lesson.question.id,
+              title: limitedEventText(questionLabel(lesson.question), 150),
+              detail: limitedEventText(
+                `Applied "${move.op}" and reached "${move.result}".`,
+              ),
+              outcome: "correct",
+              occurredAt: action.now,
+            },
+            action.eventId,
+          ),
           lesson: {
             ...lesson,
             lines,
@@ -642,17 +669,21 @@ export function sessionReducer(
 
       return {
         ...session,
-        memory: appendLearningEvent(session.memory, {
-          type: "answer",
-          stageId: lesson.pod,
-          questionId: lesson.question.id,
-          title: limitedEventText(questionLabel(lesson.question), 150),
-          detail: limitedEventText(
-            `Applied "${move.op}" and reached "${move.result}".`,
-          ),
-          outcome: "incorrect",
-          occurredAt: action.now,
-        }),
+        memory: appendLearningEvent(
+          session.memory,
+          {
+            type: "answer",
+            stageId: lesson.pod,
+            questionId: lesson.question.id,
+            title: limitedEventText(questionLabel(lesson.question), 150),
+            detail: limitedEventText(
+              `Applied "${move.op}" and reached "${move.result}".`,
+            ),
+            outcome: "incorrect",
+            occurredAt: action.now,
+          },
+          action.eventId,
+        ),
         lesson: {
           ...lesson,
           lines: [...lesson.lines, move.result],
@@ -708,6 +739,7 @@ export function sessionReducer(
             outcome: "support",
             occurredAt: action.now,
           },
+          action.eventId,
         ),
         lesson: {
           ...lesson,
@@ -759,6 +791,7 @@ export function sessionReducer(
           outcome: action.value === "helpful" ? "correct" : "support",
           occurredAt: action.now,
         },
+        action.eventId,
       );
       const decision = decideAfterFeedback({
         mission: session.mission,
