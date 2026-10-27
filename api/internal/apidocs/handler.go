@@ -9,7 +9,6 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/classrooms"
 	healthmodule "classgame-api/internal/modules/health"
 	"classgame-api/internal/modules/insights"
@@ -115,8 +114,7 @@ func query(name, description string, required bool, schema object) object {
 }
 func record(properties object) object { return object{"type": "object", "properties": properties} }
 
-// OpenAPI documents the public, teacher, student and conditional OIDC worker
-// routes. Runtime credentials and real classroom data are never embedded.
+// OpenAPI documents public, teacher and student HTTP routes. Runtime credentials and real classroom data are never embedded.
 func OpenAPI() object {
 	builder := schemaBuilder{definitions: object{}}
 	errorSchema := builder.of(students.ErrorResponse{})
@@ -125,9 +123,6 @@ func OpenAPI() object {
 		operation := object{"operationId": id, "summary": summary, "tags": []string{role}, "responses": object{"200": response("Success", result), "400": response("Invalid JSON, parameters or request validation", errorSchema), "429": response("Rate limit exceeded; observe Retry-After", errorSchema), "500": response("Internal error", errorSchema), "503": response("Required dependency unavailable", errorSchema)}}
 		if role != "public" && role != "documentation" {
 			scheme := "firebaseBearer"
-			if role == "workers" {
-				scheme = "taskOIDC"
-			}
 			operation["security"] = []any{object{scheme: []string{}}}
 			operation["responses"].(object)["401"] = response("Missing, revoked, invalid or disallowed sign-in token", errorSchema)
 			operation["responses"].(object)["403"] = response("Actor does not own the requested classroom or resource", errorSchema)
@@ -200,16 +195,6 @@ func OpenAPI() object {
 	appendParams(attachment, query("revision", "Optional immutable published revision; omission selects the current draft view", false, object{"type": "integer", "minimum": 1}))
 	attachment["responses"].(object)["200"] = object{"description": "Bounded private bytes, no-store, attachment disposition, nosniff; never a bearer token in a URL", "content": object{"application/octet-stream": object{"schema": object{"type": "string", "format": "binary"}}}}
 	attachment["responses"].(object)["404"] = response("Attachment is missing or has not reached private storage", errorSchema)
-	for _, worker := range []struct {
-		path, id, summary string
-		request           any
-	}{{"/internal/tasks/mission-attachments", "processMissionAttachments", "Retry-safe private attachment copy for an immutable revision", attachments.Job{}}, {"/internal/tasks/student-learning", "processStudentLearning", "Idempotent learning finalization or inactivity watchdog", students.LearningJob{}}} {
-		operation := add(worker.path, "post", worker.id, worker.summary, "workers", worker.request, object{})
-		operation["description"] = "Registered only when CLOUD_TASKS_ENABLED=true. Requires a valid Google-signed OIDC token with the configured audience and service account, plus the Cloud Tasks task-name header. Permanent/obsolete jobs are acknowledged; retryable failures return 503."
-		operation["parameters"] = []any{object{"name": "X-CloudTasks-TaskName", "in": "header", "required": true, "schema": object{"type": "string"}}}
-		delete(operation["responses"].(object), "200")
-		operation["responses"].(object)["204"] = object{"description": "Processed or permanently discarded; task acknowledged"}
-	}
 	// Explicit input requirements supplement the shared JSON DTO shape.
 	for _, contract := range []struct {
 		value    any
@@ -224,8 +209,6 @@ func OpenAPI() object {
 		{classrooms.UpsertTeacherClassRequest{}, []string{"subject"}},
 		{missions.CreateMissionRequest{}, []string{"learning_goal", "teacher_prompt"}},
 		{missions.ApproveMissionRequest{}, []string{"expected_draft_revision"}},
-		{attachments.Job{}, []string{"class_id", "mission_id", "revision"}},
-		{students.LearningJob{}, []string{"kind", "student_id", "attempt_id"}},
 	} {
 		ref := builder.of(contract.value)["$ref"].(string)
 		definition := builder.definitions[strings.TrimPrefix(ref, "#/components/schemas/")].(object)
@@ -247,5 +230,5 @@ func OpenAPI() object {
 		}
 	}
 
-	return object{"openapi": "3.1.0", "info": object{"title": "ClassGame API", "version": "1.0.0", "description": "Teacher-owned classroom workflows, anonymous student sessions, pinned missions and evidence-grounded tutoring. Bearer tokens are entered manually and kept in memory. Worker OIDC tokens are separate from Firebase user ID tokens."}, "servers": []any{object{"url": "/", "description": "Same origin as this API reference"}}, "paths": paths, "components": object{"schemas": builder.definitions, "securitySchemes": object{"firebaseBearer": object{"type": "http", "scheme": "bearer", "bearerFormat": "Firebase ID token", "description": "Teacher: configured Google/password provider; student: anonymous provider. Identity and resource ownership are verified by the API."}, "taskOIDC": object{"type": "http", "scheme": "bearer", "bearerFormat": "Google OIDC ID token", "description": "Cloud Tasks service account identity with the exact configured audience."}}}}
+	return object{"openapi": "3.1.0", "info": object{"title": "ClassGame API", "version": "1.0.0", "description": "Teacher-owned classroom workflows, anonymous student sessions, pinned missions and evidence-grounded tutoring. Bearer tokens are entered manually and kept in memory."}, "servers": []any{object{"url": "/", "description": "Same origin as this API reference"}}, "paths": paths, "components": object{"schemas": builder.definitions, "securitySchemes": object{"firebaseBearer": object{"type": "http", "scheme": "bearer", "bearerFormat": "Firebase ID token", "description": "Teacher: configured Google/password provider; student: anonymous provider. Identity and resource ownership are verified by the API."}}}}
 }

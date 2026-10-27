@@ -6,13 +6,13 @@ The runnable templates are [api/.env.example](../../api/.env.example) and [web/.
 
 | Group | Settings and purpose |
 | --- | --- |
-| Server | `HOST`, `PORT`, `APP_ENV`; development defaults use port `4004` |
+| Server | `HOST`, `PORT`, `APP_ENV`, `APP_ROLE=api|worker|all`; development defaults use port `4004` |
 | Firebase | `FIREBASE_PROJECT_ID`, credentials file or JSON, exact `FIREBASE_STORAGE_BUCKET`, ping timeout |
 | Bootstrap | `FIREBASE_BOOTSTRAP_ENABLED`, timeout, `DEMO_TEACHER_*`, and `DEFAULT_*` tenant values; disable against an already provisioned database when unnecessary |
 | Identity | `AUTH_TEACHER_PROVIDERS`, `AUTH_STUDENT_PROVIDERS`; supported provider policy is enforced separately from classroom authorization |
 | Redis | `REDIS_URL`, ping timeout; credentials stay server-side |
 | GenAI | `GENAI_ENABLED`, backend, model, project/location or API key, credentials, request timeout, output-token budget |
-| Tasks | `CLOUD_TASKS_ENABLED`, project, location, queue, target URLs, service-account identity, OIDC audience |
+| Tasks | `TASKS_ENABLED=false` by default; dedicated `TASKS_REDIS_URL`, `TASKS_QUEUE`, `TASKS_CONCURRENCY` (1–32 per worker); [broker/recovery rules](../operations/QUEUES.md) |
 | Learning | `STUDENT_ABANDONMENT_SECONDS`; scheduled delivery requires a configured task worker |
 | Telemetry | `POSTHOG_ENABLED`, project token, host; keep disabled for ordinary local development |
 

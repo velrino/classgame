@@ -43,27 +43,20 @@ func (config Config) Validate() error {
 		"FIREBASE_STORAGE_BUCKET": validation.Validate(config.FirebaseStorageBucket,
 			validation.Required,
 		),
-		"CLOUD_TASKS_PROJECT_ID": validation.Validate(config.CloudTasksProjectID,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_LOCATION": validation.Validate(config.CloudTasksLocation,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_QUEUE": validation.Validate(config.CloudTasksQueue,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_TARGET_URL": validation.Validate(config.CloudTasksTargetURL,
-			validation.By(validateHTTPSURLWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_LEARNING_TARGET_URL": validation.Validate(config.CloudTasksLearningTargetURL,
-			validation.By(validateHTTPSURLWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL": validation.Validate(config.CloudTasksServiceAccount,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_OIDC_AUDIENCE": validation.Validate(config.CloudTasksOIDCAudience,
-			validation.By(validateHTTPSURLWhenEnabled(config.CloudTasksEnabled)),
-		),
+		"APP_ROLE": validation.Validate(config.AppRole, validation.Required, validation.In("api", "worker", "all"), validation.By(func(any) error {
+			if config.AppRole != "api" && !config.TasksEnabled {
+				return fmt.Errorf("worker roles require TASKS_ENABLED=true")
+			}
+			return nil
+		})),
+		"TASKS_REDIS_URL": validation.Validate(config.TasksRedisURL, validation.By(func(any) error {
+			if config.TasksEnabled && (strings.TrimSpace(config.TasksRedisURL) == "" || sameRedisEndpoint(config.TasksRedisURL, config.RedisURL)) {
+				return fmt.Errorf("enabled jobs require a dedicated TASKS_REDIS_URL")
+			}
+			return nil
+		})),
+		"TASKS_QUEUE":       validation.Validate(config.TasksQueue, validation.Required),
+		"TASKS_CONCURRENCY": validation.Validate(config.TasksConcurrency, validation.Min(1), validation.Max(32)),
 		"STUDENT_ABANDONMENT_SECONDS": validation.Validate(config.StudentAbandonmentSeconds,
 			validation.Required,
 			validation.Min(60),
@@ -225,10 +218,6 @@ func validateMinimumLengthWhenEnabled(enabled bool, minimum int) validation.Rule
 	}
 }
 
-func validateHTTPSURLWhenEnabled(enabled bool) validation.RuleFunc {
-	return validateHTTPSURL(enabled, "Cloud Tasks")
-}
-
 func validateHTTPSURL(enabled bool, featureName string) validation.RuleFunc {
 	return func(value any) error {
 		if !enabled {
@@ -371,4 +360,23 @@ func validateCORSOrigins(environment string) validation.RuleFunc {
 		}
 		return nil
 	}
+}
+
+// Different database numbers do not turn a disposable cache into a dedicated broker.
+func sameRedisEndpoint(first, second string) bool {
+	left, err := url.Parse(strings.TrimSpace(first))
+	if err != nil || left.Host == "" {
+		return false
+	}
+	right, err := url.Parse(strings.TrimSpace(second))
+	if err != nil || right.Host == "" {
+		return false
+	}
+	port := func(value *url.URL) string {
+		if value.Port() != "" {
+			return value.Port()
+		}
+		return "6379"
+	}
+	return strings.EqualFold(left.Hostname(), right.Hostname()) && port(left) == port(right)
 }

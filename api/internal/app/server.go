@@ -22,16 +22,14 @@ import (
 const defaultRequestBodyLimitBytes int64 = 256 * 1024
 
 type Options struct {
-	Analytics           analytics.Tracker
-	Config              config.Config
-	Dashboard           insights.HandlerOptions
-	HealthChecks        []health.Check
-	StartedAt           time.Time
-	TeacherClass        classrooms.HandlerOptions
-	Mission             missions.HandlerOptions
-	MissionAttachment   http.Handler
-	StudentLearningTask http.Handler
-	Users               students.HandlerOptions
+	Analytics    analytics.Tracker
+	Config       config.Config
+	Dashboard    insights.HandlerOptions
+	HealthChecks []health.Check
+	StartedAt    time.Time
+	TeacherClass classrooms.HandlerOptions
+	Mission      missions.HandlerOptions
+	Users        students.HandlerOptions
 }
 
 func New(options Options) *echo.Echo {
@@ -90,12 +88,6 @@ func New(options Options) *echo.Echo {
 		ServiceTimeout: 3 * time.Second,
 		StartedAt:      options.StartedAt,
 	})
-	if options.MissionAttachment != nil {
-		server.POST("/internal/tasks/mission-attachments", echo.WrapHandler(options.MissionAttachment))
-	}
-	if options.StudentLearningTask != nil {
-		server.POST("/internal/tasks/student-learning", echo.WrapHandler(options.StudentLearningTask))
-	}
 
 	students.RegisterRoutes(server, options.Users)
 	insights.RegisterRoutes(server, options.Dashboard)
