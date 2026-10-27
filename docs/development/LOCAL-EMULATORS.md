@@ -76,3 +76,5 @@ Each tool requires explicit opt-in and uses owned synthetic records only. No pai
 The local review on 2026-10-27 passed the native 14-case IndexedDB run, including the page reload. The actual app also passed teacher sign-in, class creation, preview and publication, anonymous student joining, 3D movement, and **Go to desk**. During an API outage, answer, reasoning, and feedback records survived a page reload. **Retry** acknowledged the pending records after the API returned.
 
 That review found a wrong-answer path that marked a stage complete after an explanation. The reducer now asks the student to try again and preserves the incorrect answer as evidence. The API still requires its own accepted answers before completion. The recovery policy suite covers this fix and older local progress repair.
+
+The review also found a resume crash when an empty server checkpoint field was `null`. One checkpoint normalizer now handles nullable fields before the board is restored. The policy suite covers both a cached checkpoint and published server question IDs.

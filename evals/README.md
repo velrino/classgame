@@ -30,7 +30,7 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 
 Exit `0` means every selected policy case passed, `1` means assertions failed, and `2` means invalid input/build/bridge/output failure. Unknown flags/IDs, duplicate IDs, malformed cases, and unsupported modes fail before case execution. `--mode=live` is deliberately unavailable; no paid run occurs.
 
-These are offline policy checks, including a scripted timeout result. The browser suite does not run IndexedDB or real browser tabs. Passing does not prove teaching quality, live recovery, or deployed access. See [evaluation scope](../docs/ai/EVALUATIONS.md) and [release safety](../docs/operations/RELEASE-SAFETY.md).
+The default, `offline-evidence`, and `frontend-recovery` suites are offline policy checks, including a scripted timeout result. They do not run IndexedDB or real browser tabs. Passing does not prove teaching quality, live recovery, or deployed access. Use the opt-in browser and local HTTP tools for their stated runtime coverage. See [evaluation scope](../docs/ai/EVALUATIONS.md) and [release safety](../docs/operations/RELEASE-SAFETY.md).
 
 ## Optional queue transport check
 
