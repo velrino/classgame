@@ -50,6 +50,6 @@ Check affected workflows with development data:
 - Auth/route changes cancel requests, unsubscribe listeners, and dispose Three.js resources.
 - Duplicate/delayed tasks preserve finalization; unavailable providers select the documented fallback.
 
-For documentation changes, verify local Markdown and HTML links, legacy anchors, and image references. Preserve the root Product tour text, links, images, and bytes. For an authorized architecture update, regenerate SVG/PNG from the Graphviz source, check the rendered result, and verify that the dashboard SVG is identical.
+For documentation changes, verify local Markdown and HTML links, legacy anchors, and image references. Preserve the root Product tour text, links, images, and bytes. For an authorized architecture update, regenerate PNG from the Graphviz source, check the rendered result, and verify that the dashboard PNG is identical.
 
 Record what ran and its result in the PR. Distinguish build success, local smoke checks, authenticated workflow checks, deployment, and physical-device validation.

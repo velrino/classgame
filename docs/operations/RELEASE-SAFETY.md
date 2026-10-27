@@ -30,7 +30,7 @@ Private attachments require compatible bearer-authenticated download handling. I
 - Teacher/student workflows pass, including revision conflicts, incorrect answers, checkpoint recovery, older checkpoints, pending answers, and private downloads.
 - Negative checks reject wrong providers, unrelated classroom access, forged completion, invalid worker identity, and unsafe object access. Verify deployed Firebase/Storage rules separately from local checks.
 - Concurrency saturation, provider timeout, and caller cancellation select an honest bounded fallback. Duplicate requests/jobs preserve accepted progress; trace/request correlation survives API-to-worker delivery.
-- Projection backfill, source/consumer compatibility, retry handling, and rollback steps are recorded. The Product tour and runtime asset URLs remain intact. Authorized architecture updates regenerate matching SVG/PNG assets and the dashboard copy.
+- Projection backfill, source/consumer compatibility, retry handling, and rollback steps are recorded. The Product tour and runtime asset URLs remain intact. Authorized architecture updates regenerate matching PNG assets and the dashboard copy.
 
 Record measured latency/read counts, fallback rates, and remaining delivery gaps. Introduce an outbox, breaker, or cache only when a measured requirement justifies its consistency and recovery costs.
 

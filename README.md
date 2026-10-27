@@ -13,7 +13,7 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
 One Next.js application, one Go API, and Firebase-backed learning state. Read the [system overview](docs/architecture/SYSTEM.md) and [module boundaries](docs/architecture/MODULES.md).
 
 <p align="center">
-  <img src="assets/diagrams/architecture/architecture.svg" alt="ClassGame current modular architecture" width="100%" />
+  <img src="assets/diagrams/architecture/architecture.png" alt="ClassGame current modular architecture" width="100%" />
 </p>
 
 ## Product tour
