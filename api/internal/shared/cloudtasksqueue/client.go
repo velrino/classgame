@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -15,6 +17,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const (
@@ -86,7 +90,7 @@ func (client *Client) Enqueue(ctx context.Context, input Task) error {
 		return err
 	}
 
-	task := client.buildTask(input)
+	task := client.buildTask(ctx, input)
 	createContext, cancel := context.WithTimeout(ctx, createTaskTimeout)
 	defer cancel()
 
@@ -95,11 +99,15 @@ func (client *Client) Enqueue(ctx context.Context, input Task) error {
 		Task:   task,
 	})
 	if status.Code(err) == codes.AlreadyExists {
+		slog.InfoContext(ctx, "cloud task already exists", "task_id", input.ID,
+			"request_id", requestmeta.RequestID(ctx), "trace_id", requestmeta.TraceID(ctx))
 		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("enqueue cloud task: %w", err)
 	}
+	slog.InfoContext(ctx, "cloud task enqueued", "task_id", input.ID,
+		"request_id", requestmeta.RequestID(ctx), "trace_id", requestmeta.TraceID(ctx))
 
 	return nil
 }
@@ -112,13 +120,18 @@ func (client *Client) Close() error {
 	return client.client.Close()
 }
 
-func (client *Client) buildTask(input Task) *taskspb.Task {
-	headers := make(map[string]string, len(input.Headers)+1)
+func (client *Client) buildTask(ctx context.Context, input Task) *taskspb.Task {
+	carrier := make(http.Header, len(input.Headers)+3)
 	for key, value := range input.Headers {
-		headers[key] = value
+		carrier.Set(key, value)
 	}
-	if _, exists := headers["Content-Type"]; !exists {
-		headers["Content-Type"] = "application/json"
+	if carrier.Get("Content-Type") == "" {
+		carrier.Set("Content-Type", "application/json")
+	}
+	requestmeta.Inject(ctx, carrier)
+	headers := make(map[string]string, len(carrier))
+	for key := range carrier {
+		headers[key] = carrier.Get(key)
 	}
 
 	httpRequest := &taskspb.HttpRequest{

@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const (
@@ -81,6 +83,11 @@ func (handler *LearningTaskHTTPHandler) ServeHTTP(response http.ResponseWriter, 
 		return
 	}
 
+	slog.InfoContext(request.Context(), "process student learning task",
+		"request_id", requestmeta.RequestID(request.Context()),
+		"trace_id", requestmeta.TraceID(request.Context()),
+		"kind", job.Kind, "attempt_id", job.AttemptID,
+	)
 	if err := handler.processor.ProcessLearningJob(request.Context(), job); err != nil {
 		slog.Error("retry student learning task",
 			"kind", job.Kind,
