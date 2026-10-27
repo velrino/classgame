@@ -2,9 +2,11 @@
 
 ClassGame is a modular monolith: a Next.js teacher dashboard and student game call one Go API. Firebase authenticates teachers and anonymous students. Firestore stores durable state; selected browser projections update through realtime subscriptions.
 
-The submitted deployment used Cloud Run, Vertex AI, Cloud Storage, Cloud Tasks, Redis, Secret Manager, and Cloud Build. Hosting was shut down; see [hosting history](../operations/HOSTING-HISTORY.md).
+Optional Go workers use Asynq and a dedicated Redis broker for attachment copies, finalization, and inactivity checks. A separate Redis connection holds quotas and shared AI admission. Mia tutoring stays synchronous. Local jobs default off; learning finalization has an inline fallback.
 
-![Original production architecture](../../assets/diagrams/architecture/architecture-graphviz.svg)
+The diagram shows the current code and optional services. It does not show a live deployment; see [hosting history](../operations/HOSTING-HISTORY.md).
+
+![Current modular architecture](../../assets/diagrams/architecture/architecture-graphviz.svg)
 
 ## Learning loop
 

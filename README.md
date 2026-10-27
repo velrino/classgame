@@ -13,7 +13,7 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
 One Next.js application, one Go API, and Firebase-backed learning state. Read the [system overview](docs/architecture/SYSTEM.md) and [module boundaries](docs/architecture/MODULES.md).
 
 <p align="center">
-  <img src="assets/diagrams/architecture/architecture-graphviz.svg" alt="ClassGame production architecture" width="100%" />
+  <img src="assets/diagrams/architecture/architecture-graphviz.svg" alt="ClassGame current modular architecture" width="100%" />
 </p>
 
 ## Product tour
@@ -36,17 +36,7 @@ Every screen below is from the working product. Select any image to open it at f
 
 Use the canonical [local setup](docs/development/LOCAL-SETUP.md), [configuration](docs/reference/CONFIGURATION.md), and [validation](docs/development/VALIDATION.md) guides.
 
-### Path B — spin up from a clean clone
-
-<a id="path-b--spin-up-from-a-clean-clone"></a>
-
 Clone [velrino/classgame](https://github.com/velrino/classgame), configure Firebase and Redis, then start `api/` and `web/` as described in [local setup](docs/development/LOCAL-SETUP.md). Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home).
-
-### Path A — test the hosted production build
-
-<a id="path-a--test-the-hosted-production-build"></a>
-
-The former deployment is offline. The [demo](https://www.youtube.com/watch?v=mvsbSKlGfyE) and [historical pitch](docs/pitch/PITCH.md) preserve the submitted walkthrough.
 
 ## Documentation
 
@@ -69,29 +59,6 @@ assets/    Source media, credits, and generation notes
 scripts/   Operational and asset commands
 ```
 
-## Demo script (video)
-
-See the [pitch and screenshot index](docs/pitch/PITCH.md) and [submission draft](docs/pitch/DEVPOST-SUBMISSION-DRAFT.md).
-
 ## Credits
 
-[Classroom model](https://sketchfab.com/3d-models/low-poly-classroom-8b1bf103c90349d981c9c2ae1c0596e5) by Mumladze28; [avatar credits and generation notes](assets/3d/avatars/chibi-band/README.md); [worksheet sources](assets/grade/README.md). Asset licenses stay beside their files.
-
-## Earlier documentation links
-
-<a id="judge-fast-path"></a>
-<a id="explore-classgame"></a>
-<a id="gcp-production-footprint"></a>
-<a id="why-this-shape"></a>
-<a id="collaborative-partner-alignment"></a>
-<a id="the-core-loop-this-is-the-product"></a>
-<a id="one-tutor-turn-in-depth"></a>
-<a id="what-exists-today"></a>
-<a id="safety-and-honesty-by-design"></a>
-<a id="data-model-firestore"></a>
-<a id="api"></a>
-<a id="agent-contracts-gemini-structured-output"></a>
-<a id="known-limits-and-whats-next"></a>
-<a id="short-pitch"></a>
-
-Product and agent details moved to [architecture](docs/architecture/SYSTEM.md); storage and routes to [reference](docs/README.md); historical hosted material to [pitch](docs/pitch/PITCH.md) and [operations](docs/operations/HOSTING-HISTORY.md).
+[Classroom model](https://sketchfab.com/3d-models/low-poly-classroom-8b1bf103c90349d981c9c2ae1c0596e5) by Mumladze28; [avatar credits and generation notes](assets/3d/avatars/chibi-band/README.md); [worksheet sources](assets/grade/README.md). Asset licenses stay beside their files. The dashboard uses shadcn/ui and a shell adapted from shadcn-admin.
