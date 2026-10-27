@@ -12,6 +12,7 @@ The runnable templates are [api/.env.example](../../api/.env.example) and [web/.
 | Identity | `AUTH_TEACHER_PROVIDERS`, `AUTH_STUDENT_PROVIDERS`; supported provider policy is enforced separately from classroom authorization |
 | Redis | `REDIS_URL`, ping timeout; credentials stay server-side |
 | GenAI | `GENAI_ENABLED`, backend, model, project/location or API key, credentials, request timeout, output-token budget |
+| Shared AI budget | `GENAI_SHARED_BUDGET_SCOPE`, `GENAI_SHARED_CONCURRENT`, `GENAI_SHARED_REQUESTS_PER_MINUTE`, `GENAI_SHARED_OUTPUT_TOKENS_PER_MINUTE`, `GENAI_SHARED_LEASE_SECONDS`; [shared limits and recovery](../operations/AI-BUDGETS.md) |
 | Tasks | `TASKS_ENABLED=false` by default; dedicated `TASKS_REDIS_URL`, `TASKS_QUEUE`, `TASKS_CONCURRENCY` (1–32 per worker); [broker/recovery rules](../operations/QUEUES.md) |
 | Learning | `STUDENT_ABANDONMENT_SECONDS`; scheduled delivery requires a configured task worker |
 | Telemetry | `POSTHOG_ENABLED`, project token, host; keep disabled for ordinary local development |

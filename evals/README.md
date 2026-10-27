@@ -19,6 +19,7 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 | [platform/offline-evidence/cases.json](platform/offline-evidence/cases.json) | Scope, queue capacity, replay, retry, and completion policies; requires Node.js 24+ |
 | [api/cmd/evalbridge](../api/cmd/evalbridge/main.go) | Production Go calls with scripted provider/authentication ports |
 | [api/cmd/evalfirestore](../api/cmd/evalfirestore/README.md) | Optional real transaction checks on a guarded local emulator |
+| [platform/provider-budget/run.py](platform/provider-budget/run.py) | Opt-in local Redis budget checks with two Go processes and a real broker outage |
 | [manual rubric](platform/ai-policy/MANUAL-RUBRIC.md) | Separate pedagogical review and held-out comparison plan |
 | `output/<unique-run>/` | Ignored, newly created run artifacts |
 
