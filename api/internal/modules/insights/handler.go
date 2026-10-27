@@ -99,8 +99,8 @@ func (handler *Handler) authenticate(
 }
 
 func (handler *Handler) serviceError(ctx *echo.Context, err error) error {
-	if errors.Is(err, ErrTeacherRequiresGoogleAuth) || errors.Is(err, classrooms.ErrTeacherRequiresGoogleAuth) {
-		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Dashboard requires Google sign in.")
+	if errors.Is(err, ErrTeacherAuthRequired) || errors.Is(err, classrooms.ErrTeacherAuthRequired) {
+		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Teacher sign-in is required.")
 	}
 	if errors.Is(err, classrooms.ErrClassOwnedByAnotherTeacher) {
 		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "This class code already belongs to another teacher.")

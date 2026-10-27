@@ -13,7 +13,6 @@ substitutions:
   _FIREBASE_STORAGE_BUCKET: allthingsagentichackatho-ee359.firebasestorage.app
   _FIREBASE_SECRET_NAME: allthingsagentichackathon-api-firebase-credentials-json
   _REDIS_SECRET_NAME: unshatter-api-redis-url
-  _AUTH_GOOGLE_WEB_CLIENT_ID: 245584783597-t05j7fj2iucesiad4jpu4mlh72kgcs12.apps.googleusercontent.com
   _GENAI_ENABLED: "true"
   _GENAI_BACKEND: vertex
   _GENAI_MODEL: gemini-3.7-flash

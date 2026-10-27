@@ -7,6 +7,12 @@ import (
 // AssessLearningSnapshot derives assessment from server-recorded tutor
 // turns on the pinned revision. Browser checkpoints remain presentation state.
 func AssessLearningSnapshot(document missions.MissionDocument, snapshot StudentLearningSnapshot, turns []StudentTutorTurn, requestedStatus string) (StudentLearningSnapshot, string) {
+	return AssessLearningSnapshotWithEvidence(document, snapshot, turns, nil, requestedStatus)
+}
+
+// AssessLearningSnapshotWithEvidence keeps durable accepted facts independent
+// from the bounded recent-turn context. Facts are checked against pinned content.
+func AssessLearningSnapshotWithEvidence(document missions.MissionDocument, snapshot StudentLearningSnapshot, turns []StudentTutorTurn, facts []AcceptedAnswerFact, requestedStatus string) (StudentLearningSnapshot, string) {
 	questions := studentSessionMissionFromDocument(document).PreviewQuestions
 	byID := map[string]int{}
 	stageOrder := []string{}
@@ -22,6 +28,12 @@ func AssessLearningSnapshot(document missions.MissionDocument, snapshot StudentL
 		byStage[q.StageID] = append(byStage[q.StageID], q.ID)
 	}
 	solved := map[string]bool{}
+	for _, fact := range facts {
+		if index, ok := byID[fact.QuestionID]; ok && fact.PublishedRevision == document.PublishedRevision && normalizedStudentAnswer(fact.StudentResponse) == normalizedStudentAnswer(questions[index].ExpectedAnswer) {
+			solved[fact.QuestionID] = true
+		}
+	}
+
 	events := make([]StudentLearningEvent, 0, len(turns))
 	notes := []StudentLearningNote{}
 	decisions := []StudentDecision{}

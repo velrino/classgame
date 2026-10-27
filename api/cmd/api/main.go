@@ -283,6 +283,7 @@ func run() (runErr error) {
 	}
 
 	usersService := students.NewService(students.Dependencies{
+		Recovery: usersRepository,
 		Sessions: usersRepository, Learning: usersRepository, ClassLearning: usersRepository,
 		Missions: missionRepository, Revisions: missionRepository, Classes: teacherClassRepository,
 		TraceGenerator: orchestratorService, TutorGenerator: orchestratorService, ClassGenerator: orchestratorService,
@@ -303,6 +304,12 @@ func run() (runErr error) {
 			return fmt.Errorf("start background worker: %w", err)
 		}
 		defer worker.Shutdown()
+		stopRecovery := app.StartBackgroundRecovery(ctx, func(ctx context.Context, after string, limit int) (string, error) {
+			report, err := usersService.RecoverPendingFinalizations(ctx, after, limit)
+			slog.InfoContext(ctx, "background recovery page", "scanned", report.Scanned, "candidates", report.Candidates, "enqueued", report.Enqueued, "failed", report.Failed)
+			return report.NextCursor, err
+		})
+		defer stopRecovery()
 		slog.Info("background worker started", "queue", cfg.TasksQueue, "concurrency", cfg.TasksConcurrency)
 		if cfg.AppRole == "worker" {
 			<-ctx.Done()

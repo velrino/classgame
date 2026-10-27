@@ -1,6 +1,7 @@
 package students
 
 import (
+	"context"
 	"time"
 
 	"classgame-api/internal/auth"
@@ -124,6 +125,16 @@ type StudentLearningMemory struct {
 }
 
 type StudentMissionAttemptDocument struct {
+	EvidenceSchemaVersion          int                  `firestore:"evidence_schema_version" json:"-"`
+	AcceptedAnswers                []AcceptedAnswerFact `firestore:"accepted_answers" json:"-"`
+	GeneratedTurnCount             int64                `firestore:"generated_turn_count" json:"-"`
+	TutorEventSequence             int64                `firestore:"tutor_event_sequence" json:"-"`
+	LegacyHistoryIncomplete        bool                 `firestore:"legacy_history_incomplete" json:"-"`
+	EvidenceRevision               int64                `firestore:"evidence_revision" json:"-"`
+	FinalizationToken              string               `firestore:"finalization_token" json:"-"`
+	FinalizationLeaseUntil         time.Time            `firestore:"finalization_lease_until" json:"-"`
+	FinalizationDispatchGeneration int64                `firestore:"finalization_dispatch_generation" json:"-"`
+
 	ID                  string                            `firestore:"id" json:"id"`
 	OrganizationID      string                            `firestore:"organization_id" json:"organization_id"`
 	DistrictID          string                            `firestore:"district_id" json:"district_id"`
@@ -228,7 +239,15 @@ type StudentLearningEvent struct {
 	OccurredAt int64  `firestore:"occurred_at" json:"occurred_at"`
 }
 
+// AttemptScope is supplied by modern clients; omitted fields retain legacy compatibility.
+type AttemptScope struct {
+	AttemptID         string `json:"attempt_id,omitempty"`
+	PublishedRevision int64  `json:"published_revision,omitempty"`
+}
+
 type SaveStudentLearningSnapshotInput struct {
+	RequestScope      AttemptScope
+	ExpectedAttemptID string
 	Mission           missions.MissionDocument
 	PublishedRevision int64
 	Identity          auth.Identity
@@ -277,6 +296,9 @@ type StudentTutorTurn struct {
 }
 
 type SaveStudentTutorTurnInput struct {
+	ReservationOwner          string
+	BeforeGeneration          func(context.Context) error
+	RequestScope              AttemptScope
 	ExpectedAttemptID         string
 	ExpectedPublishedRevision int64
 	Identity                  auth.Identity

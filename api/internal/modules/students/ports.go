@@ -27,6 +27,10 @@ type SessionStore interface {
 
 // LearningStore is the persistence port owned by this workflow.
 type LearningStore interface {
+	ReserveTutorGeneration(context.Context, SaveStudentTutorTurnInput, string, time.Time, time.Time) (TutorGenerationReservation, error)
+	FailTutorGeneration(context.Context, SaveStudentTutorTurnInput, time.Time) error
+
+	GetStudentTutorEvent(context.Context, string, string, string) (TutorEventDocument, bool, error)
 	SaveStudentLearningSnapshot(
 		ctx context.Context,
 		input SaveStudentLearningSnapshotInput,
@@ -48,16 +52,12 @@ type LearningStore interface {
 		expectedLastActivity time.Time,
 		timestamp time.Time,
 	) (StudentMissionAttemptDocument, bool, error)
-	SetStudentAttemptTraceState(
-		ctx context.Context,
-		attemptID string,
-		state string,
-		timestamp time.Time,
-	) error
+	ClaimStudentFinalization(context.Context, LearningJob, string, time.Time, time.Time) (StudentMissionAttemptDocument, UserDocument, bool, error)
+	FailStudentFinalization(context.Context, FinalizationFence, time.Time) error
+
 	FinalizeStudentLearningTrace(
 		ctx context.Context,
-		studentID string,
-		attemptID string,
+		fence FinalizationFence,
 		trace generation.LearningTraceBlueprint,
 		memory StudentLearningMemory,
 		timestamp time.Time,

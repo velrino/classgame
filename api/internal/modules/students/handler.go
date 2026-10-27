@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -71,6 +72,7 @@ type StudentLearningService interface {
 		string,
 		string,
 		StudentLearningSnapshot,
+		AttemptScope,
 	) (StudentMissionAttemptDocument, error)
 	GetCurrentStudentLearningAttempt(
 		context.Context,
@@ -156,9 +158,11 @@ type StudentPresenceRequest struct {
 }
 
 type StudentLearningSnapshotRequest struct {
-	MissionID string                  `json:"mission_id"`
-	Status    string                  `json:"status"`
-	Snapshot  StudentLearningSnapshot `json:"snapshot"`
+	AttemptID         string                  `json:"attempt_id,omitempty"`
+	PublishedRevision int64                   `json:"published_revision,omitempty"`
+	MissionID         string                  `json:"mission_id"`
+	Status            string                  `json:"status"`
+	Snapshot          StudentLearningSnapshot `json:"snapshot"`
 }
 
 type StudentLearningResponse struct {
@@ -166,6 +170,8 @@ type StudentLearningResponse struct {
 }
 
 type StudentTutorTurnRequest struct {
+	AttemptID         string `json:"attempt_id,omitempty"`
+	PublishedRevision int64  `json:"published_revision,omitempty"`
 	MissionID         string `json:"mission_id"`
 	EventID           string `json:"event_id"`
 	Type              string `json:"type"`
@@ -442,6 +448,18 @@ func (handler *Handler) PostStudentPresence(ctx *echo.Context) error {
 }
 
 func (handler *Handler) GetStudentLearning(ctx *echo.Context) error {
+	scope := AttemptScope{AttemptID: ctx.QueryParam("attempt_id")}
+	if value := strings.TrimSpace(ctx.QueryParam("published_revision")); value != "" {
+		revision, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", "published_revision must be an integer.")
+		}
+		scope.PublishedRevision = revision
+	}
+	if err := validateAttemptScopeFields(scope.AttemptID, scope.PublishedRevision); err != nil {
+		return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", err.Error())
+	}
+
 	missionID := strings.TrimSpace(ctx.QueryParam("mission_id"))
 	if err := validation.Validate(missionID, validation.Required, validation.Length(1, 120)); err != nil {
 		return httpx.JSONError(ctx, http.StatusBadRequest, "validation_failed", "mission_id: "+err.Error())
@@ -464,6 +482,10 @@ func (handler *Handler) GetStudentLearning(ctx *echo.Context) error {
 	}
 	if !exists {
 		return ctx.JSON(http.StatusOK, StudentLearningResponse{Attempt: nil})
+	}
+
+	if err := ValidateAttemptRequestScope(scope, attempt); err != nil {
+		return httpx.JSONError(ctx, http.StatusConflict, "mission_mismatch", "This tab uses a different mission revision. Select the mission again.")
 	}
 
 	resume := ToStudentLearningResume(attempt)
@@ -496,6 +518,7 @@ func (handler *Handler) PostStudentLearning(ctx *echo.Context) error {
 		request.MissionID,
 		request.Status,
 		request.Snapshot,
+		AttemptScope{AttemptID: request.AttemptID, PublishedRevision: request.PublishedRevision},
 	)
 	if err != nil {
 		return handler.studentLearningError(ctx, err)
@@ -537,15 +560,22 @@ func (handler *Handler) PostStudentTutorTurn(ctx *echo.Context) error {
 	if err != nil || !ok {
 		return err
 	}
-	limited, err := handler.limitTutorGeneration(requestContext, ctx, identity)
-	if err != nil || limited {
-		return err
-	}
 
 	turn, err := handler.studentTutorService.SaveStudentTutorTurn(
 		requestContext,
 		identity,
 		SaveStudentTutorTurnInput{
+			BeforeGeneration: func(admissionContext context.Context) error {
+				limited, err := handler.limitTutorGeneration(admissionContext, ctx, identity)
+				if err != nil {
+					return err
+				}
+				if limited {
+					return ErrTutorAdmissionHandled
+				}
+				return nil
+			},
+			RequestScope:      AttemptScope{AttemptID: request.AttemptID, PublishedRevision: request.PublishedRevision},
 			MissionID:         request.MissionID,
 			EventID:           request.EventID,
 			Type:              request.Type,
@@ -559,6 +589,9 @@ func (handler *Handler) PostStudentTutorTurn(ctx *echo.Context) error {
 			Feedback:          request.Feedback,
 		},
 	)
+	if errors.Is(err, ErrTutorAdmissionHandled) {
+		return nil
+	}
 	if err != nil {
 		return handler.studentLearningError(ctx, err)
 	}
@@ -582,6 +615,7 @@ func (handler *Handler) limitTutorGeneration(
 		ratelimit.Rule{Limiter: handler.tutorRateLimiters.PerIPHour, Identifier: ipIdentifier},
 	)
 	if err != nil {
+		echoCtx.Response().Header().Set("Retry-After", "5")
 		slog.Error("student tutor rate limiter failed", "error", err)
 		return true, httpx.JSONError(echoCtx, http.StatusServiceUnavailable, "rate_limit_unavailable", "Student tutor is temporarily unavailable.")
 	}
@@ -598,6 +632,15 @@ func (handler *Handler) limitTutorGeneration(
 
 func (handler *Handler) studentLearningError(ctx *echo.Context, err error) error {
 	switch {
+	case errors.Is(err, ErrTutorEventPending):
+		ctx.Response().Header().Set("Retry-After", "5")
+		return httpx.JSONError(ctx, http.StatusServiceUnavailable, "tutor_event_pending", "This interaction is still processing. Retry the same event.")
+	case errors.Is(err, ErrTutorEventConflict):
+		return httpx.JSONError(ctx, http.StatusConflict, "tutor_event_conflict", "This event ID already belongs to different evidence.")
+	case errors.Is(err, ErrStudentAttemptClosed):
+		return httpx.JSONError(ctx, http.StatusConflict, "attempt_closed", "This mission attempt is complete. Select another mission.")
+	case errors.Is(err, ErrTutorHistoryIncomplete):
+		return httpx.JSONError(ctx, http.StatusConflict, "tutor_history_incomplete", "This older attempt has incomplete history. Ask the teacher for a new mission revision.")
 	case errors.Is(err, ErrStudentRequiresAnonymousAuth):
 		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Student learning requires anonymous Firebase auth.")
 	case errors.Is(err, ErrStudentNotFound):
@@ -665,6 +708,9 @@ func (request StudentPresenceRequest) Validate() error {
 }
 
 func (request StudentLearningSnapshotRequest) Validate() error {
+	if err := validateAttemptScopeFields(request.AttemptID, request.PublishedRevision); err != nil {
+		return err
+	}
 	if err := validation.ValidateStruct(&request,
 		validation.Field(&request.MissionID, validation.Required, validation.Length(1, 120)),
 		validation.Field(&request.Status,
@@ -832,6 +878,9 @@ func (request StudentLearningSnapshotRequest) Validate() error {
 }
 
 func (request StudentTutorTurnRequest) Validate() error {
+	if err := validateAttemptScopeFields(request.AttemptID, request.PublishedRevision); err != nil {
+		return err
+	}
 	if err := validation.ValidateStruct(&request,
 		validation.Field(&request.MissionID, validation.Required, validation.Length(1, 120)),
 		validation.Field(&request.EventID, validation.Required, validation.Length(1, 120)),
@@ -978,4 +1027,20 @@ func resolveStudentSessionRateLimitExpires(value time.Duration) time.Duration {
 	}
 
 	return value
+}
+
+func validateAttemptScopeFields(attemptID string, revision int64) error {
+	if revision < 0 {
+		return errors.New("published_revision must be zero or greater")
+	}
+	if len(attemptID) > 120 {
+		return errors.New("attempt_id is too long")
+	}
+	if trimmed := strings.TrimSpace(attemptID); trimmed != "" {
+		matched, _ := regexp.MatchString(`^[A-Za-z0-9_-]{1,120}$`, trimmed)
+		if !matched {
+			return errors.New("attempt_id is invalid")
+		}
+	}
+	return nil
 }

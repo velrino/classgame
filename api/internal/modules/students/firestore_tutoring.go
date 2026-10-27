@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/grpc/codes"
@@ -73,15 +74,59 @@ func (repository *FirestoreRepository) AppendStudentTutorTurn(
 		}
 
 		turnID := tutorTurnID(input.EventID)
-		for _, turn := range attempt.TutorTurns {
-			if turn.ID == turnID {
+		eventRef := attemptRef.Collection("tutor_events").Doc(turnID)
+		eventSnapshot, eventErr := tx.Get(eventRef)
+
+		var reserved TutorEventDocument
+		if eventErr == nil {
+			if err := eventSnapshot.DataTo(&reserved); err != nil {
+				return fmt.Errorf("decode tutor replay event: %w", err)
+			}
+			if reserved.StudentID != user.ID {
+				return ErrStudentMissionMismatch
+			}
+			turn, complete, err := TutorReplayDecision(reserved, input, time.Now())
+			if complete {
 				result = turn
+				return err
+			}
+			if err != nil && err != ErrTutorEventPending {
+				return err
+			}
+			if input.Type != "feedback" && !MatchesTutorReservation(reserved, input, time.Now()) {
+				return ErrTutorEventPending
+			}
+		} else if status.Code(eventErr) != codes.NotFound {
+			return fmt.Errorf("read tutor replay event: %w", eventErr)
+		}
+		if input.Type != "feedback" && (eventErr != nil || !MatchesTutorReservation(reserved, input, time.Now())) {
+			return ErrTutorEventPending
+		}
+
+		for _, turn := range attempt.TutorTurns {
+			if turn.ID != turnID {
+				continue
+			}
+			if fingerprintRecordedTurn(turn, input) != TutorEventFingerprint(input) {
+				return ErrTutorEventConflict
+			}
+			result = turn
+			if attempt.Status == "completed" {
 				return nil
 			}
+			return tx.Create(eventRef, TutorEventDocument{State: "complete", StudentID: user.ID, EventID: input.EventID, Fingerprint: TutorEventFingerprint(input), Turn: turn, CreatedAt: input.Timestamp})
 		}
+		if attempt.Status == "completed" {
+			return ErrStudentAttemptClosed
+		}
+		attempt = EffectiveTutorEvidence(attempt)
+
+		attempt.TutorEventSequence++
+		attempt.EvidenceRevision++
+
 		result = StudentTutorTurn{
 			ID:                turnID,
-			Sequence:          len(attempt.TutorTurns) + 1,
+			Sequence:          int(attempt.TutorEventSequence),
 			Type:              input.Type,
 			StageID:           input.StageID,
 			QuestionID:        input.QuestionID,
@@ -94,12 +139,24 @@ func (repository *FirestoreRepository) AppendStudentTutorTurn(
 			Tutor:             tutor,
 			CreatedAt:         input.Timestamp,
 		}
+		if input.Type == "answer" && input.ExpectedAnswer != "" && normalizedStudentAnswer(input.StudentResponse) == normalizedStudentAnswer(input.ExpectedAnswer) {
+			attempt.AcceptedAnswers = mergeAcceptedAnswer(attempt.AcceptedAnswers, AcceptedAnswerFact{QuestionID: input.QuestionID, StageID: input.StageID, StudentResponse: input.StudentResponse, PublishedRevision: attempt.PublishedRevision, TurnID: result.ID, AcceptedAt: input.Timestamp})
+		}
+		if err := tx.Set(eventRef, TutorEventDocument{State: "complete", StudentID: user.ID, EventID: input.EventID, Fingerprint: TutorEventFingerprint(input), Turn: result, CreatedAt: input.Timestamp}); err != nil {
+			return fmt.Errorf("write durable tutor replay: %w", err)
+		}
+
 		turns := append(attempt.TutorTurns, result)
 		if len(turns) > maxTutorTurnsPerAttempt {
 			turns = turns[len(turns)-maxTutorTurnsPerAttempt:]
 		}
 
+		traceState := "live"
+		if attempt.Status == "abandoned" {
+			traceState = "pending"
+		}
 		if err := tx.Set(attemptRef, map[string]any{
+			"evidence_schema_version": attempt.EvidenceSchemaVersion, "accepted_answers": attempt.AcceptedAnswers, "generated_turn_count": attempt.GeneratedTurnCount, "tutor_event_sequence": attempt.TutorEventSequence, "legacy_history_incomplete": attempt.LegacyHistoryIncomplete, "evidence_revision": attempt.EvidenceRevision, "trace": map[string]any{"finalized": false}, "trace_state": traceState, "finalization_token": "", "finalization_lease_until": time.Time{},
 			"tutor_turns":      turns,
 			"last_activity_at": input.Timestamp,
 			"updated_at":       input.Timestamp,

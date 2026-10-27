@@ -58,7 +58,7 @@ func New(options Options) *echo.Echo {
 		origins[index] = strings.TrimSpace(origins[index])
 	}
 	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		ExposeHeaders: []string{requestmeta.RequestIDHeader, "traceparent"},
+		ExposeHeaders: []string{requestmeta.RequestIDHeader, "traceparent", "Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"},
 		AllowHeaders: []string{
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,

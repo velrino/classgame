@@ -28,7 +28,6 @@ type Config struct {
 	TasksQueue                      string
 	TasksConcurrency                int
 	StudentAbandonmentSeconds       int
-	AuthGoogleWebClientID           string
 	AuthTeacherProviders            string
 	AuthStudentProviders            string
 	DemoTeacherEmail                string
@@ -85,7 +84,6 @@ func Load() (Config, error) {
 		TasksQueue:                      reader.getString("TASKS_QUEUE", "classgame-background"),
 		TasksConcurrency:                reader.getInt("TASKS_CONCURRENCY", 4),
 		StudentAbandonmentSeconds:       reader.getInt("STUDENT_ABANDONMENT_SECONDS", 120),
-		AuthGoogleWebClientID:           reader.getString("AUTH_GOOGLE_WEB_CLIENT_ID", "245584783597-t05j7fj2iucesiad4jpu4mlh72kgcs12.apps.googleusercontent.com"),
 		AuthTeacherProviders:            reader.getString("AUTH_TEACHER_PROVIDERS", "google"),
 		AuthStudentProviders:            reader.getString("AUTH_STUDENT_PROVIDERS", "anonymous"),
 		DemoTeacherEmail:                reader.getString("DEMO_TEACHER_EMAIL", demoaccount.DefaultEmail),

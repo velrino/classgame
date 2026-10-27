@@ -18,6 +18,7 @@ func (service *Service) SaveStudentLearningSnapshot(
 	missionID string,
 	status string,
 	snapshot StudentLearningSnapshot,
+	requestScope AttemptScope,
 ) (StudentMissionAttemptDocument, error) {
 	if identity.AuthMethod != auth.AuthMethodAnonymous {
 		return StudentMissionAttemptDocument{}, ErrStudentRequiresAnonymousAuth
@@ -33,6 +34,16 @@ func (service *Service) SaveStudentLearningSnapshot(
 	if !exists {
 		current = StudentMissionAttemptDocument{StudentID: user.ID, ClassID: user.Student.ClassID, MissionID: normalizeText(missionID), PublishedRevision: user.Activity.CurrentGame.PublishedRevision}
 	}
+	if current.ID == "" {
+		current.ID = user.Activity.CurrentGame.AttemptID
+	}
+	if current.ID == "" {
+		current.ID = learningAttemptID(user.ID, normalizeText(missionID), current.PublishedRevision)
+	}
+	if err := ValidateAttemptRequestScope(requestScope, current); err != nil {
+		return StudentMissionAttemptDocument{}, err
+	}
+
 	document, err := service.missionForAttempt(ctx, current)
 	if err != nil {
 		return StudentMissionAttemptDocument{}, err
@@ -47,8 +58,9 @@ func (service *Service) SaveStudentLearningSnapshot(
 	liveTrace := generation.BuildObservedLearningTrace(liveInput, "")
 	liveTrace.Finalized = false
 
-	attempt, _, completionStarted, err := service.learning.SaveStudentLearningSnapshot(ctx, SaveStudentLearningSnapshotInput{
-		Identity:          identity,
+	attempt, _, _, err := service.learning.SaveStudentLearningSnapshot(ctx, SaveStudentLearningSnapshotInput{
+		Identity:     identity,
+		RequestScope: requestScope, ExpectedAttemptID: current.ID,
 		Mission:           document,
 		PublishedRevision: current.PublishedRevision,
 		MissionID:         normalizeText(missionID),
@@ -64,11 +76,9 @@ func (service *Service) SaveStudentLearningSnapshot(
 		return attempt, nil
 	}
 
-	if attempt.Status == "completed" {
-		shouldFinalize := completionStarted || attempt.TraceState == "failed"
-		if !shouldFinalize {
-			return attempt, nil
-		}
+	if FinalizationEligible(attempt) && attempt.Status == "completed" {
+		// Retrying pending dispatch is deliberate: an earlier process may have died
+		// after the completion transaction and before enqueue. The job ID is stable.
 		if service.learningTaskEnqueuer != nil {
 			if err := service.learningTaskEnqueuer.EnqueueFinalization(ctx, attempt); err == nil {
 				return attempt, nil
@@ -76,8 +86,11 @@ func (service *Service) SaveStudentLearningSnapshot(
 				slog.Warn("student learning finalization enqueue failed; using inline fallback", "error", err)
 			}
 		}
-
-		return service.finalizeStudentAttempt(ctx, attempt.StudentID, attempt.ID)
+		finalized, err := service.finalizeStudentAttempt(ctx, FinalizationJob(attempt))
+		if errors.Is(err, ErrFinalizationBusy) {
+			return attempt, nil
+		}
+		return finalized, err
 	}
 
 	if attempt.Status == "paused" && service.learningTaskEnqueuer != nil {
@@ -106,5 +119,17 @@ func (service *Service) GetCurrentStudentLearningAttempt(
 		identity.ProviderUserID,
 		normalizeText(missionID),
 	)
+
+	if err == nil && exists && attempt.Status != "completed" {
+		document, readErr := service.missionForAttempt(ctx, attempt)
+		if readErr != nil {
+			return StudentMissionAttemptDocument{}, false, readErr
+		}
+		evidence := EffectiveTutorEvidence(attempt)
+		if attempt.EvidenceSchemaVersion == 0 {
+			evidence.AcceptedAnswers = acceptedAnswerFacts(document, attempt.TutorTurns)
+		}
+		attempt.Snapshot, _ = AssessLearningSnapshotWithEvidence(document, attempt.Snapshot, attempt.TutorTurns, evidence.AcceptedAnswers, attempt.Status)
+	}
 	return attempt, exists, err
 }
