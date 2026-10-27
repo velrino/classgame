@@ -16,7 +16,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATASET = ROOT / "evals/platform/ai-policy/cases.json"
-KINDS = {"tutor", "auth", "projection", "learning", "scope", "memory", "object_path"}
+KINDS = {"tutor", "auth", "projection", "learning", "scope", "memory", "object_path", "evidence", "tutor_event", "finalization"}
 OPERATORS = {"equals", "contains", "not_contains", "absent"}
 MISSING = object()
 
