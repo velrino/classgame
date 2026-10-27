@@ -8,8 +8,9 @@ Select a diagram to open the full PNG. Add a row when a new step is ready.
 |:---:|---|:---:|
 | 01 | **Upload material and prepare a mission draft**<br>[Guide](01-mission-draft/README.md) · [Mermaid source](01-mission-draft/SEQUENCE.txt) | <a href="01-mission-draft/diagram.png"><img src="01-mission-draft/diagram.png" alt="Sequence diagram for uploading material and preparing a mission draft" width="480" /></a> |
 | 02 | **Review and publish the mission**<br>[Guide](02-mission-publication/README.md) · [Mermaid source](02-mission-publication/SEQUENCE.txt) | <a href="02-mission-publication/diagram.png"><img src="02-mission-publication/diagram.png" alt="Sequence diagram for reviewing and publishing a mission" width="480" /></a> |
+| 03 | **Copy mission files to private storage**<br>[Guide](03-attachment-transfer/README.md) · [Mermaid source](03-attachment-transfer/SEQUENCE.txt) | <a href="03-attachment-transfer/diagram.png"><img src="03-attachment-transfer/diagram.png" alt="Sequence diagram for copying mission attachments to private storage" width="480" /></a> |
 
-Step 01 ends with the saved preview for teacher review. Step 02 ends with the published revision. Private file-copy workers, quiz play, and learning memory will have separate diagrams.
+Step 01 ends with the saved preview for teacher review. Step 02 ends with the published revision. Step 03 records private file-copy outcomes. Quiz play and learning memory will have separate diagrams.
 
 ## Style
 

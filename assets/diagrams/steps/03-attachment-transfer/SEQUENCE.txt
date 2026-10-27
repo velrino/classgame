@@ -1,0 +1,94 @@
+---
+title: 03 - Copy mission files to private storage
+config:
+  theme: base
+  look: classic
+  fontFamily: Arial, sans-serif
+  themeCSS: |
+    rect.actor[name="Redis"], line.actor-line[name="Redis"] { fill: #a573bc !important; stroke: #a573bc !important; }
+    rect.actor[name="Worker"], line.actor-line[name="Worker"] { fill: #04c7ff !important; stroke: #04c7ff !important; }
+    rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
+    rect.actor[name="Storage"], line.actor-line[name="Storage"] { fill: #9054af !important; stroke: #9054af !important; }
+    rect.actor[name="Uploadcare"], line.actor-line[name="Uploadcare"] { fill: #86d5fb !important; stroke: #86d5fb !important; }
+    text.actor, text.actor tspan { fill: #FFFFFF !important; }
+    text.actor { font-weight: 700 !important; }
+    text.messageText:has(+ [data-et="message"][data-from="Redis"][data-to="Worker"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Worker"][data-to="DB"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Worker"][data-to="Storage"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Worker"][data-to="Uploadcare"]),
+    text.messageText:has(+ [data-et="message"][data-from="Worker"][data-to="Redis"]),
+    g[data-et="note"] text.noteText:first-of-type,
+    g[data-et="note"] text.noteText:first-of-type tspan { font-weight: 700 !important; }
+  themeVariables:
+    background: "#FFFFFF"
+    primaryColor: "#FFFFFF"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#111111"
+    actorBkg: "#FFFFFF"
+    actorBorder: "#111111"
+    actorTextColor: "#FFFFFF"
+    actorLineColor: "#111111"
+    signalColor: "#111111"
+    signalTextColor: "#111111"
+    titleColor: "#111111"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#111111"
+    noteTextColor: "#111111"
+    activationBkgColor: "#FFFFFF"
+    activationBorderColor: "#111111"
+    labelBoxBkgColor: "#FFFFFF"
+    labelBoxBorderColor: "#111111"
+    labelTextColor: "#111111"
+    loopTextColor: "#111111"
+    sequenceNumberColor: "#FFFFFF"
+  sequence:
+    useMaxWidth: true
+    diagramMarginX: 20
+    diagramMarginY: 20
+    mirrorActors: false
+    actorMargin: 45
+    messageMargin: 24
+---
+sequenceDiagram
+    %% First-use headers introduce existing services, not new infrastructure.
+    %% This is the main copy flow; notes summarize failure paths.
+    %% Quiz play and learning memory belong to later steps.
+    autonumber
+    participant Redis
+
+    create participant Worker
+    Redis->>Worker: Deliver the revision-scoped copy job
+    activate Worker
+    Note over Redis,Worker: IDs only in the job body.<br/>Class, mission and published revision
+
+    create participant DB
+    Worker->>DB: Prepare the published revision<br/>Mark remaining files copying in a transaction
+    DB-->>Worker: Remaining files and source metadata
+    Note right of DB: Revision-bound transfer<br/>missions/{mission_id}/<br/>published_revisions/{revision}<br/>Skip stored files and permanent failures.
+    Note over Worker,DB: Missing pending revision: retry.<br/>Impossible revision: finish without copying.<br/>Existing historical revisions still run.
+
+    loop Each remaining attachment
+        create participant Storage
+        Worker->>Storage: Check the deterministic object<br/>Validate scope and private access
+        Storage-->>Worker: Valid existing object or missing object
+        Note right of Storage: Private Cloud Storage bucket<br/>Verify bucket IAM, object ACLs<br/>and absence of public download tokens.
+
+        opt Object is missing
+            create participant Uploadcare
+            Worker->>Uploadcare: Download a validated source<br/>HTTPS CDN URL and allowed redirects
+            Uploadcare-->>Worker: File stream, bounded to 20 MiB
+            Worker->>Storage: Stream a private object<br/>Create only if the path does not exist
+            Storage-->>Worker: Validated stored object metadata
+        end
+        Note over Worker,Storage: Reuse a validated existing object.<br/>Concurrent writers reread the winning object.
+
+        Worker->>DB: Mark the attachment stored<br/>Transaction checks revision and attachment ID
+        DB-->>Worker: Attachment state committed
+        Note over Worker,DB: Save each failure and its retry flag.<br/>Temporary error: retry the job.<br/>Permanent file error: continue with other files.
+    end
+
+    Worker->>DB: Complete the revision transfer<br/>Check that no files are still pending
+    DB-->>Worker: complete or complete_with_failures
+    Worker-->>Redis: Return success to complete the job
+    deactivate Worker
+    Note over Redis,Worker: Retry temporary errors, up to 10 retries.<br/>Invalid jobs archive for operator review.<br/>Completed jobs stay for 24 hours.
