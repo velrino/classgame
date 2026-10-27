@@ -120,7 +120,7 @@ func mergeAcceptedAnswer(facts []AcceptedAnswerFact, incoming AcceptedAnswerFact
 }
 func acceptedAnswerFacts(document missions.MissionDocument, turns []StudentTutorTurn) []AcceptedAnswerFact {
 	facts := []AcceptedAnswerFact{}
-	questions := studentSessionMissionFromDocument(document).PreviewQuestions
+	questions := playableMissionQuestions(document)
 	for _, turn := range turns {
 		if turn.Type != "answer" {
 			continue

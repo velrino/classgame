@@ -203,8 +203,9 @@ func groundStudentTutorTurn(
 	}
 
 	var publishedQuestion *generation.PreviewQuestion
-	for index := range document.PreviewQuestions {
-		question := &document.PreviewQuestions[index]
+	questions := playableMissionQuestions(document)
+	for index := range questions {
+		question := &questions[index]
 		if question.ID == input.QuestionID {
 			publishedQuestion = question
 			break

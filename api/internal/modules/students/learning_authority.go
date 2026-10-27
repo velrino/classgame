@@ -13,7 +13,7 @@ func AssessLearningSnapshot(document missions.MissionDocument, snapshot StudentL
 // AssessLearningSnapshotWithEvidence keeps durable accepted facts independent
 // from the bounded recent-turn context. Facts are checked against pinned content.
 func AssessLearningSnapshotWithEvidence(document missions.MissionDocument, snapshot StudentLearningSnapshot, turns []StudentTutorTurn, facts []AcceptedAnswerFact, requestedStatus string) (StudentLearningSnapshot, string) {
-	questions := studentSessionMissionFromDocument(document).PreviewQuestions
+	questions := playableMissionQuestions(document)
 	byID := map[string]int{}
 	stageOrder := []string{}
 	byStage := map[string][]string{}
