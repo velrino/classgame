@@ -1,0 +1,97 @@
+---
+title: 04 - Answer a quiz question with Mia
+config:
+  theme: base
+  look: classic
+  fontFamily: Arial, sans-serif
+  themeCSS: |
+    rect.actor[name="Student"], line.actor-line[name="Student"] { fill: #04c7ff !important; stroke: #04c7ff !important; }
+    rect.actor[name="API"], line.actor-line[name="API"] { fill: #86d5fb !important; stroke: #86d5fb !important; }
+    rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
+    rect.actor[name="LLM"], line.actor-line[name="LLM"] { fill: #9054af !important; stroke: #9054af !important; }
+    text.actor, text.actor tspan { fill: #FFFFFF !important; }
+    text.actor { font-weight: 700 !important; }
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Student"][data-to="Student"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="Student"][data-to="API"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="DB"]),
+    text.messageText:has(+ text.messageText + [data-et="message"][data-from="API"][data-to="API"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="LLM"]),
+    text.messageText:has(+ [data-et="message"][data-from="API"][data-to="Student"]),
+    g[data-et="note"] text.noteText:first-of-type,
+    g[data-et="note"] text.noteText:first-of-type tspan { font-weight: 700 !important; }
+  themeVariables:
+    background: "#FFFFFF"
+    primaryColor: "#FFFFFF"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#111111"
+    actorBkg: "#FFFFFF"
+    actorBorder: "#111111"
+    actorTextColor: "#FFFFFF"
+    actorLineColor: "#111111"
+    signalColor: "#111111"
+    signalTextColor: "#111111"
+    titleColor: "#111111"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#111111"
+    noteTextColor: "#111111"
+    activationBkgColor: "#FFFFFF"
+    activationBorderColor: "#111111"
+    labelBoxBkgColor: "#FFFFFF"
+    labelBoxBorderColor: "#111111"
+    labelTextColor: "#111111"
+    loopTextColor: "#111111"
+    sequenceNumberColor: "#FFFFFF"
+  sequence:
+    useMaxWidth: true
+    diagramMarginX: 20
+    diagramMarginY: 20
+    mirrorActors: false
+    actorMargin: 45
+    messageMargin: 24
+---
+sequenceDiagram
+    %% First-use headers introduce existing services, not new infrastructure.
+    %% Session setup is a prerequisite; post-quiz finalization is a later step.
+    %% The main path is a new generated turn; notes summarize retry branches.
+    autonumber
+    participant Student
+    Note over Student: Ready to play<br/>Mission selected and attempt pinned.<br/>Initial checkpoint already saved.
+
+    loop Each answer or reasoning turn
+        Student->>Student: Save the answer locally<br/>Keep a stable event_id in IndexedDB
+        create participant API
+        Student->>API: Send the quiz turn<br/>Question, response, event_id and attempt scope
+        activate API
+
+        create participant DB
+        API->>DB: Load scoped attempt and context<br/>Check the stored event for replay
+        DB-->>API: Scoped evidence and replay state
+        Note right of DB: Server-owned evidence<br/>student_mission_attempts/{attempt_id}<br/>tutor_events/{hashed_event_id}<br/>Question comes from the pinned revision.
+        Note over API,DB: Stable event IDs control retries.<br/>Same content: replay. Changed content: conflict.<br/>Active event: retry after the pending response.
+
+        opt Event needs processing
+            API->>API: Ground the quiz evidence<br/>Build bounded learning context
+            Note over API,DB: Bounded memory for this turn<br/>5 chunks, 12 recent turns, 24 recent events.<br/>Student skills and class learning signals
+
+            opt Generated feedback is needed
+                API->>DB: Reserve the tutor event<br/>Owner token and 2-minute lease
+                DB-->>API: Generation ownership granted
+                create participant LLM
+                API->>LLM: Generate grounded Mia feedback
+                activate LLM
+                LLM-->>API: Structured feedback
+                deactivate LLM
+            end
+
+            API->>DB: Commit the turn and answer evidence<br/>Recheck scope, fingerprint and any owner lease
+        end
+        API-->>Student: Return saved student-safe Mia feedback
+        deactivate API
+        Note over Student,API: Save evidence before replying.<br/>Teacher observations stay server-side.
+
+        Student->>API: Save the next checkpoint<br/>Flush pending tutor evidence first
+        activate API
+        API->>DB: Validate and merge progress<br/>Use server-recorded answers for authority
+        API-->>Student: Accepted progress for resume
+        deactivate API
+    end
