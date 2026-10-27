@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -70,6 +71,9 @@ func publicBucket(ctx context.Context, bucket *storage.BucketHandle) (bool, erro
 	return false, nil
 }
 func writeAccessManifest(ctx context.Context, client *storage.Client, objects map[string]map[string]bool, project, bucket, output string) error {
+	if !privateManifestLocation(output) {
+		return errors.New("private manifest must be outside Git in an existing private directory")
+	}
 	if len(objects) != 1 || objects[bucket] == nil {
 		return errors.New("manifest bucket must exactly match all referenced application objects")
 	}
@@ -223,6 +227,30 @@ func applyAccessManifest(ctx context.Context, client *storage.Client, input, pro
 			return errors.New("private access verification failed; stop and inspect")
 		}
 	}
+	if public, err := publicBucket(ctx, handle); err != nil || public {
+		return errors.New("final bucket access check failed; keep changed objects private and inspect")
+	}
 	fmt.Printf("Access changes complete: objects_privatized=%d objects_deleted=0 firestore_writes=0\n", len(changes))
 	return nil
+}
+
+func privateManifestLocation(path string) bool {
+	directory, err := filepath.Abs(filepath.Dir(path))
+	if err != nil {
+		return false
+	}
+	directory, err = filepath.EvalSymlinks(directory)
+	if err != nil {
+		return false
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(directory, ".git")); err == nil {
+			return false
+		}
+		parent := filepath.Dir(directory)
+		if parent == directory {
+			return true
+		}
+		directory = parent
+	}
 }
