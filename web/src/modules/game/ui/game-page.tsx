@@ -66,11 +66,20 @@ export function GamePage({
   const autoSitMissionIDRef = useRef("");
   const gameAccessTrackedRef = useRef(false);
   const missionStartGenerationRef = useRef(0);
+  const missionStartControllerRef = useRef<AbortController | null>(null);
   const missionCompletionRef = useRef<{
     attemptId: string;
     captured: boolean;
     wasComplete: boolean;
   } | null>(null);
+
+  const cancelMissionStart = useCallback(() => {
+    missionStartGenerationRef.current += 1;
+    missionStartControllerRef.current?.abort();
+    missionStartControllerRef.current = null;
+    setStartingMissionID("");
+    setMissionStartError(null);
+  }, []);
 
   useEffect(() => {
     if (gameAccessTrackedRef.current) {
@@ -89,35 +98,31 @@ export function GamePage({
     const unsubscribe = observeStudentIdentity((user) => {
       if (user?.uid === actorId) return;
       actorId = user?.uid;
-      missionStartGenerationRef.current += 1;
-      setStartingMissionID("");
+      cancelMissionStart();
     });
     return () => {
       missionStartGenerationRef.current += 1;
+      missionStartControllerRef.current?.abort();
       unsubscribe();
     };
-  }, []);
+  }, [cancelMissionStart]);
 
   const leaveMission = useCallback(() => {
-    missionStartGenerationRef.current += 1;
+    cancelMissionStart();
     clearStudentMissionSession();
     handlers.leaveMission();
-    setStartingMissionID("");
     setRewardOpen(false);
     autoSitMissionIDRef.current = "";
-    setMissionStartError(null);
-  }, [handlers]);
+  }, [handlers, cancelMissionStart]);
 
   const leaveClass = useCallback(() => {
-    missionStartGenerationRef.current += 1;
+    cancelMissionStart();
     clearStudentSession();
     handlers.leaveMission();
-    setStartingMissionID("");
     setRewardOpen(false);
     autoSitMissionIDRef.current = "";
-    setMissionStartError(null);
     void signOutStudentIdentity().catch(() => undefined);
-  }, [handlers]);
+  }, [handlers, cancelMissionStart]);
 
   const leaveUnavailableClass = useCallback(() => {
     window.dispatchEvent(new Event(studentClassUnavailableEvent));
@@ -261,8 +266,10 @@ export function GamePage({
   }, [handlers, session.hydrated, session.mission.id]);
 
   async function startMission(missionID: string) {
-    const generation = ++missionStartGenerationRef.current;
-    setStartingMissionID("");
+    cancelMissionStart();
+    const generation = missionStartGenerationRef.current;
+    const controller = new AbortController();
+    missionStartControllerRef.current = controller;
     const selectedMission = missions.find(
       (mission) => mission.id === missionID,
     );
@@ -287,6 +294,7 @@ export function GamePage({
     const isCurrentStart = () => {
       const activeClass = readStudentClassSession();
       return (
+        !controller.signal.aborted &&
         generation === missionStartGenerationRef.current &&
         currentStudentIdentity()?.uid === user.uid &&
         activeClass?.classId === classSession.classId &&
@@ -314,7 +322,7 @@ export function GamePage({
         class_code: classSession.classCode,
         mission_id: missionID,
         student_name: classSession.studentName,
-      });
+      }, controller.signal);
       if (!isCurrentStart()) return false;
       if (!response.mission) {
         throw new Error("The mission payload is unavailable.");
@@ -356,6 +364,8 @@ export function GamePage({
       return false;
     } finally {
       if (isCurrentStart()) setStartingMissionID("");
+      if (missionStartControllerRef.current === controller)
+        missionStartControllerRef.current = null;
     }
   }
 
@@ -434,6 +444,7 @@ export function GamePage({
             onSelectAvatar={handlers.selectAvatar}
             onToggleMusic={setMusicEnabled}
             onSelectMission={startMission}
+            onCancelMissionStart={cancelMissionStart}
             onWalkToDesk={handlers.walk}
             onEndSession={leaveClass}
           />

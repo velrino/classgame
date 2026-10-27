@@ -41,6 +41,7 @@ type GameHudProps = {
   readonly onSelectAvatar: (presetId: string) => void;
   readonly onToggleMusic: (enabled: boolean) => void;
   readonly onSelectMission: (missionID: string) => Promise<boolean>;
+  readonly onCancelMissionStart: () => void;
   readonly onWalkToDesk: () => void;
   readonly onEndSession: () => void;
 };
@@ -109,6 +110,7 @@ export function GameHud({
   onSelectAvatar,
   onToggleMusic,
   onSelectMission,
+  onCancelMissionStart,
   onWalkToDesk,
   onEndSession,
 }: GameHudProps) {
@@ -260,7 +262,10 @@ export function GameHud({
         missionsReady={missionsReady}
         startingMissionID={startingMissionID}
         error={missionStartError}
-        onOpenChange={setMissionPickerOpen}
+        onOpenChange={(open) => {
+          if (!open) onCancelMissionStart();
+          setMissionPickerOpen(open);
+        }}
         onSelect={onSelectMission}
       />
     </div>
