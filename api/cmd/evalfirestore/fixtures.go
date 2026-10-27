@@ -91,7 +91,7 @@ func (s *suite) cleanup() error {
 				errs = append(errs, err)
 			}
 		}
-		for _, ref := range []*firestore.DocumentRef{ref, s.client.Collection("users").Doc(f.user.ID), s.client.Collection("student_mission_completions").Doc(f.user.ID).Collection("missions").Doc(f.attempt.ID)} {
+		for _, ref := range []*firestore.DocumentRef{ref, s.client.Collection("users").Doc(f.user.ID), s.client.Collection("student_mission_completions").Doc(f.user.ID).Collection("missions").Doc(f.attempt.ID), s.client.Collection(students.ClassRefreshCollection).Doc(f.attempt.ClassID)} {
 			if _, err := ref.Delete(ctx); err != nil {
 				errs = append(errs, err)
 			}

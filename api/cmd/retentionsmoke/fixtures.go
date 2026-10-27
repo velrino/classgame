@@ -165,6 +165,11 @@ func (s *suite) cleanup() error {
 			all = append(all, e)
 		}
 	}
+	if s.scope.Class != "" {
+		if _, e := s.store.Client.Collection(students.ClassRefreshCollection).Doc(s.scope.Class).Delete(ctx); e != nil {
+			all = append(all, e)
+		}
+	}
 	hash := sha256.Sum256([]byte(s.scope.Organization + "/" + s.scope.District + "/" + s.scope.School + "/" + s.scope.Class))
 	if _, e := s.store.Client.Collection("data_recovery_holds").Doc(hex.EncodeToString(hash[:])).Delete(ctx); e != nil {
 		all = append(all, e)

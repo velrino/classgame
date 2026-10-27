@@ -68,6 +68,8 @@ go run ./cmd/classbackup "${scope_flags[@]}" -mode release-local -apply-local \
 
 A changed source, another recovery owner, expired hold, nonempty restore target, or altered artifact fails closed. After deletion, only the same bundle/owner may resume restoration. Do not clear recovery receipts or queue state to force a retry. A restore receipt contains technical scope/hash/owner state and stays private under the default deny browser rules.
 
+Class bundles include their private class-refresh intent when present. Restore clears its owner/lease and advances both source and dispatch generations, leaving it pending for fresh synthesis. A legacy bundle fails atomically if a current intent exists outside that bundle; take a fresh reviewed backup rather than leave untracked work behind.
+
 ## Local evidence
 
 ```sh

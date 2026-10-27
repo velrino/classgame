@@ -81,6 +81,20 @@ func (b Bundle) Validate() error {
 	}
 	for path, d := range documents {
 		p := strings.Split(path, "/")
+		if len(p) == 2 && p[0] == "class_learning_refreshes" {
+			for _, key := range []string{"generation", "completed_generation", "dispatch_generation"} {
+				value := d.Fields[key]
+				if value == nil {
+					return ErrScope
+				}
+				if _, ok := value.ValueType.(*firestorepb.Value_IntegerValue); !ok || value.GetIntegerValue() < 0 || value.GetIntegerValue() == math.MaxInt64 {
+					return ErrScope
+				}
+			}
+			if d.Fields["completed_generation"].GetIntegerValue() > d.Fields["generation"].GetIntegerValue() {
+				return ErrScope
+			}
+		}
 		if len(p) == 2 && p[0] == "student_mission_attempts" {
 			if value := d.Fields["finalization_dispatch_generation"]; value != nil {
 				if _, ok := value.ValueType.(*firestorepb.Value_IntegerValue); !ok || value.GetIntegerValue() < 0 || value.GetIntegerValue() == math.MaxInt64 {
@@ -95,7 +109,7 @@ func (b Bundle) Validate() error {
 				valid = p[1] == b.Scope.Class && matchesTenant(d, b.Scope)
 			case "missions", "mission_codes", "student_mission_attempts":
 				valid = text(d, "class_id") == b.Scope.Class && matchesTenant(d, b.Scope)
-			case "class_learning_summaries", "class_learning_students":
+			case "class_learning_summaries", "class_learning_students", "class_learning_refreshes":
 				valid = p[1] == b.Scope.Class && text(d, "class_id") == b.Scope.Class && matchesTenant(d, b.Scope)
 			}
 		}
