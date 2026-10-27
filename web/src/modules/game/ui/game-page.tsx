@@ -39,8 +39,14 @@ export function GamePage({
   readonly initialClassCode?: string;
 }) {
   const movementRef = useRef<MovementState>({ forward: 0, right: 0 });
-  const { session, report, directiveRef, avatarPresetId, handlers } =
-    useGameSession();
+  const {
+    session,
+    report,
+    directiveRef,
+    avatarPresetId,
+    handlers,
+    recoveryError,
+  } = useGameSession();
   const [startingMissionID, setStartingMissionID] = useState("");
   const [missionStartError, setMissionStartError] = useState<string | null>(
     null,
@@ -301,6 +307,15 @@ export function GamePage({
           showSeatMarker={missionsReady && pendingMissions.length > 0}
         />
 
+        {recoveryError ? (
+          <p
+            role="alert"
+            className="absolute inset-x-3 top-20 z-30 rounded-xl border border-amber-300/30 bg-slate-950/95 px-4 py-3 text-sm text-amber-100 sm:left-5 sm:right-auto sm:max-w-lg"
+          >
+            {recoveryError}
+          </p>
+        ) : null}
+
         {seatedLesson ? (
           <Chalkboard
             mission={session.mission}
@@ -328,7 +343,7 @@ export function GamePage({
             pendingMissionCount={pendingMissions.length}
             missionsReady={missionsReady}
             startingMissionID={startingMissionID}
-            missionStartError={missionStartError}
+            missionStartError={missionStartError ?? recoveryError}
             movementRef={movementRef}
             progress={session.memory.progress}
             tutorPod={session.tutorPod}

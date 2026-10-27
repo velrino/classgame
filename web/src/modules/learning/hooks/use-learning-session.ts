@@ -27,8 +27,12 @@ export function useLearningSession() {
     undefined,
     createInitialSession,
   );
-  const { requestTutorTurn, resetRecovery, clearCurrentRecovery } =
-    useLearningRecovery(session, dispatch);
+  const {
+    requestTutorTurn,
+    resetRecovery,
+    clearCurrentRecovery,
+    recoveryError,
+  } = useLearningRecovery(session, dispatch);
   // The hologram pauses before revealing a decision.
   useEffect(() => {
     if (session.lesson?.phase !== "thinking") {
@@ -215,5 +219,5 @@ export function useLearningSession() {
     [clearCurrentRecovery, requestTutorTurn, resetRecovery, session],
   );
 
-  return { session, handlers };
+  return { session, handlers, recoveryError };
 }
