@@ -17,7 +17,17 @@ From `api/`:
 go test ./...
 go build ./...
 go vet ./...
+go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 ```
+
+From the repository root, run the requested offline suites:
+
+```bash
+python3 evals/run.py
+python3 evals/run.py --dataset evals/platform/offline-evidence/cases.json
+```
+
+Python uses production Go and TypeScript policies. These checks use synthetic data and no real model calls. Optional local Redis and Firestore checks are described in the [eval guide](../../evals/README.md). They are separate from shared cloud services.
 
 Run production web builds separately from the active development server: both use the default Next.js build directory. An audit exit code needs advisory triage; a passing build does not resolve vulnerabilities.
 
