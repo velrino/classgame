@@ -13,7 +13,7 @@ import { DashboardShell } from "@/modules/dashboard";
 import { useTeacherAuth } from "@/modules/identity";
 
 const ARCHITECTURE_IMAGE_SRC =
-  "/assets/diagrams/architecture/architecture-graphviz.svg";
+  "/assets/diagrams/architecture/architecture.png";
 const LIFECYCLE_IMAGE_SRC = "/assets/diagrams/lifecycle/content-lifecycle.svg";
 
 const diagrams = [
@@ -21,8 +21,8 @@ const diagrams = [
     key: "architecture",
     title: "Architecture",
     image: ARCHITECTURE_IMAGE_SRC,
-    imageWidth: 1920,
-    imageHeight: 1080,
+    imageWidth: 3840,
+    imageHeight: 2160,
     alt: "ClassGame current modular architecture diagram",
   },
   {
