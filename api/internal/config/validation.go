@@ -11,6 +11,7 @@ import (
 
 func (config Config) Validate() error {
 	return validation.Errors{
+		"CORS_ALLOWED_ORIGINS": validation.Validate(config.CORSAllowedOrigins, validation.Required, validation.By(validateCORSOrigins(config.AppEnv))),
 		"HOST": validation.Validate(config.Host,
 			validation.Required,
 		),
@@ -42,38 +43,30 @@ func (config Config) Validate() error {
 		"FIREBASE_STORAGE_BUCKET": validation.Validate(config.FirebaseStorageBucket,
 			validation.Required,
 		),
-		"CLOUD_TASKS_PROJECT_ID": validation.Validate(config.CloudTasksProjectID,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_LOCATION": validation.Validate(config.CloudTasksLocation,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_QUEUE": validation.Validate(config.CloudTasksQueue,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_TARGET_URL": validation.Validate(config.CloudTasksTargetURL,
-			validation.By(validateHTTPSURLWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_LEARNING_TARGET_URL": validation.Validate(config.CloudTasksLearningTargetURL,
-			validation.By(validateHTTPSURLWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL": validation.Validate(config.CloudTasksServiceAccount,
-			validation.By(validateRequiredWhenEnabled(config.CloudTasksEnabled)),
-		),
-		"CLOUD_TASKS_OIDC_AUDIENCE": validation.Validate(config.CloudTasksOIDCAudience,
-			validation.By(validateHTTPSURLWhenEnabled(config.CloudTasksEnabled)),
-		),
+		"APP_ROLE": validation.Validate(config.AppRole, validation.Required, validation.In("api", "worker", "all"), validation.By(func(any) error {
+			if config.AppRole != "api" && !config.TasksEnabled {
+				return fmt.Errorf("worker roles require TASKS_ENABLED=true")
+			}
+			return nil
+		})),
+		"TASKS_REDIS_URL": validation.Validate(config.TasksRedisURL, validation.By(func(any) error {
+			if config.TasksEnabled && (strings.TrimSpace(config.TasksRedisURL) == "" || sameRedisEndpoint(config.TasksRedisURL, config.RedisURL)) {
+				return fmt.Errorf("enabled jobs require a dedicated TASKS_REDIS_URL")
+			}
+			return nil
+		})),
+		"TASKS_QUEUE":       validation.Validate(config.TasksQueue, validation.Required),
+		"TASKS_CONCURRENCY": validation.Validate(config.TasksConcurrency, validation.Min(1), validation.Max(32)),
 		"STUDENT_ABANDONMENT_SECONDS": validation.Validate(config.StudentAbandonmentSeconds,
 			validation.Required,
 			validation.Min(60),
 		),
-		"AUTH_GOOGLE_WEB_CLIENT_ID": validation.Validate(config.AuthGoogleWebClientID,
-			validation.Required,
-		),
 		"AUTH_TEACHER_PROVIDERS": validation.Validate(config.AuthTeacherProviders,
+			validation.By(validateAuthProviders("google", "password")),
 			validation.Required,
 		),
 		"AUTH_STUDENT_PROVIDERS": validation.Validate(config.AuthStudentProviders,
+			validation.By(validateAuthProviders("anonymous")),
 			validation.Required,
 		),
 		"DEMO_TEACHER_EMAIL": validation.Validate(config.DemoTeacherEmail,
@@ -225,10 +218,6 @@ func validateMinimumLengthWhenEnabled(enabled bool, minimum int) validation.Rule
 	}
 }
 
-func validateHTTPSURLWhenEnabled(enabled bool) validation.RuleFunc {
-	return validateHTTPSURL(enabled, "Cloud Tasks")
-}
-
 func validateHTTPSURL(enabled bool, featureName string) validation.RuleFunc {
 	return func(value any) error {
 		if !enabled {
@@ -338,4 +327,56 @@ func validateRedisCACert(otherValue string) validation.RuleFunc {
 
 func hasPlaceholder(value string) bool {
 	return strings.Contains(value, "<") || strings.Contains(value, ">")
+}
+
+func validateAuthProviders(allowed ...string) validation.RuleFunc {
+	return func(value any) error {
+		configured, _ := value.(string)
+		for _, provider := range strings.Split(configured, ",") {
+			supported := false
+			for _, candidate := range allowed {
+				if strings.TrimSpace(provider) == candidate {
+					supported = true
+				}
+			}
+			if !supported {
+				return fmt.Errorf("unsupported authentication provider %q", strings.TrimSpace(provider))
+			}
+		}
+		return nil
+	}
+}
+func validateCORSOrigins(environment string) validation.RuleFunc {
+	return func(value any) error {
+		origins, _ := value.(string)
+		for _, origin := range strings.Split(origins, ",") {
+			parsed, err := url.Parse(strings.TrimSpace(origin))
+			if err != nil || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Path != "" || strings.Contains(origin, "*") {
+				return fmt.Errorf("CORS origins must be exact HTTP(S) origins")
+			}
+			if parsed.Scheme != "https" && (environment == "production" || parsed.Scheme != "http") {
+				return fmt.Errorf("production CORS origins must use HTTPS")
+			}
+		}
+		return nil
+	}
+}
+
+// Different database numbers do not turn a disposable cache into a dedicated broker.
+func sameRedisEndpoint(first, second string) bool {
+	left, err := url.Parse(strings.TrimSpace(first))
+	if err != nil || left.Host == "" {
+		return false
+	}
+	right, err := url.Parse(strings.TrimSpace(second))
+	if err != nil || right.Host == "" {
+		return false
+	}
+	port := func(value *url.URL) string {
+		if value.Port() != "" {
+			return value.Port()
+		}
+		return "6379"
+	}
+	return strings.EqualFold(left.Hostname(), right.Hostname()) && port(left) == port(right)
 }

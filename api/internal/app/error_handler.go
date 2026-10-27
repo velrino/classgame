@@ -7,16 +7,13 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+
+	"classgame-api/internal/transport/httpx"
 )
 
-type errorResponse struct {
-	Error errorResponseBody `json:"error"`
-}
+type errorResponse = httpx.ErrorResponse
 
-type errorResponseBody struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
+type errorResponseBody = httpx.ErrorResponseBody
 
 func httpErrorHandler(ctx *echo.Context, err error) {
 	if response, unwrapErr := echo.UnwrapResponse(ctx.Response()); unwrapErr == nil && response.Committed {

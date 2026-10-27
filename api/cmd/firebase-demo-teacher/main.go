@@ -23,7 +23,7 @@ import (
 	"google.golang.org/api/option"
 
 	"classgame-api/internal/demoaccount"
-	sharedfirebase "classgame-api/internal/shared/google/firebase"
+	"classgame-api/internal/platform/firebase"
 )
 
 const (
@@ -78,7 +78,7 @@ func run() error {
 		return fmt.Errorf("create Firebase Auth client: %w", err)
 	}
 
-	result, err := sharedfirebase.EnsureEmailPasswordUser(ctx, client, sharedfirebase.EmailPasswordUserInput{
+	result, err := firebase.EnsureEmailPasswordUser(ctx, client, firebase.EmailPasswordUserInput{
 		Email:          email,
 		Password:       password,
 		DisplayName:    displayName,

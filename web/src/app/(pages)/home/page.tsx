@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { GamePage } from "@/modules/game/pages/game-page";
+import { GamePage } from "@/modules/game";
 
 export const metadata: Metadata = {
   title: "ClassGame | Student mission",

@@ -2,33 +2,34 @@ package app
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
+	"classgame-api/internal/apidocs"
 	"classgame-api/internal/config"
-	"classgame-api/internal/modules/dashboard"
-	healthcheck "classgame-api/internal/modules/health-check"
-	mission "classgame-api/internal/modules/mission"
-	teacherclass "classgame-api/internal/modules/teacher-class"
-	"classgame-api/internal/modules/users"
-	sharedanalytics "classgame-api/internal/shared/analytics"
+	"classgame-api/internal/modules/classrooms"
+	"classgame-api/internal/modules/health"
+	"classgame-api/internal/modules/insights"
+	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/platform/analytics"
+	"classgame-api/internal/platform/requestmeta"
 )
 
 const defaultRequestBodyLimitBytes int64 = 256 * 1024
 
 type Options struct {
-	Analytics           sharedanalytics.Tracker
-	Config              config.Config
-	Dashboard           dashboard.HandlerOptions
-	HealthChecks        []healthcheck.Check
-	StartedAt           time.Time
-	TeacherClass        teacherclass.HandlerOptions
-	Mission             mission.HandlerOptions
-	MissionAttachment   http.Handler
-	StudentLearningTask http.Handler
-	Users               users.HandlerOptions
+	Analytics    analytics.Tracker
+	Config       config.Config
+	Dashboard    insights.HandlerOptions
+	HealthChecks []health.Check
+	StartedAt    time.Time
+	TeacherClass classrooms.HandlerOptions
+	Mission      missions.HandlerOptions
+	Users        students.HandlerOptions
 }
 
 func New(options Options) *echo.Echo {
@@ -39,6 +40,7 @@ func New(options Options) *echo.Echo {
 	} else {
 		server.IPExtractor = echo.ExtractIPDirect()
 	}
+	server.Use(requestMetadataMiddleware)
 
 	if options.Analytics != nil && options.Analytics.Enabled() {
 		server.Use(serverErrorCaptureMiddleware(options.Analytics))
@@ -48,12 +50,22 @@ func New(options Options) *echo.Echo {
 		server.Use(echo.WrapMiddleware(options.Analytics.RequestContextMiddleware))
 	}
 	server.Use(middleware.BodyLimit(defaultRequestBodyLimitBytes))
+	origins := strings.Split(options.Config.CORSAllowedOrigins, ",")
+	if options.Config.CORSAllowedOrigins == "" {
+		origins = []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+	}
+	for index := range origins {
+		origins[index] = strings.TrimSpace(origins[index])
+	}
 	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		ExposeHeaders: []string{requestmeta.RequestIDHeader, "traceparent", "Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"},
 		AllowHeaders: []string{
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,
 			echo.HeaderContentType,
 			echo.HeaderOrigin,
+			requestmeta.RequestIDHeader,
+			"traceparent",
 			"X-PostHog-Distinct-Id",
 			"X-PostHog-Session-Id",
 			"X-PostHog-Window-Id",
@@ -64,27 +76,23 @@ func New(options Options) *echo.Echo {
 			http.MethodOptions,
 			http.MethodPost,
 		},
-		AllowOrigins: []string{"*"},
+		AllowOrigins: origins,
 	}))
 
-	healthcheck.RegisterRoutes(server, healthcheck.HandlerOptions{
+	apidocs.RegisterRoutes(server)
+
+	health.RegisterRoutes(server, health.HandlerOptions{
 		AppEnv:         options.Config.AppEnv,
 		Checks:         options.HealthChecks,
 		CheckCacheTTL:  time.Minute,
 		ServiceTimeout: 3 * time.Second,
 		StartedAt:      options.StartedAt,
 	})
-	if options.MissionAttachment != nil {
-		server.POST("/internal/tasks/mission-attachments", echo.WrapHandler(options.MissionAttachment))
-	}
-	if options.StudentLearningTask != nil {
-		server.POST("/internal/tasks/student-learning", echo.WrapHandler(options.StudentLearningTask))
-	}
 
-	users.RegisterRoutes(server, options.Users)
-	dashboard.RegisterRoutes(server, options.Dashboard)
-	teacherclass.RegisterRoutes(server, options.TeacherClass)
-	mission.RegisterRoutes(server, options.Mission)
+	students.RegisterRoutes(server, options.Users)
+	insights.RegisterRoutes(server, options.Dashboard)
+	classrooms.RegisterRoutes(server, options.TeacherClass)
+	missions.RegisterRoutes(server, options.Mission)
 
 	return server
 }

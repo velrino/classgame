@@ -1,2 +1,5 @@
 # Local-only classroom demo materials
 /assets/grade/5th/
+
+# Finder metadata
+.DS_Store

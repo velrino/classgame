@@ -7,10 +7,10 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	sharedanalytics "classgame-api/internal/shared/analytics"
+	"classgame-api/internal/platform/analytics"
 )
 
-func serverErrorCaptureMiddleware(tracker sharedanalytics.Tracker) echo.MiddlewareFunc {
+func serverErrorCaptureMiddleware(tracker analytics.Tracker) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx *echo.Context) error {
 			err := next(ctx)
@@ -23,7 +23,7 @@ func serverErrorCaptureMiddleware(tracker sharedanalytics.Tracker) echo.Middlewa
 			if captureErr == nil {
 				captureErr = fmt.Errorf("api request returned HTTP %d", statusCode)
 			}
-			tracker.CaptureException(ctx.Request().Context(), captureErr, sharedanalytics.Properties{
+			tracker.CaptureException(ctx.Request().Context(), captureErr, analytics.Properties{
 				"error_source": "http",
 				"http_method":  ctx.Request().Method,
 				"http_route":   requestPath(ctx),

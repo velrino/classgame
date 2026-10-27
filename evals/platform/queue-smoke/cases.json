@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "suite": "queue-transport",
+  "version": "2026-10-27.2",
+  "synthetic": true,
+  "cases": [
+    "completion",
+    "canonical-replay",
+    "changed-payload-conflict",
+    "scheduled-delivery",
+    "retry",
+    "terminal-archive",
+    "request-trace-correlation",
+    "archived-replay-rejected",
+    "two-process-duplicate-enqueue",
+    "killed-worker-lease-recovery",
+    "broker-down-enqueue-fails"
+  ]
+}
