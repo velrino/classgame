@@ -16,6 +16,14 @@ One Next.js application, one Go API, and Firebase-backed learning state. Read th
   <img src="assets/diagrams/architecture/architecture.png" alt="ClassGame current modular architecture" width="100%" />
 </p>
 
+## Mission flows
+
+Each row covers one step. Select a diagram to open the full PNG. See the [step index](assets/diagrams/steps/README.md) for all diagrams and the style guide.
+
+| Step | Flow | Diagram |
+|:---:|---|:---:|
+| 01 | **Upload material and prepare a mission draft**<br>Upload optional files, generate questions, and save a draft for teacher review.<br>[Guide](assets/diagrams/steps/01-mission-draft/README.md) · [Mermaid source](assets/diagrams/steps/01-mission-draft/SEQUENCE.txt) | <a href="assets/diagrams/steps/01-mission-draft/diagram.png"><img src="assets/diagrams/steps/01-mission-draft/diagram.png" alt="Sequence diagram for uploading material and preparing a mission draft" width="480" /></a> |
+
 ## Product tour
 
 Every screen below is from the working product. Select any image to open it at full resolution.

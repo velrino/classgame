@@ -1,0 +1,83 @@
+---
+title: 01 - Upload material and prepare a mission draft
+config:
+  theme: base
+  look: classic
+  fontFamily: Arial, sans-serif
+  themeCSS: |
+    rect.actor[name="Teacher"], line.actor-line[name="Teacher"] { fill: #00c7ff !important; stroke: #00c7ff !important; }
+    rect.actor[name="Uploadcare"], line.actor-line[name="Uploadcare"] { fill: #69c7ff !important; stroke: #69c7ff !important; }
+    rect.actor[name="API"], line.actor-line[name="API"] { fill: #95c7ff !important; stroke: #95c7ff !important; }
+    rect.actor[name="LLM"], line.actor-line[name="LLM"] { fill: #7784dc !important; stroke: #7784dc !important; }
+    rect.actor[name="DB"], line.actor-line[name="DB"] { fill: #7b34a1 !important; stroke: #7b34a1 !important; }
+    text.actor, text.actor tspan { fill: #FFFFFF !important; }
+  themeVariables:
+    background: "#FFFFFF"
+    primaryColor: "#FFFFFF"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#111111"
+    actorBkg: "#FFFFFF"
+    actorBorder: "#111111"
+    actorTextColor: "#FFFFFF"
+    actorLineColor: "#111111"
+    signalColor: "#111111"
+    signalTextColor: "#111111"
+    titleColor: "#111111"
+    noteBkgColor: "#FFFFFF"
+    noteBorderColor: "#111111"
+    noteTextColor: "#111111"
+    activationBkgColor: "#FFFFFF"
+    activationBorderColor: "#111111"
+    labelBoxBkgColor: "#FFFFFF"
+    labelBoxBorderColor: "#111111"
+    labelTextColor: "#111111"
+    loopTextColor: "#111111"
+    sequenceNumberColor: "#FFFFFF"
+  sequence:
+    useMaxWidth: true
+    mirrorActors: false
+    actorMargin: 45
+    messageMargin: 24
+---
+sequenceDiagram
+    %% White preview canvas and white PNG export background.
+    %% Publication, private file-copy workers, quiz play and memory have separate steps.
+    %% Create directives introduce existing services visually at first use.
+    %% They do not represent infrastructure provisioning or a new service instance.
+    autonumber
+    participant Teacher
+
+    opt Teacher adds learning material
+        create participant Uploadcare
+        Teacher->>Uploadcare: Upload selected files
+        Uploadcare-->>Teacher: File UUID, CDN URL and metadata
+        Note right of Uploadcare: store=false<br/>Temporary upload source
+    end
+
+    create participant API
+    Teacher->>API: Preview request with goal and attachment metadata
+    activate API
+    Note over Teacher,API: Teacher identity and class access are checked.
+
+    loop Each readable, supported attachment
+        API->>Uploadcare: Download file from a validated CDN URL
+        Uploadcare-->>API: File bytes
+        create participant LLM
+        API->>LLM: Summarize inline file content
+        activate LLM
+        LLM-->>API: Short attachment summary
+        deactivate LLM
+    end
+    Note over API,LLM: File count, size and source URLs are checked.<br/>Unsupported or unreadable files use metadata fallback.
+
+    API->>LLM: Generate a mission from the goal and summaries
+    activate LLM
+    LLM-->>API: Structured mission draft
+    deactivate LLM
+    API->>API: Apply schema and content guardrails
+    create participant DB
+    API->>DB: Save draft, attachment metadata and draft_revision
+    Note right of DB: missions/{mission_id}<br/>draft + draft_revision<br/>Attachment fields:<br/>uploadcare_uuid, cdn_url,<br/>file_name, mime_type, size_bytes
+    DB-->>API: Saved mission ID and draft revision
+    API-->>Teacher: Preview ready for review
+    deactivate API
