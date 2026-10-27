@@ -32,7 +32,6 @@ type Config struct {
 	CloudTasksServiceAccount        string
 	CloudTasksOIDCAudience          string
 	StudentAbandonmentSeconds       int
-	AuthGoogleWebClientID           string
 	AuthTeacherProviders            string
 	AuthStudentProviders            string
 	DemoTeacherEmail                string
@@ -97,7 +96,6 @@ func Load() (Config, error) {
 		CloudTasksServiceAccount:        reader.getString("CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL", ""),
 		CloudTasksOIDCAudience:          cloudTasksAudience,
 		StudentAbandonmentSeconds:       reader.getInt("STUDENT_ABANDONMENT_SECONDS", 120),
-		AuthGoogleWebClientID:           reader.getString("AUTH_GOOGLE_WEB_CLIENT_ID", "245584783597-t05j7fj2iucesiad4jpu4mlh72kgcs12.apps.googleusercontent.com"),
 		AuthTeacherProviders:            reader.getString("AUTH_TEACHER_PROVIDERS", "google"),
 		AuthStudentProviders:            reader.getString("AUTH_STUDENT_PROVIDERS", "anonymous"),
 		DemoTeacherEmail:                reader.getString("DEMO_TEACHER_EMAIL", demoaccount.DefaultEmail),

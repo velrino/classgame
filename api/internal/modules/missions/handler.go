@@ -456,8 +456,8 @@ func (handler *Handler) serviceError(ctx *echo.Context, err error) error {
 	if errors.Is(err, ErrInvalidMissionAttachment) {
 		return httpx.JSONError(ctx, http.StatusBadRequest, "invalid_attachment", "New attachments need an Uploadcare URL; stored files must belong to this mission.")
 	}
-	if errors.Is(err, classrooms.ErrTeacherRequiresGoogleAuth) {
-		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Teacher missions require Google sign in.")
+	if errors.Is(err, classrooms.ErrTeacherAuthRequired) {
+		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Teacher sign-in is required.")
 	}
 	if errors.Is(err, classrooms.ErrClassOwnedByAnotherTeacher) {
 		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "This class code already belongs to another teacher.")

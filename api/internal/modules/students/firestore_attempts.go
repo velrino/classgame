@@ -51,6 +51,13 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 		if attemptID == "" {
 			attemptID = learningAttemptID(user.ID, input.MissionID, user.Activity.CurrentGame.PublishedRevision)
 		}
+		if attemptID != input.ExpectedAttemptID {
+			return ErrStudentMissionMismatch
+		}
+		scopeAttempt := StudentMissionAttemptDocument{ID: attemptID, PublishedRevision: user.Activity.CurrentGame.PublishedRevision}
+		if err := ValidateAttemptRequestScope(input.RequestScope, scopeAttempt); err != nil {
+			return err
+		}
 		attemptRef := repository.client.Collection(studentAttemptsCollectionName).Doc(attemptID)
 		createdAt := input.Timestamp
 		startedAt := user.Activity.CurrentGame.StartedAt
@@ -73,6 +80,12 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 			}
 			if existing.ID == "" {
 				existing.ID = attemptID
+			}
+			if existing.ID != input.ExpectedAttemptID || existing.MissionID != input.MissionID || existing.PublishedRevision != input.PublishedRevision || existing.StudentID != user.ID || !sameStudentClass(user.Student, existing) {
+				return ErrStudentMissionMismatch
+			}
+			if err := ValidateAttemptRequestScope(input.RequestScope, existing); err != nil {
+				return err
 			}
 			if !existing.CreatedAt.IsZero() {
 				createdAt = existing.CreatedAt

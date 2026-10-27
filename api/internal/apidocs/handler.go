@@ -167,9 +167,17 @@ func OpenAPI() object {
 	add("/users/student-presence", "post", "saveStudentPresence", "Record bounded presence metadata; it never awards completion", "students", students.StudentPresenceRequest{}, builder.of(students.StudentSessionResponse{}))
 	learning := add("/users/student-learning", "get", "getStudentLearning", "Restore the safe learning checkpoint for the current attempt", "students", nil, builder.of(students.StudentLearningResponse{}))
 	appendParams(learning, query("mission_id", "Current joined mission ID", true, object{"type": "string"}))
+	appendParams(learning, query("published_revision", "Optional client-pinned revision; supplied mismatches return 409", false, object{"type": "integer", "minimum": 0}), query("attempt_id", "Optional current attempt ID", false, object{"type": "string", "maxLength": 120}))
+	learning["responses"].(object)["409"] = response("This tab belongs to another pinned attempt; select the mission again", errorSchema)
+	learning["description"] = "Modern clients scope resume reads and compare the returned published_revision before hydrating UI state. Omitted scope remains legacy-compatible; old tabs must reload after a revision switch."
+
 	save := add("/users/student-learning", "post", "saveStudentLearning", "Save a UI checkpoint; assessment comes from verified tutor turns", "students", students.StudentLearningSnapshotRequest{}, builder.of(students.StudentLearningResponse{}))
-	save["description"] = "Client progress, counts and evidence events are not authoritative. The server derives them from persisted answer/reasoning/feedback turns against the pinned question set. Completion is accepted only after the required distinct correct answers per stage; premature completed requests return learning. Await answer-turn requests before sending the final checkpoint. UI checkpoint and preferences remain recoverable presentation state."
-	add("/users/student-tutor-turn", "post", "saveStudentTutorTurn", "Submit an idempotent observable tutor interaction", "students", students.StudentTutorTurnRequest{}, builder.of(students.StudentTutorTurnAPIResponse{}))["description"] = "event_id is the retry key within an attempt. The server resolves prompt, stage, expected_answer and outcome from the pinned published question. Client-supplied expected_answer/outcome cannot award credit."
+	save["description"] = "Client progress, counts and evidence events are not authoritative. The server derives them from persisted answer/reasoning/feedback turns against the pinned question set. Completion is accepted only after the required distinct correct answers per stage; premature completed requests return learning. Await answer-turn requests before sending the final checkpoint. Modern clients send optional published_revision and attempt_id scope; supplied mismatches return 409 before assessment and again at persistence. Omitted fields remain legacy-compatible; old tabs must reload when switching mission revisions. UI checkpoint and preferences remain recoverable presentation state."
+	tutor := add("/users/student-tutor-turn", "post", "saveStudentTutorTurn", "Submit an idempotent observable tutor interaction", "students", students.StudentTutorTurnRequest{}, builder.of(students.StudentTutorTurnAPIResponse{}))
+	tutor["description"] = "event_id is the retry key within an attempt. The server resolves prompt, stage, expected_answer and outcome from the pinned published question. Client-supplied expected_answer/outcome cannot award credit. Modern clients send optional published_revision and attempt_id; supplied mismatches return 409 before generation and again at append. Legacy requests omitting these fields remain compatible and cannot prove client revision provenance, so old tabs must reload after a revision switch."
+	save["responses"].(object)["409"] = response("Supplied attempt or revision differs from the active pinned attempt", errorSchema)
+	tutor["responses"].(object)["409"] = response("Supplied scope is stale or the session changed during generation", errorSchema)
+
 	overview := add("/dashboard/overview", "get", "getDashboardOverview", "Teacher-owned classroom overview and learning evidence", "teachers", nil, builder.of(insights.OverviewResponse{}))
 	appendParams(overview, query("class_id", "Optional teacher-owned class ID", false, object{"type": "string"}))
 	classes := add("/teacher-classes", "get", "listTeacherClasses", "List the authenticated teacher's classes", "teachers", nil, record(object{"teacher_classes": object{"type": "array", "items": builder.of(classrooms.TeacherClassResponse{})}, "next_cursor": object{"type": "string"}}))
@@ -225,6 +233,14 @@ func OpenAPI() object {
 		properties := definition["properties"].(object)
 		if field, ok := properties["class_code"].(object); ok {
 			field["pattern"] = "^[0-9]{6}$"
+		}
+		if field, ok := properties["published_revision"].(object); ok {
+			field["minimum"] = 0
+			field["description"] = "Optional pinned client revision. Modern clients always provide this field; zero or omission is legacy compatibility."
+		}
+		if field, ok := properties["attempt_id"].(object); ok {
+			field["maxLength"] = 120
+			field["description"] = "Optional current attempt ID, supplied when known."
 		}
 		if field, ok := properties["expected_draft_revision"].(object); ok {
 			field["minimum"] = 1

@@ -192,8 +192,8 @@ func (handler *Handler) authenticate(
 }
 
 func (handler *Handler) serviceError(ctx *echo.Context, err error) error {
-	if errors.Is(err, ErrTeacherRequiresGoogleAuth) {
-		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Teacher classes require Google sign in.")
+	if errors.Is(err, ErrTeacherAuthRequired) {
+		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "Teacher sign-in is required.")
 	}
 	if errors.Is(err, ErrClassOwnedByAnotherTeacher) {
 		return httpx.JSONError(ctx, http.StatusForbidden, "forbidden", "This class code already belongs to another teacher.")

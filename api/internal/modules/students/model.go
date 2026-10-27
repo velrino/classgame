@@ -228,7 +228,15 @@ type StudentLearningEvent struct {
 	OccurredAt int64  `firestore:"occurred_at" json:"occurred_at"`
 }
 
+// AttemptScope is supplied by modern clients; omitted fields retain legacy compatibility.
+type AttemptScope struct {
+	AttemptID         string `json:"attempt_id,omitempty"`
+	PublishedRevision int64  `json:"published_revision,omitempty"`
+}
+
 type SaveStudentLearningSnapshotInput struct {
+	RequestScope      AttemptScope
+	ExpectedAttemptID string
 	Mission           missions.MissionDocument
 	PublishedRevision int64
 	Identity          auth.Identity
@@ -277,6 +285,7 @@ type StudentTutorTurn struct {
 }
 
 type SaveStudentTutorTurnInput struct {
+	RequestScope              AttemptScope
 	ExpectedAttemptID         string
 	ExpectedPublishedRevision int64
 	Identity                  auth.Identity
