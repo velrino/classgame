@@ -30,4 +30,4 @@ One send batch handles at most six records and lasts at most 60 seconds. One tut
 
 An older sessionStorage queue is imported only after the API confirms the exact attempt and revision and its source question IDs match the pinned mission. Its original copy stays until every import transaction succeeds. Unknown or invalid legacy work stays in place with a visible recovery error.
 
-Production-policy evaluations cover scope, duplicate/conflicting event IDs, capacity refusal, retry policy, and the pending-completion gate. These checks do not prove real browser durability, cross-tab scheduling, storage eviction, or deployed access controls. Those need separate browser and release verification.
+Production-policy evaluations cover scope, duplicate/conflicting event IDs, capacity refusal, retry policy, and the pending-completion gate. The [native browser suite](../../evals/platform/browser-store/README.md) also checks real two-tab transactions, leases, exact ACKs, and page reload. The [local app workflow](LOCAL-EMULATORS.md) checks recovery with an unavailable API. Browser eviction and deployed access still need separate environment evidence.

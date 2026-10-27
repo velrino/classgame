@@ -1,0 +1,5 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ClassGame local browser evaluation</title><style>body{font:16px system-ui;max-width:960px;margin:3rem auto;padding:1rem;background:#101827;color:#e5e7eb}button{padding:.7rem 1rem;margin:.5rem;border-radius:.5rem;border:1px solid #64748b}pre{white-space:pre-wrap;overflow-wrap:anywhere}li{margin:.6rem}a{color:#a5d4ff}.pass{color:#86efac}.fail{color:#fda4af}</style>
+<h1>ClassGame local browser evaluation</h1><p>This page uses the real production IndexedDB adapter with synthetic records. It has no app credentials or cloud client. A second tab checks concurrent writes and leases. Reload checks preserve the same records.</p>
+<button id="run">Run browser storage checks</button><button id="reload" disabled>Check reload recovery</button><button id="cleanup">Clean this run's synthetic work</button>
+<p id="status" role="status">Ready. No evaluation has run.</p><ol id="results"></ol><pre id="report"></pre>
+<script nonce="__NONCE__">window.localEval = __CONFIG__;</script><script type="module" nonce="__NONCE__" src="/scenarios.js"></script></html>

@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "suite": "frontend-recovery",
+  "version": "frontend-recovery-v2",
+  "synthetic": true,
+  "cases": [
+    {
+      "id": "wrong-helpful-must-retry-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "wrong-feedback-retry",
+        "feedback": "helpful"
+      },
+      "expected": {
+        "equals": {
+          "same_question": true,
+          "pod": "fractions",
+          "phase": "question",
+          "correct": 0,
+          "stage_complete": false,
+          "clean_retry": true,
+          "queue_size": 1,
+          "feedback_support": true,
+          "decision": "next"
+        }
+      }
+    },
+    {
+      "id": "wrong-confusing-must-retry-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "wrong-feedback-retry",
+        "feedback": "confusing"
+      },
+      "expected": {
+        "equals": {
+          "same_question": true,
+          "pod": "fractions",
+          "phase": "question",
+          "correct": 0,
+          "stage_complete": false,
+          "clean_retry": true,
+          "queue_size": 1,
+          "feedback_support": true,
+          "decision": "next"
+        }
+      }
+    },
+    {
+      "id": "wrong-too-easy-must-retry-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "wrong-feedback-retry",
+        "feedback": "too-easy"
+      },
+      "expected": {
+        "equals": {
+          "same_question": true,
+          "pod": "fractions",
+          "phase": "question",
+          "correct": 0,
+          "stage_complete": false,
+          "clean_retry": true,
+          "queue_size": 1,
+          "feedback_support": true,
+          "decision": "next"
+        }
+      }
+    },
+    {
+      "id": "wrong-too-hard-must-retry-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "wrong-feedback-retry",
+        "feedback": "too-hard"
+      },
+      "expected": {
+        "equals": {
+          "same_question": true,
+          "pod": "fractions",
+          "phase": "question",
+          "correct": 0,
+          "stage_complete": false,
+          "clean_retry": true,
+          "queue_size": 1,
+          "feedback_support": true,
+          "decision": "next"
+        }
+      }
+    },
+    {
+      "id": "retry-correct-advances-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "retry-correct"
+      },
+      "expected": {
+        "equals": {
+          "retried_question": true,
+          "correct": 1,
+          "stage_complete": true,
+          "next_pod": "simple-equations",
+          "incorrect_kept": true
+        }
+      }
+    },
+    {
+      "id": "old-remediation-cache-reopens-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "repair-old-remediation"
+      },
+      "expected": {
+        "equals": {
+          "status": "ready",
+          "question_restored": true,
+          "correct": 0,
+          "original_unchanged": true
+        }
+      }
+    },
+    {
+      "id": "unfinished-stage-before-finish-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "unfinished-before-completion"
+      },
+      "expected": {
+        "equals": {
+          "action": "complete",
+          "target": "fractions"
+        }
+      }
+    },
+    {
+      "id": "resumed-answer-not-counted-twice-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "resume-correct"
+      },
+      "expected": {
+        "equals": {
+          "correct": 1,
+          "next_question": "synthetic-next-question",
+          "stage_complete": false
+        }
+      }
+    },
+    {
+      "id": "source-question-id-resume-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "resume-source-ids"
+      },
+      "expected": {
+        "equals": {
+          "queue": [
+            "f1"
+          ],
+          "pool": []
+        }
+      }
+    },
+    {
+      "id": "server-historical-state-unchanged-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "historical-complete"
+      },
+      "expected": {
+        "equals": {
+          "statuses": [
+            "complete",
+            "complete",
+            "complete"
+          ],
+          "counts": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "retry-pool-does-not-repeat-current-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "duplicate-retry-pool"
+      },
+      "expected": {
+        "equals": {
+          "same_question": true,
+          "queue_size": 1,
+          "correct": 0,
+          "stage_complete": false
+        }
+      }
+    },
+    {
+      "id": "nullable-checkpoint-hydrates-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "nullable-checkpoint"
+      },
+      "expected": {
+        "equals": {
+          "phase": "question",
+          "lines": [],
+          "step_index": 0,
+          "tutor_message": "",
+          "wrong": null,
+          "decision": null
+        }
+      }
+    },
+    {
+      "id": "published-checkpoint-id-and-null-fields-v1",
+      "kind": "recovery",
+      "recovery": {
+        "action": "source-checkpoint"
+      },
+      "expected": {
+        "equals": {
+          "question_id": "f1",
+          "lines": [],
+          "step_index": 0,
+          "tutor_message": ""
+        }
+      }
+    }
+  ]
+}

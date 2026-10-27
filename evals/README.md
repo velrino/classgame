@@ -8,6 +8,7 @@ python3 evals/run.py
 python3 evals/run.py --list
 python3 evals/run.py --cases=tutor-private-context-minimized-v1,auth-wrong-provider-v1
 python3 evals/run.py --dataset evals/platform/offline-evidence/cases.json
+python3 evals/run.py --dataset evals/platform/frontend-recovery/cases.json
 ```
 
 Prepare Go dependencies normally first (`go -C api mod download`). Evaluation builds use the local module/toolchain cache with dependency downloads disabled. One bridge process executes the entire selected batch; no process is launched per case. It loads no application configuration or credentials and constructs no real provider/database client.
@@ -17,8 +18,11 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 | [run.py](run.py) | Strict preflight, selection, assertions, manifests/results, exit gate |
 | [platform/ai-policy/cases.json](platform/ai-policy/cases.json) | Versioned synthetic inputs and expected policy behavior |
 | [platform/offline-evidence/cases.json](platform/offline-evidence/cases.json) | Scope, queue capacity, replay, retry, and completion policies; requires Node.js 24+ |
+| [platform/frontend-recovery](platform/frontend-recovery/README.md) | Production reducer retries, completion, local repair, and server resume mapping; requires Node.js 24+ |
 | [api/cmd/evalbridge](../api/cmd/evalbridge/main.go) | Production Go calls with scripted provider/authentication ports |
 | [api/cmd/evalfirestore](../api/cmd/evalfirestore/README.md) | Optional real transaction checks on a guarded local emulator |
+| [platform/browser-store](platform/browser-store/README.md) | Real two-tab IndexedDB and reload checks on a separate local origin |
+| [platform/local-http](platform/local-http/README.md) | Opt-in real API/Auth/rules flows and browser outage controls on demo emulators |
 | [manual rubric](platform/ai-policy/MANUAL-RUBRIC.md) | Separate pedagogical review and held-out comparison plan |
 | `output/<unique-run>/` | Ignored, newly created run artifacts |
 
