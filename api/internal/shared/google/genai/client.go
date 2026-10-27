@@ -2,6 +2,8 @@ package genai
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,17 +13,32 @@ import (
 
 	"cloud.google.com/go/auth"
 	"cloud.google.com/go/auth/credentials"
+	"golang.org/x/sync/singleflight"
 	googlegenai "google.golang.org/genai"
+
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const (
 	ProviderGeminiAPI = "google_genai_gemini_api"
 	ProviderVertexAI  = "google_genai_vertex_ai"
+
+	maximumConcurrentGenerations       = 4
+	maximumAdmittedCalls               = 16
+	maximumPromptBytes                 = 256 * 1024
+	maximumInlineBytes                 = 20 * 1024 * 1024
+	maximumInlineParts                 = 5
+	maximumResponseBytes               = 256 * 1024
+	maximumOutputTokens          int32 = 8192
+	maximumRequestTimeout              = 2 * time.Minute
 )
 
 var (
 	ErrDisabled      = errors.New("genai is disabled")
 	ErrEmptyResponse = errors.New("genai returned an empty response")
+	ErrBusy          = errors.New("genai process concurrency limit reached")
+	ErrInputBudget   = errors.New("genai input exceeds the request budget")
+	ErrOutputBudget  = errors.New("genai response exceeds the output budget")
 )
 
 type Options struct {
@@ -38,8 +55,11 @@ type Options struct {
 }
 
 type Client struct {
-	client  *googlegenai.Client
-	options Options
+	client        *googlegenai.Client
+	options       Options
+	providerSlots chan struct{}
+	callSlots     chan struct{}
+	inflight      singleflight.Group
 }
 
 type StructuredRequest struct {
@@ -97,8 +117,10 @@ func Connect(ctx context.Context, input Options) (*Client, error) {
 	}
 
 	return &Client{
-		client:  client,
-		options: options,
+		client:        client,
+		options:       options,
+		providerSlots: make(chan struct{}, maximumConcurrentGenerations),
+		callSlots:     make(chan struct{}, maximumAdmittedCalls),
 	}, nil
 }
 
@@ -133,20 +155,143 @@ func (client *Client) GenerateStructured(
 	if target == nil {
 		return StructuredResult{}, errors.New("target is required")
 	}
+	if err := ctx.Err(); err != nil {
+		return StructuredResult{}, err
+	}
+	select {
+	case client.callSlots <- struct{}{}:
+	default:
+		return StructuredResult{}, ErrBusy
+	}
+	releaseAdmission := true
+	defer func() {
+		if releaseAdmission {
+			<-client.callSlots
+		}
+	}()
 
-	model := strings.TrimSpace(request.Model)
-	if model == "" {
-		model = client.options.Model
+	request, schemaJSON, err := client.prepareRequest(request)
+	if err != nil {
+		return StructuredResult{}, err
 	}
-	maxOutputTokens := request.MaxOutputTokens
-	if maxOutputTokens <= 0 {
-		maxOutputTokens = client.options.MaxOutputTokens
+	callContext, cancel := context.WithTimeout(ctx, client.options.RequestTimeout)
+	defer cancel()
+
+	var result StructuredResult
+	if scope := requestmeta.GenerationScope(ctx); scope != "" {
+		key, err := generationKey(scope, request, schemaJSON)
+		if err != nil {
+			return StructuredResult{}, err
+		}
+		pending := client.inflight.DoChan(key, func() (any, error) {
+			return client.generate(callContext, request)
+		})
+		select {
+		case completed := <-pending:
+			if completed.Err != nil {
+				return StructuredResult{}, completed.Err
+			}
+			result = completed.Val.(StructuredResult)
+		case <-callContext.Done():
+			// Keep admission until the shared call releases its retained result channel.
+			// This bounds canceled waiters without detaching provider cancellation.
+			releaseAdmission = false
+			go func() {
+				<-pending
+				<-client.callSlots
+			}()
+			return StructuredResult{}, callContext.Err()
+		}
+	} else {
+		result, err = client.generate(callContext, request)
+		if err != nil {
+			return StructuredResult{}, err
+		}
 	}
+	if err := callContext.Err(); err != nil {
+		return StructuredResult{}, err
+	}
+	if err := json.Unmarshal([]byte(result.RawText), target); err != nil {
+		return result, fmt.Errorf("decode structured genai response: %w", err)
+	}
+	return result, nil
+}
+
+func (client *Client) prepareRequest(request StructuredRequest) (StructuredRequest, []byte, error) {
+	schemaJSON, err := json.Marshal(request.ResponseJSONSchema)
+	if err != nil {
+		return StructuredRequest{}, nil, fmt.Errorf("encode genai response schema: %w", err)
+	}
+	if len(request.SystemInstruction)+len(request.Prompt)+len(schemaJSON) > maximumPromptBytes ||
+		len(request.FileParts) > maximumInlineParts {
+		return StructuredRequest{}, nil, ErrInputBudget
+	}
+	inlineBytes := 0
+	for _, part := range request.FileParts {
+		if len(part.Data) > maximumInlineBytes-inlineBytes {
+			return StructuredRequest{}, nil, ErrInputBudget
+		}
+		inlineBytes += len(part.Data)
+	}
+	request.Model = strings.TrimSpace(request.Model)
+	if request.Model == "" {
+		request.Model = client.options.Model
+	}
+	if request.MaxOutputTokens <= 0 {
+		request.MaxOutputTokens = client.options.MaxOutputTokens
+	}
+	request.MaxOutputTokens = min(request.MaxOutputTokens, client.options.MaxOutputTokens, maximumOutputTokens)
+	return request, schemaJSON, nil
+}
+
+func generationKey(scope string, request StructuredRequest, schemaJSON []byte) (string, error) {
+	digest := sha256.New()
+	metadata := struct {
+		Instruction string
+		Prompt      string
+		Model       string
+		Schema      json.RawMessage
+		Temperature float32
+		Output      int32
+		Labels      map[string]string
+	}{request.SystemInstruction, request.Prompt, request.Model, schemaJSON,
+		request.Temperature, request.MaxOutputTokens, request.Labels}
+	if err := json.NewEncoder(digest).Encode(metadata); err != nil {
+		return "", fmt.Errorf("fingerprint genai request: %w", err)
+	}
+	for _, part := range request.FileParts {
+		file := struct {
+			MIMEType string
+			Digest   [32]byte
+		}{part.MIMEType, sha256.Sum256(part.Data)}
+		if err := json.NewEncoder(digest).Encode(file); err != nil {
+			return "", fmt.Errorf("fingerprint genai attachment: %w", err)
+		}
+	}
+	return scope + ":" + hex.EncodeToString(digest.Sum(nil)), nil
+}
+
+func (client *Client) generate(ctx context.Context, request StructuredRequest) (result StructuredResult, err error) {
+	// singleflight runs asynchronously, outside HTTP panic recovery.
+	defer func() {
+		if recover() != nil {
+			result = StructuredResult{}
+			err = errors.New("genai provider call failed unexpectedly")
+		}
+	}()
+	select {
+	case client.providerSlots <- struct{}{}:
+		defer func() { <-client.providerSlots }()
+	default:
+		return StructuredResult{}, ErrBusy
+	}
+
+	model := request.Model
 	temperature := request.Temperature
 	responseSchema, responseJSONSchema := responseSchemaConfig(request.ResponseJSONSchema)
 
 	config := &googlegenai.GenerateContentConfig{
-		MaxOutputTokens:    maxOutputTokens,
+		MaxOutputTokens:    request.MaxOutputTokens,
 		ResponseMIMEType:   "application/json",
 		ResponseSchema:     responseSchema,
 		ResponseJsonSchema: responseJSONSchema,
@@ -173,14 +318,8 @@ func (client *Client) GenerateStructured(
 	if text == "" {
 		return StructuredResult{}, ErrEmptyResponse
 	}
-
-	if err := json.Unmarshal([]byte(text), target); err != nil {
-		return StructuredResult{
-			Model:        model,
-			ModelVersion: response.ModelVersion,
-			Provider:     client.Provider(),
-			RawText:      text,
-		}, fmt.Errorf("decode structured genai response: %w", err)
+	if len(text) > maximumResponseBytes {
+		return StructuredResult{}, ErrOutputBudget
 	}
 
 	return buildStructuredResult(model, client.Provider(), text, response), nil
@@ -281,9 +420,11 @@ func resolveOptions(input Options) Options {
 	if input.RequestTimeout <= 0 {
 		input.RequestTimeout = 30 * time.Second
 	}
+	input.RequestTimeout = min(input.RequestTimeout, maximumRequestTimeout)
 	if input.MaxOutputTokens <= 0 {
 		input.MaxOutputTokens = 4096
 	}
+	input.MaxOutputTokens = min(input.MaxOutputTokens, maximumOutputTokens)
 
 	return input
 }

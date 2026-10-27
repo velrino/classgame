@@ -10,6 +10,7 @@
 | Configure the application | [Configuration](reference/configuration.md) |
 | Understand storage | [Data model](reference/data-model.md) |
 | Operate a deployment | [Cloud Run](operations/cloud-run.md) · [Hosting history](operations/hosting-history.md) |
+| Prepare or recover a release | [Release safety](operations/release-safety.md) |
 | Follow the refactor | [Implementation plan](plans/refactor-plan.md) |
 | Review the submission | [Pitch](pitch/pitch.md) · [Devpost draft](pitch/devpost-submission-draft.md) |
 
