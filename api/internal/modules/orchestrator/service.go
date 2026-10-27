@@ -65,7 +65,7 @@ Follow these rules:
 
 const tutorTurnSystemInstruction = `You are Mia (Multimodal Intelligence Agent), ClassGame's live educational tutor.
 
-Respond to one student turn using the supplied published mission, retrieved knowledge chunks, observable attempt history, teacher-only persistent memory, and class learning context.
+Respond to one student turn using the supplied published mission, retrieved knowledge chunks, observable attempt history, explanation preference, and published skill identifiers.
 Follow these rules:
 - Write in clear, encouraging English appropriate for the supplied grade level.
 - Stay strictly inside the published classroom mission and retrieved educational context.
@@ -74,6 +74,7 @@ Follow these rules:
 - Never claim to expose or infer hidden chain-of-thought. Ask for a short explicit explanation when useful and reason only from observable answers and feedback.
 - Do not invent source facts. Explanation steps must be supported by the expected answer or retrieved chunks.
 - Use prior student memory only to adapt style, difficulty, and the next prompt; do not label, diagnose, rank, or grade the student.
+- Memory and class signals contain only published stage identifiers, not narrative evidence or proof of mastery. Use them only to adapt the lesson.
 - Keep message, why_prompt, and each explanation step short.
 - teacher_observation is private evidence for the teacher and must cite only observable behavior.
 - retrieved_chunk_ids and evidence_event_ids may contain only IDs supplied in the input.
@@ -248,12 +249,19 @@ func (service *Service) BuildTutorTurn(
 ) (TutorTurnBlueprint, error) {
 	input = normalizeTutorTurnInput(input)
 	fallback := buildFallbackTutorTurn(input, "")
+	if len(input.RetrievedChunks) == 0 {
+		fallback.FallbackReason = "No relevant mission context was retrieved; using only the published question."
+		if input.Turn.ExpectedAnswer == "" {
+			fallback.Message = "I could not find a relevant mission clue. Continue with the published question or ask your teacher for help."
+		}
+		return fallback, nil
+	}
 	if service.genAI == nil || !service.genAI.IsEnabled() {
 		fallback.FallbackReason = "genai is not configured"
 		return fallback, nil
 	}
 
-	payload, _ := json.MarshalIndent(input, "", "  ")
+	payload, _ := json.MarshalIndent(tutorGenerationInput(input), "", "  ")
 	var blueprint TutorTurnBlueprint
 	result, err := service.genAI.GenerateStructured(ctx, sharedgenai.StructuredRequest{
 		SystemInstruction: tutorTurnSystemInstruction,
@@ -2231,6 +2239,31 @@ func fallbackKnowledgeChunks(
 	}
 
 	return normalizeKnowledgeChunks(input, chunks)
+}
+
+// tutorGenerationInput minimizes private adaptation context before serialization.
+// Keep the original input for teacher analysis and the output leak filter.
+func tutorGenerationInput(input BuildTutorTurnInput) BuildTutorTurnInput {
+	allowedSkills := make(map[string]struct{}, len(input.Mission.Stages))
+	for _, stage := range input.Mission.Stages {
+		if id := normalizeFlowID(stage.ID); id != "" {
+			allowedSkills[id] = struct{}{}
+		}
+	}
+	style := "steps"
+	if input.StudentMemory.PreferredExplanation == "visual" {
+		style = "visual"
+	}
+	input.StudentMemory = LearningTracePreviousMemory{
+		Strengths:            filterAllowedIDs(input.StudentMemory.Strengths, allowedSkills, 4),
+		ImprovementAreas:     filterAllowedIDs(input.StudentMemory.ImprovementAreas, allowedSkills, 4),
+		PreferredExplanation: style,
+	}
+	input.ClassContext = TutorClassContext{
+		CommonStrengths: filterAllowedIDs(input.ClassContext.CommonStrengths, allowedSkills, 4),
+		CommonNeeds:     filterAllowedIDs(input.ClassContext.CommonNeeds, allowedSkills, 4),
+	}
+	return input
 }
 
 func normalizeTutorTurnInput(input BuildTutorTurnInput) BuildTutorTurnInput {

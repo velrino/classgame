@@ -1098,7 +1098,7 @@ func retrieveMissionKnowledge(
 	}
 	result := make([]orchestrator.KnowledgeChunk, 0, min(limit, len(scored)))
 	for _, entry := range scored {
-		if entry.chunk.Content == "" {
+		if entry.score == 0 || strings.TrimSpace(entry.chunk.Content) == "" {
 			continue
 		}
 		result = append(result, entry.chunk)

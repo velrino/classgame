@@ -5,6 +5,7 @@
 | Run locally | [Local setup](development/local-setup.md) |
 | Check a change | [Validation](development/validation.md) |
 | Understand the system | [Architecture](architecture/system.md) |
+| Review tutor safeguards | [AI quality and evidence](architecture/ai-quality.md) |
 | Develop a module | [Module boundaries](architecture/modules.md) |
 | Use the API | [API reference](reference/api.md) · [Scalar UI](http://localhost:4004/docs) |
 | Configure the application | [Configuration](reference/configuration.md) |
