@@ -422,6 +422,7 @@ func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 	var attempt StudentMissionAttemptDocument
 
 	err := repository.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		attempt = StudentMissionAttemptDocument{}
 		userSnapshot, err := tx.Get(userRef)
 		if status.Code(err) == codes.NotFound {
 			return ErrStudentNotFound
@@ -485,7 +486,7 @@ func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 		}, firestore.MergeAll)
 	})
 	if err != nil {
-		return StudentMissionAttemptDocument{}, fmt.Errorf("finalize student learning trace: %w", err)
+		return attempt, fmt.Errorf("finalize student learning trace: %w", err)
 	}
 
 	return attempt, nil
