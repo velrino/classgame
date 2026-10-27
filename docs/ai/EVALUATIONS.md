@@ -1,6 +1,6 @@
 # Evaluation scope
 
-Run `python3 evals/run.py` from the repository root. Python 3.9+ owns datasets, preflight, assertions, and run artifacts; the small Go bridge lives inside the existing API module so it can use production `internal` packages. Node remains responsible for frontend checks.
+Run `python3 evals/run.py` from the repository root. Python 3.9+ owns datasets, preflight, assertions, and run artifacts; the small Go bridge lives inside the existing API module so it can use production `internal` packages. A small Node.js 24+ bridge calls the pure TypeScript queue policy for browser evidence.
 
 The [synthetic suite](../../evals/platform/ai-policy/cases.json) exercises production boundaries through scripted ports:
 
@@ -20,6 +20,8 @@ These calls use the production generation service, provider policy, student resp
 The runner validates flags, duplicate JSON keys/IDs, case kinds, selectors, and expectation operators before execution. The bridge validates its complete batch before any scripted call. Failed checks exit `1`; invalid execution exits `2`. Exclusive run directories contain immutable-by-runner manifests/results, revision and dirty status, dataset hash/version, selected IDs, and zero real provider calls.
 
 This is **offline policy/contract coverage**. It does not evaluate generated teaching quality, semantic claim support, real provider cancellation/latency, concurrency saturation, Firebase token verification, browser rules, or deployed object access. Scripted timeout and canary cases cover specific boundaries; they do not prove general prompt-injection resistance or impossible leakage.
+
+Run the browser policy suite with `python3 evals/run.py --dataset evals/platform/offline-evidence/cases.json`. It checks all scope fields, unchanged records at capacity, exact replay, changed intent, bounded retry, terminal errors, credential projection, and the completion gate. It uses the real TypeScript policy without a DOM or IndexedDB. Multi-tab storage transactions still need a separate browser check.
 
 Use the separate [pedagogical rubric and held-out plan](../../evals/platform/ai-policy/MANUAL-RUBRIC.md) for model quality. There is no live/paid execution path in this runner. Future Python graders can consume the JSON artifacts without moving production policy into the harness.
 

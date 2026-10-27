@@ -3,12 +3,17 @@ export class ApiError extends Error {
   readonly status: number;
   readonly requestId?: string;
   readonly traceparent?: string;
+  readonly retryAfterSeconds?: number;
 
   constructor(
     status: number,
     code: string,
     message: string,
-    correlation?: { requestId?: string; traceparent?: string },
+    correlation?: {
+      requestId?: string;
+      traceparent?: string;
+      retryAfterSeconds?: number;
+    },
   ) {
     super(message);
     this.name = "ApiError";
@@ -16,6 +21,7 @@ export class ApiError extends Error {
     this.status = status;
     this.requestId = correlation?.requestId;
     this.traceparent = correlation?.traceparent;
+    this.retryAfterSeconds = correlation?.retryAfterSeconds;
   }
 }
 
@@ -41,6 +47,9 @@ export async function apiError(
   const message =
     body.error?.message || body.message || res.statusText || fallbackCode;
   return new ApiError(res.status, code, message, {
+    retryAfterSeconds: /^\d+$/.test(res.headers.get("Retry-After") ?? "")
+      ? Math.min(86400, Number(res.headers.get("Retry-After")))
+      : undefined,
     requestId: res.headers.get("X-Request-ID") || undefined,
     traceparent: res.headers.get("traceparent") || undefined,
   });

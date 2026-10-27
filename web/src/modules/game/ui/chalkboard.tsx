@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { INPUT_LIMITS, limitInput } from "@/shared/input-limits";
 
@@ -22,6 +22,9 @@ import {
 } from "@/modules/learning";
 
 type ChalkboardProps = {
+  readonly assessmentDisabled?: boolean;
+  readonly completionPending?: boolean;
+  readonly syncStatus?: ReactNode;
   readonly mission: GameMission;
   readonly lesson: Lesson;
   readonly progress: Record<PodId, PodProgress>;
@@ -537,7 +540,8 @@ function ThinkingPhase() {
 function DecisionPhase({
   lesson,
   onContinue,
-}: Pick<ChalkboardProps, "lesson" | "onContinue">) {
+  completionPending,
+}: Pick<ChalkboardProps, "lesson" | "onContinue" | "completionPending">) {
   const decision = lesson.decision;
 
   if (!decision) {
@@ -552,14 +556,18 @@ function DecisionPhase({
         {TUTOR_NAME} decided
       </p>
       <p className="chalk animate-pop mt-[0.3em] text-[1.6em] leading-tight">
-        {decision.message}
+        {leaves && completionPending
+          ? "Your mission is waiting to send and confirm your work."
+          : decision.message}
       </p>
       <div className="chalk-line mt-[0.8em] rounded-sm border-2 border-dashed border-chalk-accent/60 p-[0.6em]">
         <p className="chalk text-[0.75em] tracking-[0.14em] text-chalk-accent uppercase">
           Why
         </p>
         <p className="chalk mt-[0.2em] text-[1.1em] leading-snug">
-          {decision.why}
+          {leaves && completionPending
+            ? "Reconnect and select Retry before this mission can be marked complete."
+            : decision.why}
         </p>
       </div>
       <div className="mt-auto pt-[1em]">
@@ -599,6 +607,8 @@ export function Chalkboard(props: ChalkboardProps) {
     lesson.explainIndex,
     lesson.lines.length,
     lesson.decision,
+    props.assessmentDisabled,
+    props.syncStatus,
   ]);
 
   return (
@@ -635,18 +645,34 @@ export function Chalkboard(props: ChalkboardProps) {
             </div>
           </header>
 
+          {props.syncStatus ? (
+            <div className="mt-2">{props.syncStatus}</div>
+          ) : null}
+
           {/* Body: sized in em; the font-size is set imperatively by useFitScale. */}
           <div
             ref={bodyRef}
             className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden sm:mt-4"
           >
-            {lesson.phase === "question" ? <QuestionPhase {...props} /> : null}
+            {lesson.phase === "question" ? (
+              <fieldset
+                disabled={props.assessmentDisabled}
+                className="contents"
+              >
+                <QuestionPhase {...props} />
+              </fieldset>
+            ) : null}
             {lesson.phase === "correct" ? <CorrectPhase {...props} /> : null}
             {lesson.phase === "why" ? (
-              <WhyPhase
-                key={lesson.question.id + lesson.stepIndex}
-                {...props}
-              />
+              <fieldset
+                disabled={props.assessmentDisabled}
+                className="contents"
+              >
+                <WhyPhase
+                  key={lesson.question.id + lesson.stepIndex}
+                  {...props}
+                />
+              </fieldset>
             ) : null}
             {lesson.phase === "explain" ? <ExplainPhase {...props} /> : null}
             {lesson.phase === "feedback" ? <FeedbackPhase /> : null}
@@ -665,6 +691,7 @@ export function Chalkboard(props: ChalkboardProps) {
                 <button
                   key={item.value}
                   type="button"
+                  disabled={props.assessmentDisabled}
                   onClick={() => onFeedback(item.value)}
                   className="glass font-display animate-rise flex h-14 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[0.7rem] font-semibold text-white transition hover:bg-white/10 active:translate-y-px sm:text-xs"
                 >
