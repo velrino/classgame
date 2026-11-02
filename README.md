@@ -16,6 +16,26 @@ One Next.js application, one Go API, and Firebase-backed learning state. Read th
   <img src="assets/diagrams/architecture/architecture.png" alt="ClassGame current modular architecture" width="100%" />
 </p>
 
+## Architecture decisions and trade-offs
+
+These choices fit the current code. The alternatives below are comparison options, not a record of benchmark wins or a plan to rewrite the stack. Each row compares at most three options, including the current choice.
+
+| Decision and current choice | Relevant alternatives | Why it fits ClassGame | Trade-off / when to reconsider |
+| --- | --- | --- | --- |
+| **API: Go** | Node.js/TypeScript; Python | One typed module shares domain policies between HTTP handlers and workers. Request cancellation and bounded model calls are explicit. The [API container](api/infra/cloud-run/Dockerfile) runs one static binary. | Go and frontend TypeScript contracts still need to stay aligned. Node.js would share more language/tooling with the web; Python would fit Python-native ML libraries. No comparative latency or memory benchmark is claimed; provider response time still needs measurement. |
+| **Evals: Python with small Go/Node bridges** | TypeScript runner; Go runner | Python's standard library handles JSON cases, selection, assertions and reports. Bridges call actual production Go/TypeScript policies instead of rewriting business rules in Python. See [evaluation scope](docs/ai/EVALUATIONS.md). | This adds a third language/toolchain. A Go or TypeScript runner could reduce one part of the setup, but still needs access to the other language's policies. Default synthetic checks verify contracts and fallbacks, not live teaching quality; local integration and human/model assessment are separate. |
+| **Web: Next.js + React** | [React + Vite](https://vite.dev/guide/) | One app provides teacher routes, shared layouts and React UI around the browser-based Three.js classroom. The [standalone build](web/next.config.ts) can run in a Node container rather than requiring one hosting provider. | The current deployment includes a Node server and needs clear server/client boundaries; Three.js still runs in the browser. A Vite SPA could simplify static hosting, with a routing/layout setup and migration cost. Next.js is useful structure here, not a requirement for 3D or proof of better game performance. |
+| **Durable data: Firestore, alongside Firebase Auth** | PostgreSQL; MongoDB | Document state and transactions fit mission revisions and learning attempts. Selected projections use realtime browser reads; Firebase Auth handles identity separately. Browser Firestore writes are denied; mutations use the API. See [data model](docs/reference/DATA-MODEL.md) and [access rules](firestore.rules). | Firestore needs planned indexes and denormalized projections, and keeps a Google-specific data/access model. PostgreSQL fits relational constraints and join-heavy reporting; MongoDB keeps a document model with different query/hosting choices. Either migration must replace the current realtime/read-rule integration and preserve transactions and access checks; it is not just a new connection URL. |
+| **Background delivery: Redis + Asynq** | Google Cloud Tasks | A dedicated Redis broker and Go workers run locally or on another cloud without Cloud Tasks delivery endpoints or Google OIDC setup. Module-owned messages keep job meaning outside the transport. See [task portability](docs/architecture/TASK-PORTABILITY.md). | Cloud Tasks manages the queue service; Redis moves broker persistence, capacity, backups and worker operation to us. Delivery can repeat: stable IDs and domain checks remain necessary. The current adapter needs standalone-compatible Redis, not an assumed Redis Cluster deployment. Prefer managed delivery if lower operating effort matters more than queue portability. |
+| **Application shape: modular monolith with API/worker roles** | Separate microservices | One Go module reuses the same policies and processors, with narrow module contracts. API and worker processes can have separate roles without splitting business logic into network services. See [system boundaries](docs/architecture/SYSTEM.md). | Releases must keep producers, workers and stored contracts compatible. Separate services become useful when independent ownership, isolation or scaling needs justify extra network calls, deployments and recovery work. A small project does not need that cost by default. |
+
+Two boundaries matter when discussing portability:
+
+- **Redis is not the durable learning database.** `TASKS_REDIS_URL` is a dedicated job broker; `REDIS_URL` handles quotas and shared AI admission. Firestore keeps accepted learning state and recovery markers. Broker loss still needs recovery; retries do not guarantee exactly-once external effects. [Queue operations](docs/operations/QUEUES.md).
+- **Moving compute is different from replacing services.** API/web containers and a compatible Redis broker can move to another host, but Firebase Auth, Firestore, object storage and Google AI remain dependencies. Mia's interactive tutor calls stay synchronous; file copies and selected learning jobs run in the background. [Architecture](docs/architecture/SYSTEM.md).
+
+Provider references: [Go concurrency](https://go.dev/doc/faq#goroutines), [Node.js I/O and CPU work](https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop), [Next.js static-export limits](https://nextjs.org/docs/app/guides/static-exports#unsupported-features), [Firestore transactions](https://firebase.google.com/docs/firestore/manage-data/transactions), [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html), [MongoDB data modeling](https://www.mongodb.com/docs/manual/data-modeling/), and [Cloud Tasks delivery](https://docs.cloud.google.com/tasks/docs/dual-overview).
+
 ## Mission flows
 
 Read the steps in order. **Starts with** shows who begins each flow. Select a diagram to open the full PNG. See the [step index](assets/diagrams/steps/README.md) for all diagrams and the style guide.
@@ -51,11 +71,15 @@ Use the canonical [local setup](docs/development/LOCAL-SETUP.md), [configuration
 
 Clone [velrino/classgame](https://github.com/velrino/classgame), configure Firebase and Redis, then start `api/` and `web/` as described in [local setup](docs/development/LOCAL-SETUP.md). Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home).
 
+See [evaluations](evals/README.md) for synthetic policy checks and optional local integration suites. The default Python runner sends JSON through standard input to a Go bridge built from `api/cmd/evalbridge`. The bridge calls the API's production functions and returns JSON through standard output for Python to check and report. Frontend policy suites use Node bridges. Default checks run offline without a running API server or paid AI calls.
+
 ## Documentation
 
 Start with [docs/README.md](docs/README.md): architecture, development, operations, API/configuration reference, and implementation plans each have a canonical home.
 
 Coding assistance starts at the [root router](AGENTS.md) and scoped package guides. Use the [AI index](docs/ai/README.md) for workspace/evaluation guidance and [processes](docs/processes/README.md) for review and release integration.
+
+Repository skills live in [.agents/skills](.agents/skills); contribution and workspace contracts live in [agents/AGENTS.md](agents/AGENTS.md).
 
 ## Deployment
 
@@ -64,12 +88,19 @@ See [Cloud Run operations](docs/operations/CLOUD-RUN.md). Local execution does n
 ## Repository layout
 
 ```text
-api/       Go API and provider integrations
-web/       Next.js dashboard and student game
-docs/      Canonical project documentation
-agents/    AI contribution and workspace contracts
-assets/    Source media, credits, and generation notes
-scripts/   Operational and asset commands
+.agents/skills/          Repository skills for reviews, evals, and background jobs
+.github/workflows/      CI checks for the API, web app, and policy evaluations
+agents/                 AI contribution and workspace contracts
+api/                    Go API, worker roles, provider integrations, and eval bridges
+web/                    Next.js teacher dashboard and student 3D game
+evals/                  Python runners, synthetic datasets, and local evaluation tools
+docs/                   Canonical project documentation
+assets/                 Source media, credits, diagrams, and generation notes
+scripts/                Operational and asset commands
+AGENTS.md               Contributor router and repository rules
+firebase*.json          Firebase configuration and local emulator settings
+firestore.rules         Browser access rules
+firestore.indexes.json  Firestore query indexes
 ```
 
 ## Credits
