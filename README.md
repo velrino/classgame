@@ -10,7 +10,22 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
 
 ## Architecture
 
-One Next.js application, one Go API, and Firebase-backed learning state. Read the [system overview](docs/architecture/SYSTEM.md) and [module boundaries](docs/architecture/MODULES.md).
+One Next.js application, one Go API, and Firebase-backed learning state form a modular monolith. Optional Go workers use a dedicated Redis/Asynq broker; interactive tutoring stays synchronous.
+
+### System design
+
+The system design is documented in the guides below. They describe the implemented architecture; the diagram does not represent a currently hosted deployment.
+
+| Guide | Covers |
+| --- | --- |
+| [System architecture](docs/architecture/SYSTEM.md) | Components, capability ownership, learning loop, and system invariants |
+| [Module boundaries](docs/architecture/MODULES.md) | Module structure, dependency direction, and public contracts |
+| [Data model](docs/reference/DATA-MODEL.md) | Storage ownership, immutable revisions, and student projections |
+| [API contracts](docs/reference/API.md) | Authentication, routes, pagination, streaming, and errors |
+| [Background jobs](docs/architecture/TASK-PORTABILITY.md) | Queue boundaries, delivery behavior, and recovery constraints |
+| [AI quality and evidence](docs/architecture/AI-QUALITY.md) | Tutor context, retrieval, fallbacks, and private information boundaries |
+
+The diagram below shows the components and their connections. Continue with [architecture decisions and trade-offs](#architecture-decisions-and-trade-offs) for the choices behind the design, and [mission flows](#mission-flows) for six sequence diagrams.
 
 <p align="center">
   <img src="assets/diagrams/architecture/architecture.png" alt="ClassGame current modular architecture" width="100%" />
