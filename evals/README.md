@@ -1,6 +1,24 @@
 # Evaluations
 
-Python runs the datasets, checks results, and saves reports. Small Go and Node bridges call the same policy functions used by the API and web app. No business rule is copied into Python.
+## TL;DR
+
+This folder checks ClassGame behavior with synthetic cases. Python selects the cases, checks results, and saves reports. The bridges call the same policy functions used by the API and web app; no business rule is copied into Python.
+
+The default API evaluation uses a local Go process:
+
+```text
+cases.json → Python runner → JSON on stdin → Go evalbridge
+                                                ↓
+                                   api/internal production functions
+                                                ↓
+output/ ← Python checks expected results ← JSON on stdout
+```
+
+[run.py](run.py) builds [api/cmd/evalbridge](../api/cmd/evalbridge/main.go) into a temporary executable using the API's Go module. It sends the selected inputs as one JSON batch through standard input (`stdin`), without the expected results. The bridge imports the API modules and calls their functions directly, using scripted AI and authentication dependencies. It returns observations as JSON through standard output (`stdout`); Python compares them with the dataset expectations and writes the reports.
+
+The default run needs no running HTTP server, database connection, credentials, or paid AI calls. It checks application policies, not real model teaching quality. The `offline-evidence` and `frontend-recovery` datasets use Node bridges to call frontend TypeScript policies through the same JSON exchange. Real local HTTP flows have a separate [opt-in suite](platform/local-http/README.md).
+
+## Run
 
 ```bash
 # From the repository root; Python 3.9+ and the API Go toolchain are required.

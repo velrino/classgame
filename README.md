@@ -71,11 +71,15 @@ Use the canonical [local setup](docs/development/LOCAL-SETUP.md), [configuration
 
 Clone [velrino/classgame](https://github.com/velrino/classgame), configure Firebase and Redis, then start `api/` and `web/` as described in [local setup](docs/development/LOCAL-SETUP.md). Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home).
 
+See [evaluations](evals/README.md) for synthetic policy checks and optional local integration suites. The default Python runner sends JSON through standard input to a Go bridge built from `api/cmd/evalbridge`. The bridge calls the API's production functions and returns JSON through standard output for Python to check and report. Frontend policy suites use Node bridges. Default checks run offline without a running API server or paid AI calls.
+
 ## Documentation
 
 Start with [docs/README.md](docs/README.md): architecture, development, operations, API/configuration reference, and implementation plans each have a canonical home.
 
 Coding assistance starts at the [root router](AGENTS.md) and scoped package guides. Use the [AI index](docs/ai/README.md) for workspace/evaluation guidance and [processes](docs/processes/README.md) for review and release integration.
+
+Repository skills live in [.agents/skills](.agents/skills); contribution and workspace contracts live in [agents/AGENTS.md](agents/AGENTS.md).
 
 ## Deployment
 
@@ -84,12 +88,19 @@ See [Cloud Run operations](docs/operations/CLOUD-RUN.md). Local execution does n
 ## Repository layout
 
 ```text
-api/       Go API and provider integrations
-web/       Next.js dashboard and student game
-docs/      Canonical project documentation
-agents/    AI contribution and workspace contracts
-assets/    Source media, credits, and generation notes
-scripts/   Operational and asset commands
+.agents/skills/          Repository skills for reviews, evals, and background jobs
+.github/workflows/      CI checks for the API, web app, and policy evaluations
+agents/                 AI contribution and workspace contracts
+api/                    Go API, worker roles, provider integrations, and eval bridges
+web/                    Next.js teacher dashboard and student 3D game
+evals/                  Python runners, synthetic datasets, and local evaluation tools
+docs/                   Canonical project documentation
+assets/                 Source media, credits, diagrams, and generation notes
+scripts/                Operational and asset commands
+AGENTS.md               Contributor router and repository rules
+firebase*.json          Firebase configuration and local emulator settings
+firestore.rules         Browser access rules
+firestore.indexes.json  Firestore query indexes
 ```
 
 ## Credits
