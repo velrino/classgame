@@ -1,0 +1,4 @@
+interface:
+  display_name: "ClassGame Background Jobs"
+  short_description: "Change ClassGame jobs without breaking recovery"
+  default_prompt: "Use $classgame-background-jobs to inspect or change this background workflow."

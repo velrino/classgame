@@ -1,0 +1,4 @@
+interface:
+  display_name: "ClassGame Evals"
+  short_description: "Run and interpret ClassGame policy evaluations"
+  default_prompt: "Use $classgame-evals to select and run the relevant existing evaluation checks."
