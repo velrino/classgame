@@ -16,6 +16,16 @@ Read the nearest package guide and the [documentation task index](docs/README.md
 | Review and release | [Processes](docs/processes/README.md) |
 | AI safeguards | [AI](docs/ai/README.md) |
 
+## Repository skills
+
+Use the relevant skill for the requested task; keep the linked guides as the source of detailed rules.
+
+| Skill | Use |
+| --- | --- |
+| [classgame-review](.agents/skills/classgame-review/SKILL.md) | Review code or diffs with evidence and the four review lenses. |
+| [classgame-evals](.agents/skills/classgame-evals/SKILL.md) | Select, run or maintain the matching evaluation suite and report its actual coverage. |
+| [classgame-background-jobs](.agents/skills/classgame-background-jobs/SKILL.md) | Work on dispatch, retries, queue adapters and durable recovery. |
+
 ## Working rules
 
 - Do not use test-driven development (TDD). Do not add new tests unless the user explicitly asks. Run relevant existing checks after a change.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ClassGame Review"
+  short_description: "Review ClassGame changes with evidence"
+  default_prompt: "Use $classgame-review to review this change and report actionable findings."
