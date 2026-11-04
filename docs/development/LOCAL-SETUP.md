@@ -57,6 +57,19 @@ go run ./cmd/api
 
 Check [health](http://localhost:4004/): Firebase and Redis should report up. Open the [Scalar API reference](http://localhost:4004/docs) or [OpenAPI contract](http://localhost:4004/openapi.json).
 
+### Existing Firebase project checks
+
+Health does not check every query or verify a teacher token. The indexes in
+[firestore.indexes.json](../../firestore.indexes.json) must be ready in the configured
+database. A missing index can return HTTP 500 during tutoring or dashboard reads.
+Creating remote indexes is separate from starting local processes.
+
+If the credentials file contains local user ADC (`authorized_user`), set its
+`quota_project_id` to the intended project in a private local copy. Without it,
+Firebase Auth can return a quota-project error and the API can reject a valid
+sign-in token. Keep this file outside Git; do not change account permissions to
+work around a configuration error.
+
 ## Web
 
 In a second terminal, from the repository root:

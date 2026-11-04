@@ -282,9 +282,11 @@ func runWait(raw, queue, id, want string) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
+		// Read the state before its counters: a worker can finish between reads.
+		// Once completion is visible, the handler's effects have already committed.
+		state, err := client.Status(id)
 		starts, _ := store.Get(ctx, effectKey(queue, id, "started")).Int()
 		effects, _ := store.Get(ctx, effectKey(queue, id, "effect")).Int()
-		state, err := client.Status(id)
 		if err == nil && ((want == "started" && starts >= 1 && state == "active") || (want == "completed" && state == "completed")) {
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"id": id, "state": state, "starts": starts, "effects": effects})
 		}

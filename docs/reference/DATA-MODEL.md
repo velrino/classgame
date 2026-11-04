@@ -30,6 +30,8 @@ A mission retains separate draft and published content. Changed inline approval 
 
 Attempts identify the student, class, mission, and published revision. Resume state includes a revisioned checkpoint. Observable events and tutor turns support evidence traces; student memory records supported strengths, needs, explanation preference, and the next adaptation.
 
+Teacher dashboard strengths, needs, and note counts come from the student's latest attempt. They stay empty or zero before evidence exists. Mission signals describe the teaching plan and do not become student observations.
+
 Treat browser snapshots as untrusted input. Display, tutor grounding, and accepted-answer assessment use one pinned playable-question policy, including short and legacy publications. Derive authoritative progress from accepted events rather than trusting client completion flags.
 
 Changed class evidence, source invalidation, and rebuild-window changes atomically advance a durable class refresh intent. Summary writes compare its owner, lease, tenant, and source generation; timestamps/counts remain metadata. Recovery can retry class synthesis after the student attempt is finalized, without regrading it.

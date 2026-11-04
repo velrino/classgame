@@ -855,6 +855,7 @@ export function sessionReducer(
         let updated: PodProgress = { ...progress, queue: rest, correct };
 
         if (correct >= progress.required) {
+          updated = { ...updated, status: "complete" };
           const nextMemory: StudentMemory = {
             ...memory,
             progress: { ...memory.progress, [lesson.pod]: updated },

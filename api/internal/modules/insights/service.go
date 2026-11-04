@@ -261,9 +261,10 @@ func buildStudentDashboardItems(
 		if session.LastHeartbeatAt.After(lastActivityAt) {
 			lastActivityAt = session.LastHeartbeatAt
 		}
-		strengths := buildStrengths(activeMission)
-		improvementAreas := buildImprovementAreas(activeMission, progress)
-		notebookNotes := int64(math.Max(1, float64(student.Activity.LoginCount)))
+		// Mission signals are teaching plans, not evidence about a student.
+		strengths := []string{}
+		improvementAreas := []string{}
+		notebookNotes := int64(0)
 		if latestAttempt != nil {
 			if len(latestAttempt.Trace.Strengths) > 0 {
 				strengths = latestAttempt.Trace.Strengths
@@ -589,28 +590,6 @@ func sortedClassLearningPatterns(
 	return result
 }
 
-func buildStrengths(activeMission *missions.MissionDocument) []string {
-	if activeMission != nil && len(activeMission.PositiveSignals) > 0 {
-		return limitSignals(activeMission.PositiveSignals, 2)
-	}
-
-	return []string{"Keeps trying after feedback", "Responds to Mia's prompts"}
-}
-
-func buildImprovementAreas(
-	activeMission *missions.MissionDocument,
-	progress StudentProgress,
-) []string {
-	if progress.Status == "needs_attention" {
-		return []string{"Needs a shorter review loop", "Ask why before showing the answer"}
-	}
-	if activeMission != nil && len(activeMission.ImprovementSignals) > 0 {
-		return limitSignals(activeMission.ImprovementSignals, 2)
-	}
-
-	return []string{"Explain the reasoning in their own words"}
-}
-
 func starterSuggestions() []generation.MissionSuggestion {
 	return []generation.MissionSuggestion{
 		{
@@ -626,14 +605,6 @@ func starterSuggestions() []generation.MissionSuggestion {
 			FocusSkills: []string{"diagnostic", "feedback"},
 		},
 	}
-}
-
-func limitSignals(values []string, limit int) []string {
-	if len(values) <= limit {
-		return values
-	}
-
-	return values[:limit]
 }
 
 func resolveStudentName(student studentUserDocument) string {
