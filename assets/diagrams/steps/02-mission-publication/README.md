@@ -2,6 +2,13 @@
 
 [Open the full PNG](diagram.png) · [Mermaid source](SEQUENCE.txt)
 
+## Request and response
+
+| Request | Response | Why |
+| --- | --- | --- |
+| Teacher → API: JSON `expected_draft_revision` + optional edits; `POST /teacher-classes/{class}/missions/{mission}/approve`. | JSON: published mission + `published_revision`. | Publish the reviewed version; reject stale edits. |
+| API → Redis: JSON `class_id`, `mission_id`, `revision`. | Enqueue accepted or error. | Queue a reference to the revision; keep file bytes outside Redis. |
+
 Start with the saved preview from [step 01](../01-mission-draft/README.md). The teacher reviews it and sends `expected_draft_revision` with optional edits. The API checks access and content policy, prepares any file-copy job, and publishes through a Firestore transaction. The result is a published revision; file copies may still be pending.
 
 ## Important boundaries

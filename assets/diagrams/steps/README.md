@@ -2,7 +2,7 @@
 
 Each numbered step folder owns its `README.md`, `SEQUENCE.txt`, and one `diagram.png`.
 
-Read the steps in order. **Starts with** shows who begins each flow. Select a diagram to open the full PNG. Add a row when a new step is ready.
+Read the steps in order. **Starts with** shows who begins each flow. Select a diagram to open the full PNG. Add a row when a new step is ready. Each guide starts with a short **request / response / why** table. Browser API calls use a Firebase bearer token. File bytes reach the LLM only during attachment reading; later steps send text context.
 
 | Step | Starts with | Flow | Diagram |
 |:---:|---|---|:---:|

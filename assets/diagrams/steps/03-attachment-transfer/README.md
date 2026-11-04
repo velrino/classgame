@@ -2,6 +2,13 @@
 
 [Open the full PNG](diagram.png) · [Mermaid source](SEQUENCE.txt)
 
+## Request and response
+
+| Request | Response | Why |
+| --- | --- | --- |
+| Redis → Worker: JSON `class_id`, `mission_id`, `revision`. | Job success or retryable error. | Load the exact published sources from Firestore. |
+| Worker → Uploadcare: HTTPS GET; Worker → Storage: binary stream. | File bytes, then stored object path, MIME and size. | Copy the file without Base64; persist private storage metadata. |
+
 Start with the copy job from [step 02](../02-mission-publication/README.md). The **Worker** runs the Asynq attachment processor. It loads source metadata from the published DB snapshot, copies remaining files from Uploadcare to **private Cloud Storage**, and saves each outcome. Action 14 completes the queue job; individual files may have permanent failures.
 
 ## Retry and failure rules

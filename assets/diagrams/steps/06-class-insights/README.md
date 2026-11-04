@@ -2,6 +2,14 @@
 
 [Open the full PNG](diagram.png) · [Mermaid source](SEQUENCE.txt)
 
+## Request and response
+
+| Request | Response | Why |
+| --- | --- | --- |
+| Redis → Worker: JSON class ID + source/dispatch generations. | Job success or retryable error. | Refresh only the intended evidence version. |
+| Worker → LLM: up to 100 finalized student evidence records in the prompt. | JSON: strength/need clusters + next adaptation. | Summarize class evidence without resending files or full histories. |
+| Teacher → API: authenticated `GET /dashboard/overview/page?class_id=…&cursor=…`. | JSON: visible-page students, progress, insights and next cursor. | Refresh the authorized page; summary changes only trigger a new read. |
+
 After [step 05](../05-learning-memory/README.md), a durable class-refresh intent identifies the evidence generation to summarize. The worker builds **bounded class memory** and saves it only while its owner, lease, tenant, and source generation still match. The summary change invalidates the open teacher dashboard. Action 15 returns the authorized overview for the visible student page.
 
 ## Refresh and memory bounds

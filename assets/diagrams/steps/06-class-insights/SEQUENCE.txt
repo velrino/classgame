@@ -62,7 +62,7 @@ sequenceDiagram
     Note over Redis: Ready for class refresh<br/>Evidence and pending intent<br/>were saved together.
 
     create participant Worker
-    Redis->>Worker: Deliver the versioned class refresh job
+    Redis->>Worker: JSON job: class ID<br/>+ source/dispatch generations
     activate Worker
     create participant DB
     Worker->>DB: Claim the pending generation<br/>Check class scope and acquire the owner token
@@ -74,26 +74,26 @@ sequenceDiagram
     Note over Worker,DB: Pending work survives failures.<br/>Old or completed jobs do no work.<br/>Busy claims retry. Recovery scans pending intents.
 
     create participant LLM
-    Worker->>LLM: Build a bounded class synthesis<br/>Cluster only the supplied evidence
+    Worker->>LLM: JSON context in prompt<br/>Up to 100 finalized student evidence records
     activate LLM
-    LLM-->>Worker: Strength and need clusters plus adaptation
+    LLM-->>Worker: JSON response: clusters + adaptation
     deactivate LLM
     Note right of LLM: Bounded class memory<br/>Up to 4 strengths and 4 needs<br/>Next adaptation: 280 characters<br/>Observed fallback if the model is unavailable
 
     Worker->>DB: Commit the class summary<br/>Recheck owner, lease, tenant and source generation
     Note right of DB: Atomic completion<br/>class_learning_summaries/{class_id}<br/>Advance completed_generation with the summary
     DB-->>Worker: Summary and completed generation saved
-    Worker-->>Redis: Complete delivery
+    Worker-->>Redis: Job result: success (error requests retry)
     deactivate Worker
 
     create participant Teacher
     DB-->>Teacher: Summary changed - invalidate the visible page
     Note over Teacher: Dashboard already open<br/>Realtime invalidation or a visible-page<br/>refresh every 15 seconds
     create participant API
-    Teacher->>API: Refresh the selected class overview<br/>GET /dashboard/overview/page with class and cursor
+    Teacher->>API: GET /dashboard/overview/page<br/>Query: class_id + cursor
     activate API
     API->>DB: Check teacher access and read overview<br/>Current roster page, latest evidence and stored summary
     DB-->>API: Authorized overview records
-    API-->>Teacher: Page-scoped class insights<br/>Strengths, needs and next-step guidance
+    API-->>Teacher: JSON response: students, progress,<br/>page insights + next cursor
     deactivate API
-    Note over Teacher,API: Page-scoped teacher view<br/>Current page evidence drives its patterns.<br/>The legacy route can also use stored synthesis.
+    Note over Teacher,API: Why a new API read<br/>Summary changes invalidate the page.<br/>Return authorized current-page evidence.<br/>No files or full histories sent to the LLM.

@@ -51,8 +51,8 @@ config:
 ---
 sequenceDiagram
     %% First-use headers introduce existing services, not new infrastructure.
-    %% Session setup is a prerequisite; post-quiz finalization is a later step.
-    %% The main path is a new generated turn; notes summarize retry branches.
+    %% Session setup is a prerequisite. post-quiz finalization is a later step.
+    %% The main path is a new generated turn. notes summarize retry branches.
     autonumber
     participant Student
     Note over Student: Ready to play<br/>Mission selected and attempt pinned.<br/>Initial checkpoint already saved.
@@ -60,7 +60,7 @@ sequenceDiagram
     loop Each answer or reasoning turn
         Student->>Student: Save the answer locally<br/>Keep a stable event_id in IndexedDB
         create participant API
-        Student->>API: Send the quiz turn<br/>Question, response, event_id and attempt scope
+        Student->>API: JSON request: question, response,<br/>event_id + attempt/revision scope
         activate API
 
         create participant DB
@@ -77,21 +77,21 @@ sequenceDiagram
                 API->>DB: Reserve the tutor event<br/>Owner token and 2-minute lease
                 DB-->>API: Generation ownership granted
                 create participant LLM
-                API->>LLM: Generate grounded Mia feedback
+                API->>LLM: JSON context in prompt<br/>Question, response + bounded memory/chunks
                 activate LLM
-                LLM-->>API: Structured feedback
+                LLM-->>API: JSON response: tutor feedback
                 deactivate LLM
             end
 
             API->>DB: Commit the turn and answer evidence<br/>Recheck scope, fingerprint and any owner lease
         end
-        API-->>Student: Return saved student-safe Mia feedback
+        API-->>Student: JSON response: saved student-safe turn
         deactivate API
-        Note over Student,API: Save evidence before replying.<br/>Teacher observations stay server-side.
+        Note over Student,API: Why this format<br/>event_id makes retries stable.<br/>No PDF resend. private observations stay server-side.
 
-        Student->>API: Save the next checkpoint<br/>Flush pending tutor evidence first
+        Student->>API: JSON request: snapshot + attempt scope<br/>Flush pending tutor evidence first
         activate API
         API->>DB: Validate and merge progress<br/>Use server-recorded answers for authority
-        API-->>Student: Accepted progress for resume
+        API-->>Student: JSON response: accepted attempt + checkpoint
         deactivate API
     end

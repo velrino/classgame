@@ -2,6 +2,14 @@
 
 [Open the full PNG](diagram.png) · [Mermaid source](SEQUENCE.txt)
 
+## Request and response
+
+| Request | Response | Why |
+| --- | --- | --- |
+| Student → API: JSON `event_id`, question, response, attempt + revision; `POST /users/student-tutor-turn`. | JSON `turn`: Mia message, steps and next action. | Keep retries stable and return only student-safe feedback. |
+| API → LLM: pinned question + response + bounded memory and knowledge chunks in the prompt. | JSON: structured tutor feedback. | Ground feedback in recorded context; do not resend the PDF. |
+| Student → API: JSON snapshot + attempt scope; `POST /users/student-learning`. | JSON `attempt`: accepted progress + checkpoint. | Resume safely; the server checks recorded answers. |
+
 The student saves an answer locally before sending it to the API. Mia uses the **pinned question and bounded learning context** to give feedback. The API saves authoritative evidence before replying. The browser then flushes pending evidence and saves the next checkpoint. Action 14 returns accepted progress for resume.
 
 ## Before the first turn

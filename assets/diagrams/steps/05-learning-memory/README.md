@@ -2,6 +2,14 @@
 
 [Open the full PNG](diagram.png) · [Mermaid source](SEQUENCE.txt)
 
+## Request and response
+
+| Request | Response | Why |
+| --- | --- | --- |
+| Student → API: JSON `status: completed`, snapshot + attempt scope; `POST /users/student-learning`. | JSON `attempt` with confirmed status and resume state. | Show the reward after server confirmation, before AI insights are ready. |
+| API → Redis → Worker: JSON student/attempt IDs + expected versions and dispatch generation. | Job success or retryable error. | Finalize saved evidence asynchronously; no PDF or answer log in the job. |
+| Worker → LLM: bounded events, progress and previous memory in the prompt. | JSON: private trace, strengths, needs and next adaptation. | Build compact memory from observed work; keep it server-side. |
+
 After [step 04](../04-quiz-play/README.md), the browser flushes pending tutor evidence and requests completion. The API confirms completion from **server-recorded accepted answers**. A finalizer then builds a private learning trace and replaces eligible student memory with a **compact summary**. Action 15 completes the queued delivery.
 
 ## Completion and readiness

@@ -56,7 +56,7 @@ sequenceDiagram
 
     Teacher->>Teacher: Review the draft and edit if needed
     create participant API
-    Teacher->>API: Publish with expected_draft_revision<br/>and optional reviewed edits
+    Teacher->>API: JSON request: expected_draft_revision<br/>+ optional reviewed edits
     activate API
     API->>API: Validate the request and teacher identity
 
@@ -68,13 +68,13 @@ sequenceDiagram
 
     opt Files need transfer, planned revision not yet published, jobs enabled
         create participant Redis
-        API->>Redis: Enqueue copy job<br/>for class, mission and planned revision
+        API->>Redis: JSON job: class_id, mission_id, revision
         Redis-->>API: Job accepted or queue failure
         break Configured queue rejects the job
             API-->>Teacher: 503 attachment_queue_unavailable
         end
     end
-    Note over API,Redis: Enqueue happens before the DB transaction.<br/>Workers process the job in step 03.
+    Note over API,Redis: Why IDs only<br/>The worker reads the published source.<br/>No file bytes in Redis. copy runs in step 03.<br/>Enqueue happens before the DB transaction.
     Note right of API: Jobs disabled: skip enqueue.<br/>Publication can still continue.
 
     critical Firestore publication transaction
@@ -89,6 +89,6 @@ sequenceDiagram
     alt Conflicting stale approval
         API-->>Teacher: 409 draft_conflict - review the latest draft
     else Accepted publication or replay
-        API-->>Teacher: Published mission and published_revision
+        API-->>Teacher: JSON response: mission + published_revision
     end
     deactivate API

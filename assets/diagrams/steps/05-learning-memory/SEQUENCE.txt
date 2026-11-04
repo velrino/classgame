@@ -55,29 +55,29 @@ config:
 ---
 sequenceDiagram
     %% First-use headers introduce existing services, not new infrastructure.
-    %% This is the queued success path; notes describe inline fallback.
+    %% This is the queued success path. notes describe inline fallback.
     %% Class synthesis and wider memory views belong to a later step.
     autonumber
     participant Student
     Note over Student: Ready to finish<br/>Quiz answers are saved.<br/>Pending tutor evidence is flushed.
 
     create participant API
-    Student->>API: Request quiz completion<br/>Attempt, publication and snapshot scope
+    Student->>API: JSON request: status completed<br/>Snapshot + attempt/revision scope
     activate API
     create participant DB
     API->>DB: Validate and commit completion<br/>Use accepted answers and mark trace pending
     DB-->>API: Completed attempt and completion marker
 
     create participant Redis
-    API->>Redis: Enqueue the versioned finalization job
+    API->>Redis: JSON job: IDs + expected versions
     Note right of Redis: Stable job identity<br/>Student and attempt IDs<br/>Evidence and snapshot versions<br/>Status and dispatch generation
-    API-->>Student: Completion accepted for the reward
+    API-->>Student: JSON response: confirmed attempt status
     deactivate API
-    Note over Student,API: Quiz completion is confirmed.<br/>AI insights may still be pending.
+    Note over Student,API: Why separate responses<br/>Reward follows saved completion.<br/>AI insights can finish later.
     Note over API,Redis: Inline fallback<br/>If jobs are disabled or enqueue fails,<br/>the API runs the same finalizer.
 
     create participant Worker
-    Redis->>Worker: Deliver the finalization job
+    Redis->>Worker: Deliver the JSON finalization job
     activate Worker
     Worker->>DB: Claim the target attempt<br/>Owner token and 5-minute lease
     DB-->>Worker: Claimed attempt and student context
@@ -86,9 +86,9 @@ sequenceDiagram
     Note over DB,Worker: Superseded or finalized work is skipped.<br/>Busy claims retry. Recovery scans pending work.
 
     create participant LLM
-    Worker->>LLM: Build an evidence-based learning trace<br/>Bounded evidence and previous memory
+    Worker->>LLM: JSON context in prompt<br/>Bounded evidence + previous memory
     activate LLM
-    LLM-->>Worker: Structured learning trace
+    LLM-->>Worker: JSON response: private trace + memory
     deactivate LLM
     Note right of LLM: Observed fallback is available.<br/>Missing model/events, quota limits<br/>or provider failure can use it.
 
@@ -97,5 +97,5 @@ sequenceDiagram
     DB-->>Worker: Ready result or stale-result rejection
     Note over DB,Worker: Compact memory replaces the old summary.<br/>Same class/tenant and no older evidence only.<br/>Up to 4 strengths and 4 needs<br/>Next adaptation: 280 characters
     Note over Redis,Worker: Class refresh has durable intent.<br/>Dispatch a separate versioned refresh job.<br/>Recovery can retry after student finalization.
-    Worker-->>Redis: Complete delivery
+    Worker-->>Redis: Job result: success (error requests retry)
     deactivate Worker

@@ -51,15 +51,15 @@ config:
 ---
 sequenceDiagram
     %% First-use headers introduce existing services, not new infrastructure.
-    %% This is the main copy flow; notes summarize failure paths.
+    %% This is the main copy flow. notes summarize failure paths.
     %% Quiz play and learning memory belong to later steps.
     autonumber
     participant Redis
 
     create participant Worker
-    Redis->>Worker: Deliver the revision-scoped copy job
+    Redis->>Worker: JSON job: class_id, mission_id, revision
     activate Worker
-    Note over Redis,Worker: IDs only in the job body.<br/>Class, mission and published revision
+    Note over Redis,Worker: Why IDs only<br/>Read the exact published source from DB.
 
     create participant DB
     Worker->>DB: Prepare the published revision<br/>Mark remaining files copying in a transaction
@@ -75,12 +75,12 @@ sequenceDiagram
 
         opt Object is missing
             create participant Uploadcare
-            Worker->>Uploadcare: Download a validated source<br/>HTTPS CDN URL and allowed redirects
-            Uploadcare-->>Worker: File stream, bounded to 20 MiB
-            Worker->>Storage: Stream a private object<br/>Create only if the path does not exist
-            Storage-->>Worker: Validated stored object metadata
+            Worker->>Uploadcare: HTTPS GET: validated source URL
+            Uploadcare-->>Worker: Binary response: file stream, up to 20 MiB
+            Worker->>Storage: Binary upload stream<br/>Create only if the path does not exist
+            Storage-->>Worker: Stored object metadata: path, MIME, size
         end
-        Note over Worker,Storage: Reuse a validated existing object.<br/>Concurrent writers reread the winning object.
+        Note over Worker,Storage: Why streaming<br/>Copy file bytes without Base64.<br/>Reuse a validated existing object.
 
         Worker->>DB: Mark the attachment stored<br/>Check revision and full attachment identity
         DB-->>Worker: Attachment state committed
@@ -89,6 +89,6 @@ sequenceDiagram
 
     Worker->>DB: Complete the revision transfer<br/>Check that no files are still pending
     DB-->>Worker: complete or complete_with_failures
-    Worker-->>Redis: Return success to complete the job
+    Worker-->>Redis: Job result: success (error requests retry)
     deactivate Worker
     Note over Redis,Worker: Retry temporary errors, up to 10 retries.<br/>Invalid jobs archive for operator review.<br/>Completed jobs stay for 24 hours.
