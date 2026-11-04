@@ -30,6 +30,8 @@ export type PodProgress = {
   /** Spare questions for retries and reviews. */
   readonly pool: readonly string[];
   readonly correct: number;
+  /** Reviewed questions, including incorrect answers. Separate from accuracy. */
+  readonly answered?: number;
   readonly required: number;
 };
 
@@ -167,6 +169,7 @@ export function createInitialMemory(
       queue: [...plan.primary],
       pool: [...plan.reinforcement],
       correct: 0,
+      answered: 0,
       required: plan.required,
     };
   }
@@ -200,6 +203,7 @@ export function normalizeStudentMemory(
         queue: [...storedProgress.queue],
         pool: [...storedProgress.pool],
         correct: storedProgress.correct,
+        answered: storedProgress.answered ?? storedProgress.correct,
         required: storedProgress.required,
       };
     }
@@ -222,8 +226,8 @@ export function normalizeStudentMemory(
   };
 }
 
-// Older local checkpoints could mark remediation as complete without a correct
-// answer. Reopen that practice; server-confirmed historical state uses its own mapper.
+// Reopen checkpoints without recorded question progress. An incorrect answer
+// reviewed by the student can complete a step without increasing accuracy.
 export function repairUnansweredCompletion(
   memory: StudentMemory,
   mission: GameMission,
@@ -231,7 +235,7 @@ export function repairUnansweredCompletion(
   const progress = { ...memory.progress };
   for (const pod of POD_ORDER) {
     const current = progress[pod];
-    if (current.status === "complete" && current.correct < current.required) {
+    if (current.status === "complete" && (current.answered ?? current.correct) < current.required) {
       progress[pod] = {
         ...current,
         status: "ready",

@@ -84,6 +84,7 @@ export function toLearningSnapshot(
       queue: [...memory.progress[podId].queue],
       pool: [...memory.progress[podId].pool],
       correct: memory.progress[podId].correct,
+      answered: memory.progress[podId].answered ?? memory.progress[podId].correct,
       required: memory.progress[podId].required,
     })),
     notes: notes.map((note) => ({
@@ -171,6 +172,7 @@ export function memoryFromLearningAttempt(
       // answers; it is not a fresh-question queue and must not award repeat credit.
       pool: [],
       correct: stage.correct,
+      answered: stage.answered ?? stage.correct,
       required: stage.required,
     };
   }

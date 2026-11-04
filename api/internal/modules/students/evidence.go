@@ -10,7 +10,7 @@ import (
 	"classgame-api/internal/modules/missions"
 )
 
-const assessmentEvidenceSchemaVersion = 1
+const assessmentEvidenceSchemaVersion = 2
 
 var (
 	ErrTutorEventConflict     = errors.New("tutor event ID was reused with different evidence")
@@ -23,6 +23,8 @@ var (
 )
 
 type AcceptedAnswerFact struct {
+	// Used to retain correct responses when merging; assessment still rechecks the pinned answer.
+	Correct           bool      `firestore:"correct" json:"correct"`
 	QuestionID        string    `firestore:"question_id" json:"question_id"`
 	StageID           string    `firestore:"stage_id" json:"stage_id"`
 	StudentResponse   string    `firestore:"student_response" json:"student_response"`
@@ -84,9 +86,10 @@ func fingerprintRecordedTurn(turn StudentTutorTurn, input SaveStudentTutorTurnIn
 // EffectiveTutorEvidence never reconstructs credit or counts from a browser
 // snapshot. Truncated pre-upgrade histories have only a known lower-bound count.
 func EffectiveTutorEvidence(attempt StudentMissionAttemptDocument) StudentMissionAttemptDocument {
-	if attempt.EvidenceSchemaVersion > 0 {
+	if attempt.EvidenceSchemaVersion >= assessmentEvidenceSchemaVersion {
 		return attempt
 	}
+	legacy := attempt.EvidenceSchemaVersion == 0
 	attempt.EvidenceSchemaVersion = assessmentEvidenceSchemaVersion
 	knownCount := int64(0)
 	for _, turn := range attempt.TutorTurns {
@@ -96,14 +99,16 @@ func EffectiveTutorEvidence(attempt StudentMissionAttemptDocument) StudentMissio
 		if int64(turn.Sequence) > attempt.TutorEventSequence {
 			attempt.TutorEventSequence = int64(turn.Sequence)
 		}
-		if turn.Type == "answer" && turn.Outcome == "correct" && normalizedStudentAnswer(turn.StudentResponse) == normalizedStudentAnswer(turn.ExpectedAnswer) {
-			attempt.AcceptedAnswers = mergeAcceptedAnswer(attempt.AcceptedAnswers, AcceptedAnswerFact{QuestionID: turn.QuestionID, StageID: turn.StageID, StudentResponse: turn.StudentResponse, PublishedRevision: attempt.PublishedRevision, TurnID: turn.ID, AcceptedAt: turn.CreatedAt})
+		if turn.Type == "answer" && normalizedStudentAnswer(turn.StudentResponse) != "" {
+			attempt.AcceptedAnswers = mergeAcceptedAnswer(attempt.AcceptedAnswers, AcceptedAnswerFact{Correct: normalizedStudentAnswer(turn.StudentResponse) == normalizedStudentAnswer(turn.ExpectedAnswer), QuestionID: turn.QuestionID, StageID: turn.StageID, StudentResponse: turn.StudentResponse, PublishedRevision: attempt.PublishedRevision, TurnID: turn.ID, AcceptedAt: turn.CreatedAt})
 		}
 	}
-	if knownCount > attempt.GeneratedTurnCount {
+	if legacy && knownCount > attempt.GeneratedTurnCount {
 		attempt.GeneratedTurnCount = knownCount
 	}
-	attempt.LegacyHistoryIncomplete = len(attempt.TutorTurns) >= maxTutorTurnsPerAttempt
+	if legacy {
+		attempt.LegacyHistoryIncomplete = len(attempt.TutorTurns) >= maxTutorTurnsPerAttempt
+	}
 	return attempt
 }
 func CanGenerateTutorTurn(attempt StudentMissionAttemptDocument) bool {
@@ -111,8 +116,13 @@ func CanGenerateTutorTurn(attempt StudentMissionAttemptDocument) bool {
 	return !attempt.LegacyHistoryIncomplete && attempt.GeneratedTurnCount < maxGeneratedTutorTurnsPerAttempt
 }
 func mergeAcceptedAnswer(facts []AcceptedAnswerFact, incoming AcceptedAnswerFact) []AcceptedAnswerFact {
-	for _, fact := range facts {
+	for index, fact := range facts {
 		if fact.QuestionID == incoming.QuestionID {
+			if incoming.Correct && !fact.Correct {
+				updated := append([]AcceptedAnswerFact{}, facts...)
+				updated[index] = incoming
+				return updated
+			}
 			return facts
 		}
 	}
@@ -126,8 +136,8 @@ func acceptedAnswerFacts(document missions.MissionDocument, turns []StudentTutor
 			continue
 		}
 		for _, q := range questions {
-			if q.ID == turn.QuestionID && normalizedStudentAnswer(turn.StudentResponse) == normalizedStudentAnswer(q.ExpectedAnswer) {
-				facts = mergeAcceptedAnswer(facts, AcceptedAnswerFact{QuestionID: q.ID, StageID: q.StageID, StudentResponse: turn.StudentResponse, PublishedRevision: document.PublishedRevision, TurnID: turn.ID, AcceptedAt: turn.CreatedAt})
+			if q.ID == turn.QuestionID && normalizedStudentAnswer(turn.StudentResponse) != "" {
+				facts = mergeAcceptedAnswer(facts, AcceptedAnswerFact{Correct: normalizedStudentAnswer(turn.StudentResponse) == normalizedStudentAnswer(q.ExpectedAnswer), QuestionID: q.ID, StageID: q.StageID, StudentResponse: turn.StudentResponse, PublishedRevision: document.PublishedRevision, TurnID: turn.ID, AcceptedAt: turn.CreatedAt})
 			}
 		}
 	}

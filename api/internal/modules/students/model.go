@@ -200,6 +200,7 @@ type StudentStageProgress struct {
 	Queue    []string `firestore:"queue" json:"queue"`
 	Pool     []string `firestore:"pool" json:"pool"`
 	Correct  int      `firestore:"correct" json:"correct"`
+	Answered int      `firestore:"answered" json:"answered"`
 	Required int      `firestore:"required" json:"required"`
 }
 

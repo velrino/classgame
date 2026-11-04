@@ -28,9 +28,13 @@ func AssessLearningSnapshotWithEvidence(document missions.MissionDocument, snaps
 		byStage[q.StageID] = append(byStage[q.StageID], q.ID)
 	}
 	solved := map[string]bool{}
+	answered := map[string]bool{}
 	for _, fact := range facts {
-		if index, ok := byID[fact.QuestionID]; ok && fact.PublishedRevision == document.PublishedRevision && normalizedStudentAnswer(fact.StudentResponse) == normalizedStudentAnswer(questions[index].ExpectedAnswer) {
-			solved[fact.QuestionID] = true
+		if index, ok := byID[fact.QuestionID]; ok && fact.PublishedRevision == document.PublishedRevision && normalizedStudentAnswer(fact.StudentResponse) != "" {
+			answered[fact.QuestionID] = true
+			if normalizedStudentAnswer(fact.StudentResponse) == normalizedStudentAnswer(questions[index].ExpectedAnswer) {
+				solved[fact.QuestionID] = true
+			}
 		}
 	}
 
@@ -46,6 +50,9 @@ func AssessLearningSnapshotWithEvidence(document missions.MissionDocument, snaps
 		outcome := "support"
 		if turn.Type == "answer" {
 			outcome = "incorrect"
+			if normalizedStudentAnswer(turn.StudentResponse) != "" {
+				answered[q.ID] = true
+			}
 			if normalizedStudentAnswer(turn.StudentResponse) == normalizedStudentAnswer(q.ExpectedAnswer) {
 				outcome = "correct"
 				solved[q.ID] = true
@@ -73,22 +80,26 @@ func AssessLearningSnapshotWithEvidence(document missions.MissionDocument, snaps
 	for _, stageID := range stageOrder {
 		ids := byStage[stageID]
 		correct := 0
+		attempted := 0
 		remaining := []string{}
 		for _, id := range ids {
 			if solved[id] {
 				correct++
+			}
+			if answered[id] {
+				attempted++
 			} else {
 				remaining = append(remaining, id)
 			}
 		}
 		required := min(2, len(ids))
 		status := "ready"
-		if correct >= required {
+		if attempted >= required {
 			status = "complete"
 		} else {
 			complete = false
 		}
-		progress = append(progress, StudentStageProgress{StageID: stageID, Status: status, Queue: remaining, Pool: append([]string{}, ids...), Correct: correct, Required: required})
+		progress = append(progress, StudentStageProgress{StageID: stageID, Status: status, Queue: remaining, Pool: append([]string{}, ids...), Correct: correct, Answered: attempted, Required: required})
 	}
 	snapshot.Progress = progress
 	snapshot.Events = events

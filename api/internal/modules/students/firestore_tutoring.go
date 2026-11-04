@@ -143,8 +143,8 @@ func (repository *FirestoreRepository) AppendStudentTutorTurn(
 			Tutor:             tutor,
 			CreatedAt:         input.Timestamp,
 		}
-		if input.Type == "answer" && input.ExpectedAnswer != "" && normalizedStudentAnswer(input.StudentResponse) == normalizedStudentAnswer(input.ExpectedAnswer) {
-			attempt.AcceptedAnswers = mergeAcceptedAnswer(attempt.AcceptedAnswers, AcceptedAnswerFact{QuestionID: input.QuestionID, StageID: input.StageID, StudentResponse: input.StudentResponse, PublishedRevision: attempt.PublishedRevision, TurnID: result.ID, AcceptedAt: input.Timestamp})
+		if input.Type == "answer" && normalizedStudentAnswer(input.StudentResponse) != "" {
+			attempt.AcceptedAnswers = mergeAcceptedAnswer(attempt.AcceptedAnswers, AcceptedAnswerFact{Correct: normalizedStudentAnswer(input.StudentResponse) == normalizedStudentAnswer(input.ExpectedAnswer), QuestionID: input.QuestionID, StageID: input.StageID, StudentResponse: input.StudentResponse, PublishedRevision: attempt.PublishedRevision, TurnID: result.ID, AcceptedAt: input.Timestamp})
 		}
 		if err := invalidateEvidence(); err != nil {
 			return fmt.Errorf("invalidate class learning evidence: %w", err)

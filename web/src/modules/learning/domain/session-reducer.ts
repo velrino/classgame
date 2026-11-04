@@ -259,29 +259,6 @@ function restoreLesson(
   };
 }
 
-/** A wrong answer sends the question to the back of the line; a fresh one comes forward if it's the only one. */
-function requeueCurrent(
-  mission: GameMission,
-  progress: PodProgress,
-  bias: -1 | 0 | 1,
-): PodProgress {
-  const [current, ...pending] = progress.queue;
-
-  if (!current) {
-    return progress;
-  }
-  const rest = [...new Set(pending)].filter((id) => id !== current);
-  const available = [...new Set(progress.pool)].filter((id) =>
-    id !== current && !rest.includes(id),
-  );
-  if (rest.length === 0 && available.length > 0) {
-    const [fresh, ...pool] = sortByBias(mission, available, bias);
-    return { ...progress, queue: [fresh, current], pool };
-  }
-
-  return { ...progress, queue: [...rest, current], pool: available };
-}
-
 function mergeNote(
   notes: readonly StudentNote[],
   draft: Omit<StudentNote, "count">,
@@ -325,10 +302,7 @@ function logDecision(
   };
 
   return appendLearningEvent(nextMemory, {
-    type:
-      decision.action === "complete" || decision.action === "mission-complete"
-        ? "mastery"
-        : "adaptation",
+    type: "adaptation",
     stageId: memory.lastPod ?? decision.target ?? POD_ORDER[0],
     questionId: "",
     title: limitedEventText(decision.message, 150),
@@ -445,7 +419,7 @@ export function sessionReducer(
           ["complete", "mission-complete"].includes(restoredLesson.decision.action) &&
           POD_ORDER.some((pod) => memory.progress[pod].status !== "complete")) {
         const current = memory.progress[restoredLesson.pod];
-        restoredLesson = current.correct < current.required
+        restoredLesson = (current.answered ?? current.correct) < current.required
           ? startLesson(action.mission, memory, restoredLesson.pod).lesson
           : {
               ...restoredLesson,
@@ -809,9 +783,25 @@ export function sessionReducer(
         },
         action.eventId,
       );
+      const current = memory.progress[lesson.pod];
+      const wasPending = current.queue.includes(lesson.question.id);
+      const answered = (current.answered ?? current.correct) + (wasPending ? 1 : 0);
+      const reviewedMemory: StudentMemory = {
+        ...memory,
+        progress: {
+          ...memory.progress,
+          [lesson.pod]: {
+            ...current,
+            answered,
+            queue: current.queue.filter((id) => id !== lesson.question.id),
+            pool: current.pool.filter((id) => id !== lesson.question.id),
+            status: answered >= current.required ? "complete" : current.status,
+          },
+        },
+      };
       const decision = decideAfterFeedback({
         mission: session.mission,
-        memory,
+        memory: reviewedMemory,
         pod: lesson.pod,
         feedback: action.value,
         misconception: lesson.wrong?.misconception ?? null,
@@ -820,7 +810,7 @@ export function sessionReducer(
 
       return {
         ...session,
-        memory: logDecision(memory, decision, action.now),
+        memory: logDecision(reviewedMemory, decision, action.now),
         lesson: { ...lesson, phase: "thinking", decision },
       };
     }
@@ -844,7 +834,7 @@ export function sessionReducer(
 
       const bias = memory.preferences.difficultyBias;
 
-      // A clean answer: count it, and either move on or let the tutor close the pod.
+      // Record question progress separately from correct-answer credit.
       if (lesson.phase === "correct") {
         const progress = memory.progress[lesson.pod];
         const questionWasPending = progress.queue.includes(lesson.question.id);
@@ -852,9 +842,10 @@ export function sessionReducer(
         const correct = lesson.clean && questionWasPending
           ? progress.correct + 1
           : progress.correct;
-        let updated: PodProgress = { ...progress, queue: rest, correct };
+        const answered = (progress.answered ?? progress.correct) + (questionWasPending ? 1 : 0);
+        let updated: PodProgress = { ...progress, queue: rest, pool: progress.pool.filter((id) => id !== lesson.question.id), correct, answered };
 
-        if (correct >= progress.required) {
+        if (answered >= progress.required) {
           updated = { ...updated, status: "complete" };
           const nextMemory: StudentMemory = {
             ...memory,
@@ -894,7 +885,7 @@ export function sessionReducer(
       switch (decision.action) {
         case "next": {
           const current = memory.progress[lesson.pod];
-          const progress = requeueCurrent(session.mission, current, bias);
+          const progress = ensureQueue(session.mission, current, bias);
           const nextMemory: StudentMemory = {
             ...memory,
             progress: { ...memory.progress, [lesson.pod]: progress },
@@ -945,7 +936,7 @@ export function sessionReducer(
         case "complete":
         case "mission-complete": {
           const current = memory.progress[lesson.pod];
-          if (current.correct < current.required) {
+          if ((current.answered ?? current.correct) < current.required) {
             const retryMemory = {
               ...memory,
               progress: {

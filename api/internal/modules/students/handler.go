@@ -802,7 +802,7 @@ func (request StudentLearningSnapshotRequest) Validate() error {
 		if err := validation.Validate(stage.Status, validation.Required, validation.In("locked", "ready", "review", "complete")); err != nil {
 			return fmt.Errorf("snapshot.progress[%d].status: %w", index, err)
 		}
-		if stage.Correct < 0 || stage.Correct > 100 || stage.Required < 0 || stage.Required > 100 {
+		if stage.Correct < 0 || stage.Correct > 100 || stage.Answered < 0 || stage.Answered > 100 || stage.Required < 0 || stage.Required > 100 {
 			return fmt.Errorf("snapshot.progress[%d] counts are outside the allowed range", index)
 		}
 		if len(stage.Queue) > 40 || len(stage.Pool) > 40 {

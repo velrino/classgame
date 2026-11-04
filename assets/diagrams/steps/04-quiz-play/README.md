@@ -22,6 +22,8 @@ The student saves an answer locally before sending it to the API. Mia uses the *
 
 Each tutor request uses `POST /users/student-tutor-turn` with a stable `event_id`, question, response, mission, attempt, and revision scope. Feedback returns as **synchronous JSON**.
 
+After an incorrect answer, the student can review Mia's explanation and continue. `answered` tracks question progress; `correct` tracks accuracy. Errors remain visible in the teacher evidence and do not force the same question to repeat.
+
 ## Evidence and retry rules
 
 - The API derives the question, expected answer, and outcome from the pinned publication. Browser progress is presentation state; server-recorded accepted answers control completion.

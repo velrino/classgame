@@ -38,6 +38,8 @@ The preview stream uses Server-Sent Events with `progress`, `done`, and `error` 
 
 Tutor turns use ordinary JSON responses. Keep student-facing teaching fields separate from teacher-only observations and evidence.
 
+Learning progress returns `answered` separately from `correct`. Persisted incorrect answers can satisfy the question-progress requirement; they do not increase correct-answer credit. The browser lets students continue after reviewing Mia's explanation. Client completion flags and counts still cannot replace recorded answer evidence.
+
 ## Limits and errors
 
 The server bounds request bodies and attachment downloads, applies authentication and operation-specific quotas, and returns structured errors. A class code is an enrollment mechanism, not teacher authorization. Health confirms dependencies, not a complete generation or learning journey.

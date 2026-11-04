@@ -22,7 +22,7 @@ const raw = readFileSync(0);
 if (raw.length > 2 * 1024 * 1024) throw new Error("Batch exceeds 2 MiB.");
 const batch = JSON.parse(raw);
 if (!Array.isArray(batch.cases) || !batch.cases.length || batch.cases.length > 100) throw new Error("Invalid batch.");
-const actions = new Set(["wrong-feedback-retry", "retry-correct", "repair-old-remediation", "unfinished-before-completion", "resume-correct", "resume-source-ids", "historical-complete", "duplicate-retry-pool", "nullable-checkpoint", "source-checkpoint"]);
+const actions = new Set(["wrong-feedback-continue", "wrong-then-next-correct", "repair-old-remediation", "unfinished-before-completion", "resume-correct", "resume-source-ids", "historical-complete", "duplicate-reviewed-pool", "nullable-checkpoint", "source-checkpoint"]);
 for (const item of batch.cases) {
   const input = item.recovery;
   if (item.kind !== "recovery" || !input || typeof input !== "object" || Array.isArray(input) ||
@@ -56,13 +56,13 @@ function wrongFeedback(feedback, duplicatePool = false) {
 const results = batch.cases.map((item) => {
   let observed;
   switch (item.recovery.action) {
-    case "wrong-feedback-retry":
-    case "duplicate-retry-pool": {
-      const { session, id, decision } = wrongFeedback(item.recovery.feedback ?? "helpful", item.recovery.action === "duplicate-retry-pool");
-      observed = { same_question: session.lesson?.question.id === id, pod: session.lesson?.pod, phase: session.lesson?.phase, correct: session.memory.progress.fractions.correct, stage_complete: session.memory.progress.fractions.status === "complete", clean_retry: session.lesson?.clean, queue_size: session.memory.progress.fractions.queue.length, feedback_support: session.memory.events.find((event) => event.type === "feedback")?.outcome === "support", decision: decision?.action };
+    case "wrong-feedback-continue":
+    case "duplicate-reviewed-pool": {
+      const { session, id, decision } = wrongFeedback(item.recovery.feedback ?? "helpful", item.recovery.action === "duplicate-reviewed-pool");
+      observed = { same_question: session.lesson?.question.id === id, pod: session.lesson?.pod, phase: session.lesson?.phase, correct: session.memory.progress.fractions.correct, stage_complete: session.memory.progress.fractions.status === "complete", clean_next: session.lesson?.clean, queue_size: session.memory.progress.fractions.queue.length, feedback_support: session.memory.events.find((event) => event.type === "feedback")?.outcome === "support", decision: decision?.action };
       break;
     }
-    case "retry-correct": {
+    case "wrong-then-next-correct": {
       let { session, id } = wrongFeedback("helpful");
       const same = session.lesson?.question.id === id;
       session = act(session, { type: "choose", index: session.lesson.question.options.findIndex((option) => option.correct) });

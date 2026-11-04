@@ -181,36 +181,12 @@ type FeedbackContext = {
 
 /** After the student rates an explanation: change route, change style, or carry on. */
 export function decideAfterFeedback(context: FeedbackContext): Decision {
-  const { mission, memory, pod, feedback, misconception, previousStyle } =
+  const { mission, memory, pod, feedback, previousStyle } =
     context;
 
-  const canRedirect =
-    misconception !== null &&
-    misconception.id !== GUESSED_ID &&
-    misconception.skill !== pod &&
-    !memory.redirected &&
-    memory.progress[misconception.skill].status === "complete";
-
-  if (canRedirect && misconception) {
-    const target = misconception.skill;
-
-    return {
-      action: "redirect",
-      target,
-      message: `That slip connects to ${stageLabel(mission, target).toLowerCase()}. Let's fix that first.`,
-      why: `Spotted: “${misconception.note}”. Reopening ${stageLabel(mission, target)} for a short review before we come back.`,
-    };
-  }
-
   const current = memory.progress[pod];
-  if (current.queue.length <= 1 && current.pool.length === 0 &&
-      current.correct < current.required) {
-    return {
-      action: "next",
-      target: null,
-      message: "Take another look, then try this question again.",
-      why: "The explanation helps you practice. A correct answer is still needed.",
-    };
+  if ((current.answered ?? current.correct) >= current.required) {
+    return decideAfterPodComplete(mission, memory, pod);
   }
 
   switch (feedback) {
@@ -242,27 +218,27 @@ export function decideAfterFeedback(context: FeedbackContext): Decision {
       return {
         action: "next",
         target: null,
-        message: "Good. One more like that.",
+        message: "Thanks for the feedback. Let’s continue.",
         why: "You marked it helpful → keeping this explanation style.",
       };
   }
 }
 
-/** After the last clean answer of a pod. */
+/** After the required questions have been answered or reviewed. */
 export function decideAfterPodComplete(
   mission: GameMission,
   memory: StudentMemory,
   pod: PodId,
 ): Decision {
   const progress = memory.progress[pod];
-  const cleanAnswers = `${progress.correct} clean answers`;
+  const summary = `${progress.answered ?? progress.correct} questions completed, ${progress.correct} correct`;
 
   if (memory.returnTo) {
     return {
       action: "complete",
       target: memory.returnTo,
-      message: `${stageLabel(mission, pod)} is solid again. Let's go back to where we stopped.`,
-      why: `Review passed with clean answers → ${stageLabel(mission, pod)} reinforced. Returning to ${stageLabel(mission, memory.returnTo)}.`,
+      message: `${stageLabel(mission, pod)} is reviewed. Let's go back to where we stopped.`,
+      why: `Review completed → ${stageLabel(mission, pod)} reinforced. Returning to ${stageLabel(mission, memory.returnTo)}.`,
     };
   }
 
@@ -274,8 +250,8 @@ export function decideAfterPodComplete(
     return {
       action: "mission-complete",
       target: null,
-      message: `Mission complete. You reached the learning goal: ${mission.learningGoal}`,
-      why: `${cleanAnswers} → ${stageLabel(mission, pod)} completed. Every mission step is done.`,
+      message: `Mission complete. You worked through every mission step.`,
+      why: `${summary} → ${stageLabel(mission, pod)} completed. Every mission step is done.`,
     };
   }
 
@@ -283,7 +259,7 @@ export function decideAfterPodComplete(
     action: "complete",
     target: next,
     message: `${stageLabel(mission, pod)}: done. Next up: ${stageLabel(mission, next)}.`,
-    why: `${cleanAnswers} → ${stageLabel(mission, pod)} completed. Unlocking ${stageLabel(mission, next)}: ${mission.stages[next].tagline}`,
+    why: `${summary} → ${stageLabel(mission, pod)} completed. Unlocking ${stageLabel(mission, next)}: ${mission.stages[next].tagline}`,
   };
 }
 

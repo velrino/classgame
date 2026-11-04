@@ -34,6 +34,8 @@ Teacher dashboard strengths, needs, and note counts come from the student's late
 
 Treat browser snapshots as untrusted input. Display, tutor grounding, and accepted-answer assessment use one pinned playable-question policy, including short and legacy publications. Derive authoritative progress from accepted events rather than trusting client completion flags.
 
+Progress separates `answered` from `correct`. After an incorrect answer, the browser shows the explanation and lets the student continue. The server counts persisted answers toward completion and rechecks correctness against the pinned publication; an incorrect response never earns correct-answer credit. Version 2 answer evidence keeps accepted incorrect responses as well as correct ones. Older attempts retain their recorded accuracy and upgrade from persisted tutor turns on their next use. Upgrade API and workers before the web client; older code still requires correct answers for completion.
+
 Changed class evidence, source invalidation, and rebuild-window changes atomically advance a durable class refresh intent. Summary writes compare its owner, lease, tenant, and source generation; timestamps/counts remain metadata. Recovery can retry class synthesis after the student attempt is finalized, without regrading it.
 
 The [retention policy](../operations/RETENTION-RECOVERY.md) keeps class cleanup separate from global user/auth ownership. Encrypted class backups preserve Firestore field types; local restore clears old processing leases and advances finalizer dispatch generation. No live deletion or restore runs automatically.

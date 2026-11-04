@@ -379,12 +379,12 @@ func buildStudentProgress(
 		completedQuestions := 0
 		for _, stage := range attempt.Snapshot.Progress {
 			required := max(stage.Required, 0)
-			correct := max(stage.Correct, 0)
-			if correct > required && required > 0 {
-				correct = required
+			answered := max(stage.Answered, stage.Correct, 0)
+			if answered > required && required > 0 {
+				answered = required
 			}
 			totalQuestions += required
-			completedQuestions += correct
+			completedQuestions += answered
 		}
 		if totalQuestions == 0 {
 			for _, event := range attempt.Snapshot.Events {

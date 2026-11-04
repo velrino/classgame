@@ -52,6 +52,7 @@ export interface StudentSessionCheckpointDto {
 }
 
 export interface StudentStageProgressDto {
+  answered?: number;
   stage_id: string;
   status: "locked" | "ready" | "review" | "complete" | string;
   queue: string[];
