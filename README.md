@@ -31,6 +31,12 @@ The diagram below shows the components and their connections. Continue with [arc
   <img src="assets/diagrams/architecture/architecture.png" alt="ClassGame current modular architecture" width="100%" />
 </p>
 
+The Excalidraw version below shows the same architecture as editable boxes and connections. Download the [editable source](assets/diagrams/architecture/excalidraw/architecture.excalidraw) and open it in [Excalidraw](https://excalidraw.com/).
+
+<p align="center">
+  <a href="assets/diagrams/architecture/excalidraw/architecture.png"><img src="assets/diagrams/architecture/excalidraw/architecture.png" alt="ClassGame architecture drawn in Excalidraw" width="100%" /></a>
+</p>
+
 ## Architecture decisions and trade-offs
 
 These choices fit the current code. The alternatives below are comparison options, not a record of benchmark wins or a plan to rewrite the stack. Each row compares at most three options, including the current choice.
