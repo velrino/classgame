@@ -4,7 +4,7 @@ The tutor uses the student's pinned published mission. The server resolves the q
 
 ## Retrieval and insufficient evidence
 
-Lexical retrieval excludes chunks with zero relevance score and retains the existing bounded ranking. Positive overlap is a selection rule, not a confidence estimate or proof that a claim is supported.
+Lexical retrieval splits words at Unicode punctuation, excludes chunks with zero relevance score and retains the existing bounded ranking. Positive overlap is a selection rule, not a confidence estimate or proof that a claim is supported.
 
 If normalization leaves no usable chunks, tutor generation returns the deterministic policy without calling the provider. Its explanation uses the server-grounded published question/expected answer where available; otherwise it offers a bounded next step. Teacher metadata records the evidence gap and no source IDs are invented.
 
@@ -41,3 +41,11 @@ These are proposed manual acceptance cases, not measured results or a new execut
 For a later evaluation workflow, version the prompt, model, document revision, retrieval configuration, and rubric. Review teaching quality and factual support separately from deterministic access/source-ID checks. Keep held-out cases and report privacy failures independently of overall quality scores.
 
 Run existing [Go checks and affected workflow checks](../development/VALIDATION.md) for implementation changes. Repository instructions require an explicit request before adding tests.
+
+The [retrieval diagnostic case](../ai/RAG-RETRIEVAL-DIAGNOSTICS.md) records a synthetic punctuation failure and its before/after evidence. It does not claim live model quality.
+
+## Token boundaries and language limits
+
+The tokenizer splits on punctuation and whitespace using Unicode letter, number and combining-mark classes. It is not a full Unicode word segmenter, does not segment unspaced CJK text, and does not normalize composed/decomposed accents. The existing minimum is three UTF-8 bytes, not three letters: pa is excluded while pá is retained. This compatibility policy is pinned by native Go cases. A rune-count threshold would change the accepted vocabulary and needs a separate language-policy decision; rune count is not grapheme count.
+
+CI runs both the default 66-case policy dataset and the seven retrieval-diagnostic v2 cases. Native Go cases cover punctuation, token boundaries, byte-length compatibility and the retrieval result bound. The real Gemini sample stays opt-in and never runs in CI.

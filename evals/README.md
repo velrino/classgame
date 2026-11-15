@@ -23,6 +23,7 @@ The default run needs no running HTTP server, database connection, credentials, 
 ```bash
 # From the repository root; Python 3.9+ and the API Go toolchain are required.
 python3 evals/run.py
+python3 evals/run.py --dataset evals/platform/retrieval-diagnostics/cases-v2.json
 python3 evals/run.py --list
 python3 evals/run.py --cases=tutor-private-context-minimized-v1,auth-wrong-provider-v1
 python3 evals/run.py --dataset evals/platform/offline-evidence/cases.json
