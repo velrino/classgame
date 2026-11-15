@@ -46,6 +46,7 @@ type evalCase struct {
 	Security     *securityInput     `json:"security,omitempty"`
 	ID           string             `json:"id"`
 	Kind         string             `json:"kind"`
+	Retrieval    *retrievalInput    `json:"retrieval,omitempty"`
 	Tutor        *tutorInput        `json:"tutor,omitempty"`
 	Auth         *authInput         `json:"auth,omitempty"`
 	Projection   *projectionInput   `json:"projection,omitempty"`
@@ -56,6 +57,11 @@ type evalCase struct {
 	Evidence     *evidenceInput     `json:"evidence,omitempty"`
 	TutorEvent   *tutorEventInput   `json:"tutor_event,omitempty"`
 	Finalization *finalizationInput `json:"finalization,omitempty"`
+}
+
+type retrievalInput struct {
+	Turn  students.SaveStudentTutorTurnInput `json:"turn"`
+	Limit int                                `json:"limit"`
 }
 
 type tutorInput struct {
@@ -209,7 +215,7 @@ func validateBatch(input batch) error {
 		}
 		seen[candidate.ID] = true
 		count := 0
-		for _, present := range []bool{candidate.Tutor != nil, candidate.Auth != nil, candidate.Projection != nil, candidate.Learning != nil, candidate.Scope != nil, candidate.Memory != nil, candidate.ObjectPath != nil, candidate.Evidence != nil, candidate.TutorEvent != nil, candidate.Finalization != nil, candidate.Security != nil} {
+		for _, present := range []bool{candidate.Retrieval != nil, candidate.Tutor != nil, candidate.Auth != nil, candidate.Projection != nil, candidate.Learning != nil, candidate.Scope != nil, candidate.Memory != nil, candidate.ObjectPath != nil, candidate.Evidence != nil, candidate.TutorEvent != nil, candidate.Finalization != nil, candidate.Security != nil} {
 			if present {
 				count++
 			}
@@ -218,6 +224,10 @@ func validateBatch(input batch) error {
 			return fmt.Errorf("case %s requires exactly one input kind", candidate.ID)
 		}
 		switch candidate.Kind {
+		case "retrieval":
+			if candidate.Retrieval == nil || candidate.Retrieval.Limit < 1 || candidate.Retrieval.Limit > 5 {
+				return fmt.Errorf("case %s requires retrieval and a limit from 1 to 5", candidate.ID)
+			}
 		case "tutor":
 			if candidate.Tutor == nil || (candidate.Tutor.ProviderMode != "respond" && candidate.Tutor.ProviderMode != "disabled" && candidate.Tutor.ProviderMode != "timeout") {
 				return fmt.Errorf("case %s has an invalid scripted provider mode", candidate.ID)
@@ -272,7 +282,7 @@ func validateBatch(input batch) error {
 func runCase(input batch, candidate evalCase) (map[string]any, error) {
 	observation := map[string]any{"id": candidate.ID, "kind": candidate.Kind, "scripted_provider_calls": 0}
 	switch candidate.Kind {
-	case "tutor":
+	case "tutor", "retrieval":
 		// Every case receives its own copy so normalization cannot contaminate later cases.
 		encoded, err := json.Marshal(input.TutorContext)
 		if err != nil {
@@ -281,6 +291,17 @@ func runCase(input batch, candidate evalCase) (map[string]any, error) {
 		var tutorContext generation.BuildTutorTurnInput
 		if err := json.Unmarshal(encoded, &tutorContext); err != nil {
 			return nil, err
+		}
+		if candidate.Kind == "retrieval" {
+			tutorContext.Turn.Prompt = candidate.Retrieval.Turn.Prompt
+			chunks := students.RetrieveMissionKnowledge(input.Mission, candidate.Retrieval.Turn, candidate.Retrieval.Limit)
+			ids := make([]string, 0, len(chunks))
+			for _, chunk := range chunks {
+				ids = append(ids, chunk.ID)
+			}
+			observation["retrieved_chunk_ids"] = ids
+			observation["retrieved_count"] = len(chunks)
+			candidate.Tutor = &tutorInput{ProviderMode: "disabled", RetrievedChunks: &chunks}
 		}
 		if candidate.Tutor.RetrievedChunks != nil {
 			tutorContext.RetrievedChunks = *candidate.Tutor.RetrievedChunks

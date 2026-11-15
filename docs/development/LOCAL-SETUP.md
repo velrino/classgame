@@ -4,7 +4,7 @@ Run the web application and API locally against your configured Firebase project
 
 ## Requirements
 
-- Go 1.27.3, Node.js 24 or a compatible newer release, npm, and Git. Keep the toolchain aligned with [go.mod](../../api/go.mod).
+- Go 1.27.4, Node.js 24 or a compatible newer release, npm, and Git. Keep the toolchain aligned with [go.mod](../../api/go.mod).
 - Firebase Authentication, Firestore, and Storage. Enable Anonymous and Email/Password authentication; configure Google sign-in if needed.
 - A reachable Redis instance. Firebase CLI is needed when managing the project's rules.
 

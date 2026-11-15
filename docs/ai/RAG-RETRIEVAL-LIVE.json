@@ -1,0 +1,98 @@
+{
+  "scope": "One synthetic paired observation, same configured Gemini model; no benchmark or generalized quality claim.",
+  "max_authorized_calls": 6,
+  "actual_provider_calls": 1,
+  "adapter": "Dedicated SDK adapter; one request per command, retries disabled; production retrieval and BuildTutorTurn are reused.",
+  "before": {
+    "case_id": "retrieval-curly-quotes-v2",
+    "dataset_sha256": "1e903af54217c5cb676252e059095eff387b513146dc66d8e9b5832095af2aa3",
+    "dirty": true,
+    "elapsed_milliseconds": 32,
+    "max_provider_calls": 1,
+    "model_requested": "gemini-3.6-flash",
+    "phase": "before",
+    "real_provider_calls": 0,
+    "retrieved_chunk_ids": [],
+    "revision": "041f69d4054531c8a2356bdbe5d0dcf68de1471c\n",
+    "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+    "sdk_attempts": 1,
+    "timestamp": "2026-11-15T20:38:44.399556Z",
+    "tutor": {
+      "message": "I could not find a relevant mission clue. Continue with the published question or ask your teacher for help.",
+      "why_prompt": "What made you choose that answer?",
+      "explanation_steps": [],
+      "explanation_style": "steps",
+      "difficulty_bias": 0,
+      "next_action": "continue",
+      "teacher_observation": "",
+      "retrieved_chunk_ids": [],
+      "evidence_event_ids": [],
+      "generated_by_ai": false,
+      "provider": "observed_turn_fallback",
+      "model": "",
+      "model_version": "",
+      "fallback_reason": "No relevant mission context was retrieved; using only the published question.",
+      "usage": {
+        "prompt_token_count": 0,
+        "candidates_token_count": 0,
+        "thoughts_token_count": 0,
+        "total_token_count": 0
+      }
+    }
+  },
+  "after": {
+    "case_id": "retrieval-curly-quotes-v2",
+    "dataset_sha256": "1e903af54217c5cb676252e059095eff387b513146dc66d8e9b5832095af2aa3",
+    "dirty": true,
+    "elapsed_milliseconds": 7878,
+    "max_provider_calls": 1,
+    "model_requested": "gemini-3.6-flash",
+    "phase": "after",
+    "real_provider_calls": 1,
+    "retrieved_chunk_ids": [
+      "condensation-source"
+    ],
+    "revision": "041f69d4054531c8a2356bdbe5d0dcf68de1471c\n",
+    "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+    "sdk_attempts": 1,
+    "timestamp": "2026-11-15T20:38:52.904564Z",
+    "tutor": {
+      "message": "Condensation is the process where water vapor, which is an invisible gas in the air, cools down and changes back into liquid water droplets.",
+      "why_prompt": "Where have you seen water droplets form on cool surfaces in everyday life?",
+      "explanation_steps": [
+        "1. Water exists in the air as a gas called water vapor.",
+        "2. When water vapor cools down, it loses heat.",
+        "3. The cooled vapor changes into small liquid droplets, forming things like clouds, fog, or drops on a cold glass."
+      ],
+      "explanation_style": "steps",
+      "difficulty_bias": 0,
+      "next_action": "ask_reasoning",
+      "teacher_observation": "",
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "evidence_event_ids": [],
+      "generated_by_ai": true,
+      "provider": "google_genai_vertex_ai",
+      "model": "gemini-3.6-flash",
+      "model_version": "gemini-3.6-flash",
+      "fallback_reason": "",
+      "usage": {
+        "prompt_token_count": 1093,
+        "candidates_token_count": 183,
+        "thoughts_token_count": 700,
+        "total_token_count": 1976
+      }
+    }
+  },
+  "manual_review": {
+    "core_phase_change_supported": true,
+    "fully_grounded": false,
+    "unsupported_by_supplied_sentence": [
+      "cooling and heat loss",
+      "clouds, fog and drops on a cold glass"
+    ],
+    "meaning": "Additional claims can be scientifically plausible yet absent from the supplied evidence. This sample does not pass a strict source-only rubric."
+  },
+  "baseline_note": "The baseline binary used the old tokenizer with the same live command and fixed dataset. Git revision alone identifies the branch, not this temporary tokenizer replacement."
+}

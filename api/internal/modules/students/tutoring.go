@@ -101,7 +101,7 @@ func (service *Service) SaveStudentTutorTurn(
 	}
 	safeSnapshot, _ := AssessLearningSnapshotWithEvidence(missionDocument, attempt.Snapshot, attempt.TutorTurns, attempt.AcceptedAnswers, attempt.Status)
 
-	retrievedChunks := retrieveMissionKnowledge(missionDocument, input, 5)
+	retrievedChunks := RetrieveMissionKnowledge(missionDocument, input, 5)
 	classContext := generation.TutorClassContext{}
 	if input.Type != "feedback" {
 		classContext, err = service.classTutorContext(ctx, user.Student.ClassID)

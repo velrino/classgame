@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
@@ -31,7 +32,8 @@ func (service *Service) classTutorContext(
 	}, nil
 }
 
-func retrieveMissionKnowledge(
+// RetrieveMissionKnowledge selects bounded lexical evidence from a published mission.
+func RetrieveMissionKnowledge(
 	document missions.MissionDocument,
 	turn SaveStudentTutorTurnInput,
 	limit int,
@@ -110,8 +112,9 @@ func retrieveMissionKnowledge(
 
 func retrievalTokens(value string) map[string]struct{} {
 	result := make(map[string]struct{})
-	for _, token := range strings.Fields(strings.ToLower(value)) {
-		token = strings.Trim(token, ".,:;!?()[]{}\"'")
+	for _, token := range strings.FieldsFunc(strings.ToLower(value), func(char rune) bool {
+		return !unicode.IsLetter(char) && !unicode.IsNumber(char) && !unicode.IsMark(char)
+	}) {
 		if len(token) < 3 {
 			continue
 		}
