@@ -1,0 +1,309 @@
+{
+  "timestamp": "20261125T105403781920Z",
+  "revision": "7aff97645de79b319088207b268ba833fdeabca6",
+  "dirty": true,
+  "dataset_version": "1.0.0",
+  "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+  "responses_sha256": "73f32bedb445168431db16f7669f0af695c8d7b90389c79b9b716604bc690c60",
+  "cases": [
+    "definition",
+    "misconception",
+    "source-limit",
+    "compare"
+  ],
+  "genkit": "v1.14.0",
+  "deepeval": "4.3.5",
+  "mode": "live",
+  "judge_model": "gemini-3.6-flash",
+  "judge_attempts_started": 16,
+  "real_provider_calls": 16,
+  "scripted_provider_calls": 0,
+  "tutor_calls": 0,
+  "rows": [
+    {
+      "case": "definition",
+      "model": "gemini-3.6-flash",
+      "previous_review": false,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": false,
+        "status": "FAIL",
+        "details": {
+          "input_tokens": 267,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 58,
+          "reason": "The source only states that condensation changes water vapor into liquid droplets. Claims about warm air, cooling down, water vapor being an invisible gas, and everyday examples like a cold glass are unsupported by the source text.",
+          "thinking_tokens": 0,
+          "total_tokens": 325
+        }
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": false,
+        "status": "FAIL",
+        "details": {
+          "input_tokens": 267,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 66,
+          "reason": "The source only mentions that condensation changes water vapor into liquid droplets, but unsupported details were added about warm water vapor, cooling down, turning 'back' into liquid, being an invisible gas, and everyday examples like a cold glass on a hot day.",
+          "thinking_tokens": 0,
+          "total_tokens": 333
+        }
+      }
+    },
+    {
+      "case": "misconception",
+      "model": "gemini-3.6-flash",
+      "previous_review": false,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 263,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 44,
+          "reason": "All factual claims in the tutor's message, explanation steps, and prompt are directly supported by the source text, which states that evaporation changes liquid water into water vapor.",
+          "thinking_tokens": 0,
+          "total_tokens": 307
+        }
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 263,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 44,
+          "reason": "All factual claims in the tutor's message, explanation steps, and prompt are directly supported by the source text, which states that evaporation changes liquid water into water vapor.",
+          "thinking_tokens": 0,
+          "total_tokens": 307
+        }
+      }
+    },
+    {
+      "case": "source-limit",
+      "model": "gemini-3.6-flash",
+      "previous_review": false,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 257,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 48,
+          "reason": "All factual claims made by the tutor are supported by the retrieved text, which states that condensation changes water vapor into liquid droplets and does not mention a specific temperature.",
+          "thinking_tokens": 0,
+          "total_tokens": 305
+        }
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 257,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 42,
+          "reason": "The tutor's response accurately reflects the source text by stating that condensation changes water vapor into liquid droplets and correctly notes that no specific starting temperature is provided in the source.",
+          "thinking_tokens": 0,
+          "total_tokens": 299
+        }
+      }
+    },
+    {
+      "case": "compare",
+      "model": "gemini-3.6-flash",
+      "previous_review": true,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 299,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 60,
+          "reason": "All factual statements about condensation and evaporation and their directions of change are fully supported by the provided sources. The extra context mentioning that gas/vapor and liquid are opposite processes in the water cycle directly follows from the source definitions.",
+          "thinking_tokens": 0,
+          "total_tokens": 359
+        }
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 299,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 41,
+          "reason": "Every factual claim about condensation and evaporation changing between liquid water and water vapor in opposite directions is fully supported by the provided sources.",
+          "thinking_tokens": 0,
+          "total_tokens": 340
+        }
+      }
+    },
+    {
+      "case": "definition",
+      "model": "gemini-4-argon",
+      "previous_review": false,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 235,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 21,
+          "reason": "All tutor claims and explanation steps are supported by the provided source.",
+          "thinking_tokens": 0,
+          "total_tokens": 256
+        }
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 235,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 27,
+          "reason": "All factual statements in the tutor's response are directly supported by the source text.",
+          "thinking_tokens": 0,
+          "total_tokens": 262
+        }
+      }
+    },
+    {
+      "case": "misconception",
+      "model": "gemini-4-argon",
+      "previous_review": true,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 248,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 41,
+          "reason": "The tutor's response accurately corrects the student using the provided source, which states that evaporation changes liquid water into water vapor.",
+          "thinking_tokens": 0,
+          "total_tokens": 289
+        }
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 248,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 38,
+          "reason": "Every factual claim in the tutor's response is supported by the provided source text, which states that evaporation changes liquid water into water vapor.",
+          "thinking_tokens": 0,
+          "total_tokens": 286
+        }
+      }
+    },
+    {
+      "case": "source-limit",
+      "model": "gemini-4-argon",
+      "previous_review": true,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": false,
+        "status": "FAIL",
+        "details": {
+          "input_tokens": 284,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 28,
+          "reason": "The claim that condensation is a physical process in the water cycle is not supported by the source text.",
+          "thinking_tokens": 0,
+          "total_tokens": 312
+        }
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": false,
+        "status": "FAIL",
+        "details": {
+          "input_tokens": 284,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 56,
+          "reason": "The claim in step 1 that the lesson notes explain condensation as a physical process in the water cycle is not supported by the provided text, which only states that condensation changes water vapor into liquid droplets.",
+          "thinking_tokens": 0,
+          "total_tokens": 340
+        }
+      }
+    },
+    {
+      "case": "compare",
+      "model": "gemini-4-argon",
+      "previous_review": true,
+      "ids": {
+        "genkit": true,
+        "deepeval": true
+      },
+      "deepeval": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 281,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 37,
+          "reason": "All tutor claims are directly supported by the sources, which state that condensation changes water vapor into liquid droplets and evaporation changes liquid water into water vapor.",
+          "thinking_tokens": 0,
+          "total_tokens": 318
+        }
+      },
+      "genkit": {
+        "id": "source_only",
+        "score": true,
+        "status": "PASS",
+        "details": {
+          "input_tokens": 281,
+          "model_version": "gemini-3.6-flash",
+          "output_tokens": 30,
+          "reason": "All tutor statements, including the definitions and directions of evaporation and condensation, are directly supported by the retrieved sources.",
+          "thinking_tokens": 0,
+          "total_tokens": 311
+        }
+      }
+    }
+  ],
+  "complete": true,
+  "wrong_id_control": {
+    "genkit": false,
+    "deepeval": false
+  }
+}

@@ -44,6 +44,7 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 | [platform/provider-budget/run.py](platform/provider-budget/run.py) | Opt-in local Redis budget checks with two Go processes and a real broker outage |
 | [platform/browser-store](platform/browser-store/README.md) | Real two-tab IndexedDB and reload checks on a separate local origin |
 | [platform/local-http](platform/local-http/README.md) | Opt-in real API/Auth/rules flows and browser outage controls on demo emulators |
+| [Genkit and DeepEval](platform/framework-comparison/README.md) | Score saved Mia responses offline or run the same Vertex judge in each framework |
 | [manual rubric](platform/ai-policy/MANUAL-RUBRIC.md) | Separate pedagogical review and held-out comparison plan |
 | `output/<unique-run>/` | Ignored, newly created run artifacts |
 
