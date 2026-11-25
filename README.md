@@ -28,6 +28,7 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
     - [Monthly database cost](#monthly-database-cost)
   - [Authentication](#authentication)
   - [LLM models](#llm-models)
+    - [Monthly LLM cost](#monthly-llm-cost)
   - [Evaluation tooling](#evaluation-tooling)
   - [Frontend framework](#frontend-framework)
 
@@ -271,6 +272,22 @@ Mia needs a model that can read worksheets, answer from selected lesson passages
 | Evidence from ClassGame | The saved comparison tested Gemini 3.6 Flash and Gemini 4 Argon. Both returned valid tutor responses on all four cases. | No ClassGame benchmark yet. | No ClassGame benchmark yet. |
 
 I chose Gemini Flash because one model supports both worksheet reading and structured tutor turns at a token rate that fits frequent calls. I serve it through Vertex AI. The four-case experiment also showed the trade-off within Gemini. Flash 3.6 had a lower median turn time than Argon (5.15 s vs. 7.20 s), while Argon kept every factual claim within the lesson on three cases versus one for Flash. To compare GPT or Claude, I would run the same lesson cases and measure answer quality, latency, and cost per accepted turn. [Mia comparison](evals/comparisons/2026-11-25-mia-water-cycle/README.md) · [Gemini 3.7 Flash](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-7-flash) · [Vertex pricing](https://cloud.google.com/model-garden/pricing) · [GPT-5.4 mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) · [OpenAI PDF inputs](https://developers.openai.com/api/docs/guides/file-inputs) · [Claude Sonnet 5.5](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Claude PDF inputs](https://platform.claude.com/docs/en/build-with-claude/pdf-support) · [Claude structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
+
+#### Monthly LLM cost
+
+I use the same assumptions as the [project cost estimate](#monthly-costs). Each monthly active user makes **10 paid model calls** across tutoring and mission generation. Each call uses **1,500 uncached input tokens** and **900 billed output tokens**, including reasoning tokens where billed as output.
+
+| Volume or estimated cost (USD/month) | 1 user | 100 users | 1,000 users | 10,000 users | 100,000 users |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Model calls | 10 | 1,000 | 10,000 | 100,000 | 1,000,000 |
+| Input tokens | 15,000 | 1.5M | 15M | 150M | 1.5B |
+| Output tokens | 9,000 | 0.9M | 9M | 90M | 900M |
+| **Gemini 3.7 Flash on Vertex AI**, through December 31, 2026 | **$0.05** | **$4.50** | **$45.00** | **$450.00** | **$4,500.00** |
+| Gemini 3.7 Flash on Vertex AI, from January 1, 2027 | $0.09 | $9.00 | $90.00 | $900.00 | $9,000.00 |
+| **GPT-5.4 mini** | **$0.05** | **$5.18** | **$51.75** | **$517.50** | **$5,175.00** |
+| **Claude Sonnet 5.5** | **$0.12** | **$12.00** | **$120.00** | **$1,200.00** | **$12,000.00** |
+
+At 1,000 users, the Gemini estimate through December 31 is 15 million input tokens at $0.75 per million plus 9 million output tokens at $3.75 per million, for **$45/month**. At the published January 2027 rates, GPT-5.4 mini costs less than Gemini at the same token volume. Actual token counts can differ by model and response. These estimates cover standard model calls. Caching, batch discounts, tool fees, and taxes are outside the estimate. [Vertex pricing](https://cloud.google.com/model-garden/pricing) · [GPT-5.4 mini pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini) · [Claude Sonnet 5.5 pricing](https://platform.claude.com/docs/en/models/sonnet-5-5/overview)
 
 ### Evaluation tooling
 
