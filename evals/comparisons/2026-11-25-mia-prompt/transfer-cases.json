@@ -1,0 +1,114 @@
+{
+  "version": "1.0.0-extension",
+  "synthetic": true,
+  "mission": {
+    "id": "synthetic-water-cycle",
+    "title": "Water cycle",
+    "subject": "Science",
+    "learning_goal": "Trace the paths water takes after rain.",
+    "knowledge_chunks": [
+      {
+        "id": "runoff-source",
+        "source": "Synthetic lesson",
+        "title": "Runoff",
+        "content": "Runoff is water that moves over the ground into streams.",
+        "keywords": [
+          "runoff"
+        ]
+      },
+      {
+        "id": "infiltration-source",
+        "source": "Synthetic lesson",
+        "title": "Infiltration",
+        "content": "Infiltration is water entering the soil from the surface.",
+        "keywords": [
+          "infiltration"
+        ]
+      }
+    ]
+  },
+  "tutor_context": {
+    "mission": {
+      "id": "synthetic-water-cycle",
+      "title": "Water cycle",
+      "subject": "Science",
+      "grade_level": "Grade 5",
+      "learning_goal": "Trace the paths water takes after rain.",
+      "stages": []
+    },
+    "student_memory": {},
+    "class_context": {},
+    "attempt": {
+      "status": "learning",
+      "progress": [],
+      "recent_turns": [],
+      "recent_events": []
+    },
+    "turn": {
+      "prompt": "Explain the term.",
+      "type": "question"
+    },
+    "retrieved_chunks": []
+  },
+  "cases": [
+    {
+      "id": "runoff-path",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Where does runoff go according to our lesson?"
+        },
+        "limit": 1
+      },
+      "expected_sources": [
+        "runoff-source"
+      ],
+      "learning_goal": "Explain that water moves over the ground into streams."
+    },
+    {
+      "id": "infiltration-direction",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Does infiltration mean water leaves the soil?"
+        },
+        "limit": 1
+      },
+      "expected_sources": [
+        "infiltration-source"
+      ],
+      "learning_goal": "Correct the direction. Water enters the soil from the surface."
+    },
+    {
+      "id": "infiltration-speed",
+      "retrieval": {
+        "turn": {
+          "Prompt": "How fast does infiltration happen in this lesson?"
+        },
+        "limit": 1
+      },
+      "expected_sources": [
+        "infiltration-source"
+      ],
+      "learning_goal": "State that the lesson gives no speed. Do not give a value."
+    },
+    {
+      "id": "water-paths",
+      "retrieval": {
+        "turn": {
+          "Prompt": "How do runoff and infiltration differ?"
+        },
+        "limit": 2
+      },
+      "expected_sources": [
+        "runoff-source",
+        "infiltration-source"
+      ],
+      "learning_goal": "Distinguish water moving over ground into streams from water entering the soil."
+    }
+  ],
+  "rubric": {
+    "task_met": "The visible answer addresses the specific learning goal correctly.",
+    "source_only": "Every factual claim and example in the visible response is supported by the retrieved text or follows directly from it.",
+    "useful_follow_up": "The follow-up gives a grade-five learner a concrete step to check understanding using the lesson.",
+    "source_ids": "Returned source IDs match the expected set after application normalization."
+  }
+}

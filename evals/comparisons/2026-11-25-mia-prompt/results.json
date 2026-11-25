@@ -1,0 +1,2156 @@
+{
+  "mode": "live_vertex_global",
+  "real_tutor_calls": 32,
+  "real_judge_calls": 8,
+  "scripted_calls": 0,
+  "fixtures": [
+    {
+      "version": "1.0.0",
+      "sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "case_ids": [
+        "definition",
+        "misconception",
+        "source-limit",
+        "compare"
+      ]
+    },
+    {
+      "version": "1.0.0-extension",
+      "sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "case_ids": [
+        "runoff-path",
+        "infiltration-direction",
+        "infiltration-speed",
+        "water-paths"
+      ]
+    }
+  ],
+  "reviewer": "Codex used shuffled replies without prompt labels or token counts. The failed variant was visible during recovery. No teacher labels.",
+  "rates_usd_per_million": {
+    "input": 0.75,
+    "output_and_thinking": 3.75
+  },
+  "calibration": {
+    "previous_agreement": 4,
+    "revised_agreement": 4,
+    "usage": {
+      "input_tokens": 2478,
+      "output_tokens": 330,
+      "thinking_tokens": 0,
+      "total_tokens": 2808
+    },
+    "estimated_usd": 0.003096,
+    "rows": [
+      {
+        "case": "definition",
+        "tutor_model": "gemini-3.6-flash",
+        "reference": false,
+        "judge": {
+          "id": "source_only",
+          "score": false,
+          "status": "FAIL",
+          "details": {
+            "input_tokens": 310,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 59,
+            "reason": "The source mentions that condensation changes water vapor into liquid droplets, but it does not support the added details about 'warm' water vapor 'cooling down', existing as an 'invisible gas', or forming on a 'cold glass on a hot day'.",
+            "thinking_tokens": 0,
+            "total_tokens": 369
+          }
+        },
+        "previous_genkit": false,
+        "reference_review_note": "The direction is correct. Warm air, cooling, invisibility and the cold-glass example go beyond the one-sentence source. The follow-up asks for an everyday observation."
+      },
+      {
+        "case": "misconception",
+        "tutor_model": "gemini-3.6-flash",
+        "reference": false,
+        "judge": {
+          "id": "source_only",
+          "score": true,
+          "status": "PASS",
+          "details": {
+            "input_tokens": 306,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 23,
+            "reason": "All claims in the message and explanation steps are supported by the provided sources.",
+            "thinking_tokens": 0,
+            "total_tokens": 329
+          }
+        },
+        "previous_genkit": true,
+        "reference_review_note": "Corrects the reversed direction, then introduces a container or puddle, sunlight, heat and invisibility. The follow-up requires an outside observation."
+      },
+      {
+        "case": "source-limit",
+        "tutor_model": "gemini-3.6-flash",
+        "reference": false,
+        "judge": {
+          "id": "source_only",
+          "score": true,
+          "status": "PASS",
+          "details": {
+            "input_tokens": 300,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 31,
+            "reason": "All claims in the message, explanation steps, and follow-up question are fully supported by the provided source text.",
+            "thinking_tokens": 0,
+            "total_tokens": 331
+          }
+        },
+        "previous_genkit": true,
+        "reference_review_note": "Correctly acknowledges the missing temperature. The follow-up assumes cooling, which is absent from the source."
+      },
+      {
+        "case": "compare",
+        "tutor_model": "gemini-3.6-flash",
+        "reference": true,
+        "judge": {
+          "id": "source_only",
+          "score": true,
+          "status": "PASS",
+          "details": {
+            "input_tokens": 342,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 60,
+            "reason": "All claims in the message, explanation steps, and prompt premise are fully supported by the provided sources. The response accurately reflects that evaporation changes liquid water into water vapor and condensation changes water vapor into liquid droplets, which are opposite processes in the water cycle.",
+            "thinking_tokens": 0,
+            "total_tokens": 402
+          }
+        },
+        "previous_genkit": true,
+        "reference_review_note": "Explains both directions and their relationship. Its request for a personal example relies on experience beyond the lesson, without asserting a new fact."
+      },
+      {
+        "case": "definition",
+        "tutor_model": "gemini-4-argon",
+        "reference": false,
+        "judge": {
+          "id": "source_only",
+          "score": true,
+          "status": "PASS",
+          "details": {
+            "input_tokens": 278,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 38,
+            "reason": "All statements in the response message, explanation steps, and prompt are fully supported by the provided sources and context.",
+            "thinking_tokens": 0,
+            "total_tokens": 316
+          }
+        },
+        "previous_genkit": true,
+        "reference_review_note": "The direction is correct. The source does not specify that the vapor is in the air. The follow-up can be answered directly from the lesson."
+      },
+      {
+        "case": "misconception",
+        "tutor_model": "gemini-4-argon",
+        "reference": true,
+        "judge": {
+          "id": "source_only",
+          "score": true,
+          "status": "PASS",
+          "details": {
+            "input_tokens": 291,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 32,
+            "reason": "All details in the response are directly supported by the source text, which states that evaporation changes liquid water into water vapor.",
+            "thinking_tokens": 0,
+            "total_tokens": 323
+          }
+        },
+        "previous_genkit": true,
+        "reference_review_note": "Acknowledges what the learner got right, corrects the direction and asks the learner to explain it back."
+      },
+      {
+        "case": "source-limit",
+        "tutor_model": "gemini-4-argon",
+        "reference": true,
+        "judge": {
+          "id": "source_only",
+          "score": false,
+          "status": "FAIL",
+          "details": {
+            "input_tokens": 327,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 48,
+            "reason": "The claim that condensation is a physical process in the water cycle is not supported by the provided sources, which only state that condensation changes water vapor into liquid droplets.",
+            "thinking_tokens": 0,
+            "total_tokens": 375
+          }
+        },
+        "previous_genkit": false,
+        "reference_review_note": "Acknowledges that the temperature is absent and checks the phase change the lesson does explain. The mission explicitly covers physical processes."
+      },
+      {
+        "case": "compare",
+        "tutor_model": "gemini-4-argon",
+        "reference": true,
+        "judge": {
+          "id": "source_only",
+          "score": true,
+          "status": "PASS",
+          "details": {
+            "input_tokens": 324,
+            "model_version": "gemini-3.6-flash",
+            "output_tokens": 39,
+            "reason": "All statements in the response message, explanation steps, and follow-up question are fully supported by the provided sources.",
+            "thinking_tokens": 0,
+            "total_tokens": 363
+          }
+        },
+        "previous_genkit": true,
+        "reference_review_note": "Explains both directions and asks the learner to identify the starting state for each."
+      }
+    ],
+    "reference_provenance": "Earlier Codex review. No human labels. The same eight labels were used for calibration and for the judge agreement comparison."
+  },
+  "summary": {
+    "development": {
+      "current": {
+        "n": 12,
+        "accepted": 12,
+        "task_met": 12,
+        "source_only": 4,
+        "useful_follow_up": 0,
+        "source_ids": 12,
+        "prompt_token_count": 13419,
+        "candidates_token_count": 1772,
+        "thoughts_token_count": 7897,
+        "total_token_count": 23088,
+        "median_elapsed_ms": 5149.0,
+        "estimated_usd": 0.046323,
+        "generated_and_source_supported": 4
+      },
+      "compact": {
+        "n": 12,
+        "accepted": 12,
+        "task_met": 12,
+        "source_only": 12,
+        "useful_follow_up": 9,
+        "source_ids": 12,
+        "prompt_token_count": 11607,
+        "candidates_token_count": 1684,
+        "thoughts_token_count": 10801,
+        "total_token_count": 24092,
+        "median_elapsed_ms": 6055.5,
+        "estimated_usd": 0.055524,
+        "generated_and_source_supported": 12
+      }
+    },
+    "transfer": {
+      "current": {
+        "n": 4,
+        "accepted": 4,
+        "task_met": 4,
+        "source_only": 2,
+        "useful_follow_up": 0,
+        "source_ids": 4,
+        "prompt_token_count": 4484,
+        "candidates_token_count": 625,
+        "thoughts_token_count": 2231,
+        "total_token_count": 7340,
+        "median_elapsed_ms": 4462.0,
+        "estimated_usd": 0.014073,
+        "generated_and_source_supported": 2
+      },
+      "compact": {
+        "n": 4,
+        "accepted": 3,
+        "task_met": 3,
+        "source_only": 4,
+        "useful_follow_up": 2,
+        "source_ids": 4,
+        "prompt_token_count": 2926,
+        "candidates_token_count": 421,
+        "thoughts_token_count": 2546,
+        "total_token_count": 5893,
+        "median_elapsed_ms": 6042.0,
+        "estimated_usd": 0.01332075,
+        "generated_and_source_supported": 3
+      }
+    },
+    "overall": {
+      "current": {
+        "n": 16,
+        "accepted": 16,
+        "task_met": 16,
+        "source_only": 6,
+        "useful_follow_up": 0,
+        "source_ids": 16,
+        "prompt_token_count": 17903,
+        "candidates_token_count": 2397,
+        "thoughts_token_count": 10128,
+        "total_token_count": 30428,
+        "median_elapsed_ms": 4943.5,
+        "estimated_usd": 0.060396,
+        "generated_and_source_supported": 6
+      },
+      "compact": {
+        "n": 16,
+        "accepted": 15,
+        "task_met": 15,
+        "source_only": 16,
+        "useful_follow_up": 11,
+        "source_ids": 16,
+        "prompt_token_count": 14533,
+        "candidates_token_count": 2105,
+        "thoughts_token_count": 13347,
+        "total_token_count": 29985,
+        "median_elapsed_ms": 6042.0,
+        "estimated_usd": 0.06884475,
+        "generated_and_source_supported": 15
+      }
+    },
+    "matched_accepted": {
+      "current": {
+        "n": 15,
+        "accepted": 15,
+        "task_met": 15,
+        "source_only": 5,
+        "useful_follow_up": 0,
+        "source_ids": 15,
+        "prompt_token_count": 16798,
+        "candidates_token_count": 2198,
+        "thoughts_token_count": 9566,
+        "total_token_count": 28562,
+        "median_elapsed_ms": 5094,
+        "estimated_usd": 0.0567135,
+        "generated_and_source_supported": 5
+      },
+      "compact": {
+        "n": 15,
+        "accepted": 15,
+        "task_met": 15,
+        "source_only": 15,
+        "useful_follow_up": 11,
+        "source_ids": 15,
+        "prompt_token_count": 14533,
+        "candidates_token_count": 2105,
+        "thoughts_token_count": 13347,
+        "total_token_count": 29985,
+        "median_elapsed_ms": 5886,
+        "estimated_usd": 0.06884475,
+        "generated_and_source_supported": 15
+      }
+    }
+  },
+  "total_estimated_usd": 0.13233674999999998,
+  "runs": [
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "6cd56b",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Gets the direction right but adds cooling, energy loss, clouds and dew. The question requires outside experience.",
+        "source_ids": true
+      },
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5334,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:01:30.60137Z",
+      "tutor": {
+        "message": "Condensation happens when water vapor in the air cools down and turns back into liquid water droplets.",
+        "why_prompt": "Can you think of a place where you have seen water droplets form on a cold surface?",
+        "explanation_steps": [
+          "Water vapor exists in the air as an invisible gas.",
+          "When water vapor cools down, it loses energy.",
+          "This cooling causes the gas to change back into liquid water droplets, like clouds or dew."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1095,
+          "candidates_token_count": 158,
+          "thoughts_token_count": 473,
+          "total_token_count": 1726
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "cf6840",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "The definition and the restatement question both follow the passage.",
+        "source_ids": true
+      },
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 6887,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:01:37.507452Z",
+      "tutor": {
+        "message": "Great question! Condensation changes water vapor into liquid droplets. What does condensation change water vapor into?",
+        "why_prompt": "What does water vapor change into during condensation?",
+        "explanation_steps": [
+          "Condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 944,
+          "candidates_token_count": 111,
+          "thoughts_token_count": 1074,
+          "total_token_count": 2129
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "08ffdc",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Corrects the direction and asks about the change described in the passage.",
+        "source_ids": true
+      },
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 6843,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:01:44.365225Z",
+      "tutor": {
+        "message": "You are working hard! Actually, evaporation changes liquid water into water vapor. What state of matter does water start in during evaporation?",
+        "why_prompt": "How does liquid water change during evaporation?",
+        "explanation_steps": [
+          "Evaporation starts with liquid water.",
+          "The liquid water changes into water vapor."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 954,
+          "candidates_token_count": 132,
+          "thoughts_token_count": 992,
+          "total_token_count": 2078
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "d52372",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Corrects the misconception but adds heat energy. The follow-up needs personal experience.",
+        "source_ids": true
+      },
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 4793,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:01:49.180795Z",
+      "tutor": {
+        "message": "Not quite, but you are super close! Evaporation actually goes in the opposite direction: it changes liquid water into water vapor.",
+        "why_prompt": "Can you think of a time you saw liquid water dry up in the sun? What happened to it?",
+        "explanation_steps": [
+          "Liquid water absorbs heat energy.",
+          "The heat turns the liquid water into a gas called water vapor.",
+          "This process of liquid changing into gas is called evaporation."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1105,
+          "candidates_token_count": 156,
+          "thoughts_token_count": 659,
+          "total_token_count": 1920
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "75c6c4",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Acknowledges the missing temperature but the follow-up assumes cooling.",
+        "source_ids": true
+      },
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5094,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:01:54.289762Z",
+      "tutor": {
+        "message": "In our lesson, a specific temperature isn't mentioned! The lesson defines condensation as the process where water vapor changes into liquid droplets.",
+        "why_prompt": "What do you think happens to water vapor when air cools down?",
+        "explanation_steps": [
+          "Condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1103,
+          "candidates_token_count": 127,
+          "thoughts_token_count": 577,
+          "total_token_count": 1807
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "aa9b1f",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Acknowledges the missing temperature. The separate follow-up asks why this knowledge is helpful, which the passage does not explain.",
+        "source_ids": true
+      },
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5185,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:01:59.492274Z",
+      "tutor": {
+        "message": "Great question! The lesson doesn't state an exact temperature for when condensation starts. It tells us that condensation changes water vapor into liquid droplets. What form does water vapor change into during condensation?",
+        "why_prompt": "Why do you think it is helpful to know what water vapor turns into?",
+        "explanation_steps": [
+          "Check the lesson for information about temperature.",
+          "Notice that no exact temperature is mentioned in the lesson text.",
+          "See what the lesson does tell us: condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 952,
+          "candidates_token_count": 169,
+          "thoughts_token_count": 619,
+          "total_token_count": 1740
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "d8c04a",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Both directions are correct. The message includes a usable question, but the designated follow-up is a statement.",
+        "source_ids": true
+      },
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 7873,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:02:07.384995Z",
+      "tutor": {
+        "message": "Great question! Evaporation changes liquid water into water vapor. Condensation changes water vapor into liquid droplets. Which process turns liquid water into water vapor?",
+        "why_prompt": "Knowing the direction of each change helps us understand physical processes in nature.",
+        "explanation_steps": [
+          "Evaporation changes liquid water into water vapor.",
+          "Condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source",
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1019,
+          "candidates_token_count": 138,
+          "thoughts_token_count": 1106,
+          "total_token_count": 2263
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 1,
+      "blind_id": "3a6ed2",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Both directions are supported. The follow-up asks for a personal observation.",
+        "source_ids": true
+      },
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 6333,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:02:13.735784Z",
+      "tutor": {
+        "message": "Great question! Evaporation and condensation move in opposite directions. Evaporation changes liquid water into water vapor, while condensation changes water vapor back into liquid water.",
+        "why_prompt": "Can you share a real-world example of where you have seen either evaporation or condensation?",
+        "explanation_steps": [
+          "Evaporation: Liquid water turns into water vapor (gas).",
+          "Condensation: Water vapor (gas) turns into liquid water droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source",
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1170,
+          "candidates_token_count": 153,
+          "thoughts_token_count": 928,
+          "total_token_count": 2251
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "c1660d",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "The passage supports both the definition and the requested restatement.",
+        "source_ids": true
+      },
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5511,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:02:19.264951Z",
+      "tutor": {
+        "message": "Great question! Condensation changes water vapor into liquid droplets. What does water vapor turn into during condensation?",
+        "why_prompt": "What does water vapor turn into during condensation?",
+        "explanation_steps": [
+          "Condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 944,
+          "candidates_token_count": 111,
+          "thoughts_token_count": 680,
+          "total_token_count": 1735
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "83cd55",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Adds heat loss, a cold cup and vapor in the air. The follow-up asks for outside experience.",
+        "source_ids": true
+      },
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5204,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:02:24.487878Z",
+      "tutor": {
+        "message": "Condensation is what happens when water vapor in the air cools down and turns back into liquid water droplets. You might see this on the outside of a cold drink cup!",
+        "why_prompt": "Where else have you noticed tiny water droplets forming on a cool surface?",
+        "explanation_steps": [
+          "Water exists in the air as an invisible gas called water vapor.",
+          "When the water vapor cools down, it loses heat energy.",
+          "The cooled vapor changes state back into liquid water droplets, which is condensation."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1095,
+          "candidates_token_count": 158,
+          "thoughts_token_count": 552,
+          "total_token_count": 1805
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "e4956b",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Adds heat and movement into air. The follow-up depends on puddles and weather.",
+        "source_ids": true
+      },
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 4783,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:02:29.291437Z",
+      "tutor": {
+        "message": "Not quite! Evaporation actually goes in the opposite direction: liquid water turns into water vapor.",
+        "why_prompt": "What happens to puddles on a sunny day after it rains?",
+        "explanation_steps": [
+          "1. Evaporation starts with liquid water.",
+          "2. Heat causes the liquid water to warm up.",
+          "3. The liquid water turns into water vapor and goes into the air."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1105,
+          "candidates_token_count": 147,
+          "thoughts_token_count": 510,
+          "total_token_count": 1762
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "47e439",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Correct direction and a follow-up about the same change of state.",
+        "source_ids": true
+      },
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5342,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:02:34.647114Z",
+      "tutor": {
+        "message": "You are working hard! Evaporation actually changes liquid water into water vapor. What does liquid water change into during evaporation?",
+        "why_prompt": "How does liquid water change state during evaporation?",
+        "explanation_steps": [
+          "Evaporation starts with liquid water.",
+          "It changes liquid water into water vapor."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 954,
+          "candidates_token_count": 127,
+          "thoughts_token_count": 830,
+          "total_token_count": 1911
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "a0918d",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Answers the temperature question. The separate follow-up describes an assessment rather than asking the learner a question.",
+        "source_ids": true
+      },
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 6271,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:02:40.934862Z",
+      "tutor": {
+        "message": "Great question! That exact temperature detail is missing from our lesson. Our text only tells us that condensation changes water vapor into liquid droplets. According to our text, what does water vapor turn into during condensation?",
+        "why_prompt": "Checking if the learner can identify the physical change described in the provided text.",
+        "explanation_steps": [
+          "Check the provided lesson for temperature information.",
+          "See that no exact temperature is mentioned in the text.",
+          "Note that the text describes condensation as changing water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 952,
+          "candidates_token_count": 162,
+          "thoughts_token_count": 865,
+          "total_token_count": 1979
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "95da20",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Correctly acknowledges the missing temperature and asks for a personal example.",
+        "source_ids": true
+      },
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 4750,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:02:45.727178Z",
+      "tutor": {
+        "message": "Great question! According to our lesson, condensation is when water vapor changes into liquid droplets. The lesson doesn't state an exact temperature for when condensation starts.",
+        "why_prompt": "Can you share an example of condensation you have seen around you?",
+        "explanation_steps": [
+          "Condensation is the process that changes water vapor into liquid droplets.",
+          "Our lesson defines what condensation is, but it does not specify an exact temperature."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1103,
+          "candidates_token_count": 151,
+          "thoughts_token_count": 573,
+          "total_token_count": 1827
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "8efc49",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Both directions follow the text. Providing a daily-life example requires outside information.",
+        "source_ids": true
+      },
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5728,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:02:51.477221Z",
+      "tutor": {
+        "message": "Evaporation and condensation move water between liquid and gas in opposite directions!",
+        "why_prompt": "Can you name an example of evaporation or condensation that you see in daily life?",
+        "explanation_steps": [
+          "Evaporation goes from liquid water to gas (water vapor).",
+          "Condensation goes from gas (water vapor) to liquid water droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source",
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1170,
+          "candidates_token_count": 134,
+          "thoughts_token_count": 898,
+          "total_token_count": 2202
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 2,
+      "blind_id": "a84ad4",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Correct directions with a lesson-based question about condensation.",
+        "source_ids": true
+      },
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 6403,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:02:57.899623Z",
+      "tutor": {
+        "message": "Great question! Evaporation changes liquid water into water vapor. Condensation changes water vapor into liquid droplets. Which process changes liquid water into water vapor?",
+        "why_prompt": "How do you know which direction the change goes during condensation?",
+        "explanation_steps": [
+          "Evaporation changes liquid water into water vapor.",
+          "Condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source",
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1019,
+          "candidates_token_count": 140,
+          "thoughts_token_count": 1047,
+          "total_token_count": 2206
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "7fff97",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Explains the direction but introduces weather, warming, rising vapor and a cold glass. The follow-up needs personal experience.",
+        "source_ids": true
+      },
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 4461,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:03:02.378018Z",
+      "tutor": {
+        "message": "Condensation happens when warm water vapor cools down and turns back into liquid water droplets. You can see this when cloud droplets form or when water drops collect on a cold glass!",
+        "why_prompt": "Where is one place you have seen water drops form like this?",
+        "explanation_steps": [
+          "Water warms up and turns into gas called water vapor.",
+          "The warm water vapor cools down as it rises or touches a cold surface.",
+          "Cooling turns the vapor back into liquid water droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1095,
+          "candidates_token_count": 153,
+          "thoughts_token_count": 453,
+          "total_token_count": 1701
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "a17751",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Restates the phase change and asks which state results.",
+        "source_ids": true
+      },
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5263,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:03:07.655289Z",
+      "tutor": {
+        "message": "Great question! Condensation changes water vapor into liquid droplets. What does water vapor turn into during condensation?",
+        "why_prompt": "What does water vapor change into during condensation?",
+        "explanation_steps": [
+          "Water vapor starts as a gas.",
+          "Condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 944,
+          "candidates_token_count": 120,
+          "thoughts_token_count": 764,
+          "total_token_count": 1828
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "8eeab4",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Corrects the direction. The final state is directly in the passage.",
+        "source_ids": true
+      },
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 6296,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:03:13.974548Z",
+      "tutor": {
+        "message": "You are working hard! According to our lesson, evaporation changes liquid water into water vapor. What does liquid water turn into during evaporation?",
+        "why_prompt": "What state does water turn into during evaporation?",
+        "explanation_steps": [
+          "Evaporation begins with liquid water.",
+          "Evaporation changes liquid water into water vapor."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "retry",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 954,
+          "candidates_token_count": 179,
+          "thoughts_token_count": 1118,
+          "total_token_count": 2251
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "731555",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "The direction is correct. Heating appears in both the steps and the follow-up but is absent from the lesson.",
+        "source_ids": true
+      },
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5706,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:03:19.703723Z",
+      "tutor": {
+        "message": "Not quite, but you are very close! Evaporation actually changes liquid water into water vapor.",
+        "why_prompt": "What do you think happens to liquid water when it gets warm?",
+        "explanation_steps": [
+          "Liquid water absorbs heat energy.",
+          "The liquid water turns into a gas called water vapor."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1105,
+          "candidates_token_count": 121,
+          "thoughts_token_count": 920,
+          "total_token_count": 2146
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "6469a0",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Correctly flags the missing temperature. The cooling premise in the follow-up is absent from the passage.",
+        "source_ids": true
+      },
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 4363,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:03:24.088019Z",
+      "tutor": {
+        "message": "Our lesson text doesn't give an exact temperature for condensation. It explains that condensation is the process where water vapor turns into liquid droplets.",
+        "why_prompt": "What do you think happens to water vapor when air cools down?",
+        "explanation_steps": [
+          "Our lesson material defines condensation.",
+          "Condensation is the process that changes water vapor into liquid droplets.",
+          "An exact starting temperature is not specified in this lesson."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1103,
+          "candidates_token_count": 151,
+          "thoughts_token_count": 485,
+          "total_token_count": 1739
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "a713c4",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Identifies the missing temperature and asks the learner to recall the supported change.",
+        "source_ids": true
+      },
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5401,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:03:29.501726Z",
+      "tutor": {
+        "message": "Great question! The lesson does not state an exact temperature for condensation. It only tells us that condensation changes water vapor into liquid droplets. What does water vapor turn into during condensation?",
+        "why_prompt": "What does water vapor change into during condensation according to our text?",
+        "explanation_steps": [
+          "The lesson defines condensation as changing water vapor into liquid droplets.",
+          "An exact temperature is not mentioned in the reading."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 952,
+          "candidates_token_count": 148,
+          "thoughts_token_count": 894,
+          "total_token_count": 1994
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "87edf1",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "The two phase changes and the follow-up can be checked from the passages.",
+        "source_ids": true
+      },
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5840,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:03:35.354532Z",
+      "tutor": {
+        "message": "You are asking a great science question! Evaporation changes liquid water into water vapor. Condensation goes in the opposite direction, changing water vapor into liquid droplets.",
+        "why_prompt": "Which process changes water vapor into liquid droplets?",
+        "explanation_steps": [
+          "Evaporation changes liquid water into water vapor.",
+          "Condensation changes water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source",
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1019,
+          "candidates_token_count": 147,
+          "thoughts_token_count": 812,
+          "total_token_count": 1978
+        }
+      }
+    },
+    {
+      "split": "development",
+      "repeat": 3,
+      "blind_id": "767d48",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Both directions follow the lesson. The follow-up requires an observation from home or outside.",
+        "source_ids": true
+      },
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 7183,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:03:42.560245Z",
+      "tutor": {
+        "message": "Evaporation and condensation move in opposite directions! Evaporation turns liquid water into gas (water vapor). Condensation turns gas (water vapor) into liquid water droplets.",
+        "why_prompt": "Can you share an example of where you see evaporation or condensation happen at home or outside?",
+        "explanation_steps": [
+          "Evaporation: Liquid water -> Water vapor (gas)",
+          "Condensation: Water vapor (gas) -> Liquid water",
+          "They are opposite processes in the water cycle."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source",
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1170,
+          "candidates_token_count": 163,
+          "thoughts_token_count": 869,
+          "total_token_count": 2202
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "458b33",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Gets the destination right but adds a condition about water that cannot soak into the ground. The lesson ends at the stream.",
+        "source_ids": true
+      },
+      "case_id": "runoff-path",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 4047,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "runoff-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:03:50.471446Z",
+      "tutor": {
+        "message": "According to our lesson, runoff is water that moves over the ground into streams.",
+        "why_prompt": "What do you think happens after water enters those streams?",
+        "explanation_steps": [
+          "Rain falls onto the land.",
+          "Water that cannot soak into the ground becomes runoff.",
+          "Runoff moves over the ground into streams."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "runoff-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1106,
+          "candidates_token_count": 132,
+          "thoughts_token_count": 472,
+          "total_token_count": 1710
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "66498c",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Gives the path and destination from the lesson and asks the learner to name the destination.",
+        "source_ids": true
+      },
+      "case_id": "runoff-path",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 5095,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "runoff-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:03:55.587694Z",
+      "tutor": {
+        "message": "Great question! According to our lesson, runoff is water that moves over the ground into streams. What does runoff move over before reaching streams?",
+        "why_prompt": "Where does runoff flow according to our lesson?",
+        "explanation_steps": [
+          "Runoff is water that moves over land.",
+          "It flows over the ground.",
+          "It moves directly into streams."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "runoff-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 955,
+          "candidates_token_count": 132,
+          "thoughts_token_count": 731,
+          "total_token_count": 1818
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "e6ff28",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Corrects the direction. A question appears in the message, but the follow-up field contains a note about assessment.",
+        "source_ids": true
+      },
+      "case_id": "infiltration-direction",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 6198,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "infiltration-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:04:01.802251Z",
+      "tutor": {
+        "message": "Great question! Infiltration actually means water enters the soil from the surface, so it goes into the soil rather than leaving it. Where does the water enter the soil from?",
+        "why_prompt": "To check if the student can identify where water comes from during infiltration using the definition.",
+        "explanation_steps": [
+          "Infiltration is when water enters the soil.",
+          "The water enters from the surface."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "infiltration-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 953,
+          "candidates_token_count": 141,
+          "thoughts_token_count": 1141,
+          "total_token_count": 2235
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "7c91ed",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "The mission covers rain and the passage describes surface water entering soil. The follow-up asks about the next stage beyond the passage.",
+        "source_ids": true
+      },
+      "case_id": "infiltration-direction",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 4584,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "infiltration-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:04:06.401399Z",
+      "tutor": {
+        "message": "Great question! Infiltration actually means water is entering the soil from the surface, rather than leaving it.",
+        "why_prompt": "What do you think happens to the water after it enters the soil?",
+        "explanation_steps": [
+          "Rain water falls onto the ground surface.",
+          "Infiltration is the process of that water entering or soaking into the soil."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "infiltration-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1104,
+          "candidates_token_count": 141,
+          "thoughts_token_count": 653,
+          "total_token_count": 1898
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "7882cb",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "Acknowledges the missing rate and describes the supported path. The follow-up asks what happens after the passage ends.",
+        "source_ids": true
+      },
+      "case_id": "infiltration-speed",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 4340,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "infiltration-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:04:10.761455Z",
+      "tutor": {
+        "message": "In our lesson, infiltration is when water enters the soil from the surface. The text doesn't specify a exact speed for how fast it happens!",
+        "why_prompt": "Can you share what you think happens to rainwater after it enters the soil?",
+        "explanation_steps": [
+          "Infiltration is water entering the soil from the ground surface.",
+          "The lesson defines the path water takes rather than giving a specific speed."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "infiltration-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1105,
+          "candidates_token_count": 199,
+          "thoughts_token_count": 562,
+          "total_token_count": 1866
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "52dd5f",
+      "review": {
+        "task_met": false,
+        "source_only": true,
+        "useful_follow_up": false,
+        "note": "The fallback quotes the passage but does not say that the requested speed is missing. Its question assumes the learner chose an answer.",
+        "source_ids": true
+      },
+      "case_id": "infiltration-speed",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 43168,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "infiltration-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:04:53.94849Z",
+      "tutor": {
+        "message": "Keep going — use the mission clue and explain what you notice.",
+        "why_prompt": "What made you choose that answer?",
+        "explanation_steps": [
+          "Infiltration is water entering the soil from the surface."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "infiltration-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": false,
+        "provider": "observed_turn_fallback",
+        "model": "",
+        "model_version": "",
+        "fallback_reason": "Live provider call or response validation failed",
+        "usage": {
+          "prompt_token_count": 0,
+          "candidates_token_count": 0,
+          "thoughts_token_count": 0,
+          "total_token_count": 0
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "d6f610",
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "note": "Accurately contrasts the two paths and asks for the distinction using the lesson.",
+        "source_ids": true
+      },
+      "case_id": "water-paths",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 5886,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "compact",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "runoff-source",
+        "infiltration-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "a6365484903399be03feb1b35f2515092f19b2895224f1e8ef56ae63d51e5f0a",
+      "timestamp": "2026-11-25T18:05:10.528153Z",
+      "tutor": {
+        "message": "Great question! Runoff is water that moves over the ground into streams. Infiltration is water entering the soil from the surface. Where does runoff move to?",
+        "why_prompt": "How do runoff and infiltration take different paths after rain?",
+        "explanation_steps": [
+          "Runoff is water that moves over the ground into streams.",
+          "Infiltration is water entering the soil from the surface."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "continue",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "runoff-source",
+          "infiltration-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1018,
+          "candidates_token_count": 148,
+          "thoughts_token_count": 674,
+          "total_token_count": 1840
+        }
+      }
+    },
+    {
+      "split": "transfer",
+      "repeat": 1,
+      "blind_id": "76009e",
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "note": "Both paths are correct. The follow-up introduces a paved driveway and a grassy lawn as contrasting conditions. Neither setting nor its effect is in the lesson.",
+        "source_ids": true
+      },
+      "case_id": "water-paths",
+      "dataset_sha256": "df3419b81f0cb6a737c5e9389ce7323dae8164866335c2700ad023a946bf029c",
+      "dirty": true,
+      "elapsed_milliseconds": 5123,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "prompt_variant": "current",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "runoff-source",
+        "infiltration-source"
+      ],
+      "revision": "579797d9dea1c3558bd63c6b07865280531e90c7\n",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "system_instruction_sha256": "7a4fd01b9e7f2e7d7761cf65c51fe1a22ca59bdd429b276d208a9d42e685f498",
+      "timestamp": "2026-11-25T18:05:15.670668Z",
+      "tutor": {
+        "message": "Great question! The main difference is where the water travels when it hits the ground. Runoff stays on top of the ground, while infiltration goes into the ground.",
+        "why_prompt": "What do you think happens to rainwater when it lands on a paved driveway versus a grassy lawn?",
+        "explanation_steps": [
+          "Runoff is water that moves over the ground into streams.",
+          "Infiltration is water entering the soil from the surface."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "runoff-source",
+          "infiltration-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1169,
+          "candidates_token_count": 153,
+          "thoughts_token_count": 544,
+          "total_token_count": 1866
+        }
+      }
+    }
+  ],
+  "usage_scope": "Estimated cost covers reported usage only. One compact provider attempt failed without usage metadata. Matched costs and token deltas exclude both sides of that pair."
+}

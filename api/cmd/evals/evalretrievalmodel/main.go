@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"classgame-api/internal/modules/generation"
@@ -21,10 +23,15 @@ import (
 	sdk "google.golang.org/genai"
 )
 
+//go:embed compact.txt
+var compactInstruction string
+
 type provider struct {
-	client *sdk.Client
-	model  string
-	calls  int
+	variant         string
+	instructionHash string
+	client          *sdk.Client
+	model           string
+	calls           int
 }
 
 func (p *provider) IsEnabled() bool      { return true }
@@ -36,6 +43,10 @@ func (p *provider) GenerateStructured(ctx context.Context, request genai.Structu
 	}
 	p.calls++
 	attempts := int32(1)
+	if p.variant == "compact" {
+		request.SystemInstruction = strings.TrimSpace(compactInstruction)
+	}
+	p.instructionHash = fmt.Sprintf("%x", sha256.Sum256([]byte(request.SystemInstruction)))
 	temperature := request.Temperature
 	response, err := p.client.Models.GenerateContent(ctx, p.model, sdk.Text(request.Prompt), &sdk.GenerateContentConfig{
 		SystemInstruction: sdk.NewContentFromText(request.SystemInstruction, sdk.RoleUser),
@@ -70,10 +81,14 @@ func run() error {
 	dataset := flags.String("dataset", "../evals/platform/retrieval-diagnostics/cases-v2.json", "synthetic fixture")
 	caseID := flags.String("case", "retrieval-curly-quotes-v2", "synthetic case ID")
 	phase := flags.String("phase", "", "before or after label; does not change retrieval")
+	variant := flags.String("prompt", "current", "system instruction: current or compact (experiment only)")
 	model := flags.String("model", "", "explicit model ID")
 	output := flags.String("output", "", "new exclusive JSON output file")
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		return err
+	}
+	if *variant != "current" && *variant != "compact" {
+		return errors.New("unknown prompt variant")
 	}
 	if !*enabled || flags.NArg() != 0 || (*phase != "before" && *phase != "after") || *model == "" || *output == "" {
 		return errors.New("requires -run, -phase before|after, -model and a new -output path; at most one provider request, no retries")
@@ -125,7 +140,7 @@ func run() error {
 	if err != nil {
 		return errors.New("cannot initialize live provider; output file is incomplete")
 	}
-	p := &provider{client: client, model: *model}
+	p := &provider{client: client, model: *model, variant: *variant}
 	fixture.Context.RetrievedChunks = students.RetrieveMissionKnowledge(fixture.Mission, c.Retrieval.Turn, c.Retrieval.Limit)
 	fixture.Context.Turn.Prompt = c.Retrieval.Turn.Prompt
 	start := time.Now()
@@ -145,7 +160,7 @@ func run() error {
 	digest := sha256.Sum256(raw)
 	revision, _ := exec.Command("git", "rev-parse", "HEAD").Output()
 	dirty, _ := exec.Command("git", "status", "--porcelain").Output()
-	record := map[string]any{"phase": *phase, "case_id": *caseID, "timestamp": time.Now().UTC().Format(time.RFC3339Nano), "revision": string(revision), "dirty": len(dirty) > 0, "dataset_sha256": hex.EncodeToString(digest[:]), "max_provider_calls": 1, "sdk_attempts": 1, "real_provider_calls": p.calls, "model_requested": *model, "retrieved_chunk_ids": ids, "elapsed_milliseconds": time.Since(start).Milliseconds(), "tutor": answer, "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading."}
+	record := map[string]any{"prompt_variant": *variant, "system_instruction_sha256": p.instructionHash, "phase": *phase, "case_id": *caseID, "timestamp": time.Now().UTC().Format(time.RFC3339Nano), "revision": string(revision), "dirty": len(dirty) > 0, "dataset_sha256": hex.EncodeToString(digest[:]), "max_provider_calls": 1, "sdk_attempts": 1, "real_provider_calls": p.calls, "model_requested": *model, "retrieved_chunk_ids": ids, "elapsed_milliseconds": time.Since(start).Milliseconds(), "tutor": answer, "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading."}
 	if err = json.NewEncoder(file).Encode(record); err != nil {
 		return err
 	}
