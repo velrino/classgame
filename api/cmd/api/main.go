@@ -14,25 +14,26 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"classgame-api/internal/app"
-	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/app/bootstrap"
 	"classgame-api/internal/config"
+	"classgame-api/internal/modules/ai/orchestrator"
+	"classgame-api/internal/modules/ai/providers/genai"
+	"classgame-api/internal/modules/ai/providers/genai/redisbudget"
 	"classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/health"
 	"classgame-api/internal/modules/insights"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
 	"classgame-api/internal/shared/analytics"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/firebase"
-	"classgame-api/internal/shared/genai"
-	"classgame-api/internal/shared/genai/redisbudget"
 	"classgame-api/internal/shared/objectstorage"
 	rateredis "classgame-api/internal/shared/ratelimit/redis"
 	"classgame-api/internal/shared/redis"
 	"classgame-api/internal/shared/redisqueue"
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const (
@@ -161,6 +162,7 @@ func run() (runErr error) {
 	}
 	defer providerBudget.Close()
 	genAIClient, err := genai.Connect(context.Background(), genai.Options{
+		GenerationScope: requestmeta.GenerationScope,
 		Admission:       providerBudget,
 		Enabled:         cfg.GenAIEnabled,
 		Backend:         cfg.GenAIBackend,
@@ -195,7 +197,7 @@ func run() (runErr error) {
 		}
 	}()
 
-	orchestratorService := generation.NewService(generation.Dependencies{Client: genAIClient, Attachments: storageConnection})
+	orchestratorService := orchestrator.NewService(orchestrator.Dependencies{Client: genAIClient, Attachments: storageConnection})
 	teacherClassRepository := classrooms.NewFirestoreRepository(firebaseConnection.FirestoreClient())
 	teacherClassService := classrooms.NewService(teacherClassRepository)
 	missionRepository := missions.NewFirestoreRepository(firebaseConnection.FirestoreClient())

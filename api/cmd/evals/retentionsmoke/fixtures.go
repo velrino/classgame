@@ -1,18 +1,20 @@
 package main
 
 import (
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/ops/datarecovery"
-	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/modules/missions"
-	"classgame-api/internal/modules/students"
-	"cloud.google.com/go/firestore"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
+
+	"cloud.google.com/go/firestore"
+
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/classrooms"
+	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/ops/datarecovery"
+	"classgame-api/internal/shared/auth"
 )
 
 type suite struct {
@@ -96,7 +98,7 @@ func (s *suite) seed() error {
 	if _, e := repo.ReserveTutorGeneration(s.ctx, s.input, s.input.ReservationOwner, now, now.Add(time.Minute)); e != nil {
 		return e
 	}
-	turn, e := repo.AppendStudentTutorTurn(s.ctx, s.input, generation.TutorTurnBlueprint{Message: "Synthetic learning feedback"})
+	turn, e := repo.AppendStudentTutorTurn(s.ctx, s.input, ai.TutorTurnBlueprint{Message: "Synthetic learning feedback"})
 	if e != nil {
 		return e
 	}

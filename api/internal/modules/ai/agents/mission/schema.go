@@ -1,6 +1,8 @@
-package generation
+package mission
 
-func missionBlueprintSchema() map[string]any {
+import "classgame-api/internal/modules/ai"
+
+func schema() map[string]any {
 	stringArray := map[string]any{
 		"type":  "array",
 		"items": map[string]any{"type": "string"},
@@ -73,8 +75,8 @@ func missionBlueprintSchema() map[string]any {
 			},
 			"preview_questions": map[string]any{
 				"type":     "array",
-				"minItems": maxStudentPreviewQuestions,
-				"maxItems": maxStudentPreviewQuestions,
+				"minItems": ai.PreviewQuestionCount,
+				"maxItems": ai.PreviewQuestionCount,
 				"items": map[string]any{
 					"type":                 "object",
 					"additionalProperties": false,
@@ -229,189 +231,6 @@ func missionBlueprintSchema() map[string]any {
 					},
 				},
 			},
-		},
-	}
-}
-
-func learningTraceSchema() map[string]any {
-	stringArray := map[string]any{
-		"type":     "array",
-		"minItems": 1,
-		"maxItems": 4,
-		"items":    map[string]any{"type": "string"},
-	}
-
-	return map[string]any{
-		"type":                 "object",
-		"additionalProperties": false,
-		"required": []string{
-			"summary",
-			"strengths",
-			"improvement_areas",
-			"next_adaptation",
-			"flow",
-		},
-		"properties": map[string]any{
-			"summary": map[string]any{
-				"type":        "string",
-				"description": "A concise evidence-based summary of the student's observable learning path.",
-			},
-			"strengths":         stringArray,
-			"improvement_areas": stringArray,
-			"next_adaptation": map[string]any{
-				"type":        "string",
-				"description": "One concrete adaptation Mia should retrieve and apply in the next interaction.",
-			},
-			"flow": map[string]any{
-				"type":                 "object",
-				"additionalProperties": false,
-				"required":             []string{"nodes", "edges"},
-				"properties": map[string]any{
-					"nodes": map[string]any{
-						"type":     "array",
-						"minItems": 3,
-						"maxItems": 12,
-						"items": map[string]any{
-							"type":                 "object",
-							"additionalProperties": false,
-							"required":             []string{"id", "kind", "label", "description", "evidence_event_ids", "position"},
-							"properties": map[string]any{
-								"id": map[string]any{"type": "string"},
-								"kind": map[string]any{
-									"type": "string",
-									"enum": []string{
-										"start",
-										"question",
-										"answer",
-										"misconception",
-										"feedback",
-										"adaptation",
-										"mastery",
-										"complete",
-									},
-								},
-								"label":       map[string]any{"type": "string"},
-								"description": map[string]any{"type": "string"},
-								"evidence_event_ids": map[string]any{
-									"type":     "array",
-									"maxItems": 12,
-									"items":    map[string]any{"type": "string"},
-								},
-								"position": map[string]any{
-									"type":                 "object",
-									"additionalProperties": false,
-									"required":             []string{"x", "y"},
-									"properties": map[string]any{
-										"x": map[string]any{"type": "number"},
-										"y": map[string]any{"type": "number"},
-									},
-								},
-							},
-						},
-					},
-					"edges": map[string]any{
-						"type":     "array",
-						"minItems": 2,
-						"maxItems": 16,
-						"items": map[string]any{
-							"type":                 "object",
-							"additionalProperties": false,
-							"required":             []string{"id", "source", "target", "label"},
-							"properties": map[string]any{
-								"id":     map[string]any{"type": "string"},
-								"source": map[string]any{"type": "string"},
-								"target": map[string]any{"type": "string"},
-								"label":  map[string]any{"type": "string"},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func tutorTurnSchema() map[string]any {
-	stringArray := map[string]any{
-		"type":     "array",
-		"maxItems": 6,
-		"items":    map[string]any{"type": "string"},
-	}
-
-	return map[string]any{
-		"type":                 "object",
-		"additionalProperties": false,
-		"required": []string{
-			"message",
-			"why_prompt",
-			"explanation_steps",
-			"explanation_style",
-			"difficulty_bias",
-			"next_action",
-			"teacher_observation",
-			"retrieved_chunk_ids",
-			"evidence_event_ids",
-		},
-		"properties": map[string]any{
-			"message":           map[string]any{"type": "string"},
-			"why_prompt":        map[string]any{"type": "string"},
-			"explanation_steps": stringArray,
-			"explanation_style": map[string]any{
-				"type": "string",
-				"enum": []string{"steps", "visual"},
-			},
-			"difficulty_bias": map[string]any{
-				"type":    "integer",
-				"minimum": -1,
-				"maximum": 1,
-			},
-			"next_action": map[string]any{
-				"type": "string",
-				"enum": []string{"continue", "ask_reasoning", "explain", "retry", "complete"},
-			},
-			"teacher_observation": map[string]any{"type": "string"},
-			"retrieved_chunk_ids": stringArray,
-			"evidence_event_ids":  stringArray,
-		},
-	}
-}
-
-func classLearningSynthesisSchema() map[string]any {
-	cluster := map[string]any{
-		"type":                 "object",
-		"additionalProperties": false,
-		"required":             []string{"label", "student_ids", "evidence_labels"},
-		"properties": map[string]any{
-			"label": map[string]any{"type": "string"},
-			"student_ids": map[string]any{
-				"type":     "array",
-				"maxItems": 100,
-				"items":    map[string]any{"type": "string"},
-			},
-			"evidence_labels": map[string]any{
-				"type":     "array",
-				"maxItems": 20,
-				"items":    map[string]any{"type": "string"},
-			},
-		},
-	}
-
-	return map[string]any{
-		"type":                 "object",
-		"additionalProperties": false,
-		"required":             []string{"common_strengths", "common_needs", "next_adaptation"},
-		"properties": map[string]any{
-			"common_strengths": map[string]any{
-				"type":     "array",
-				"maxItems": 4,
-				"items":    cluster,
-			},
-			"common_needs": map[string]any{
-				"type":     "array",
-				"maxItems": 4,
-				"items":    cluster,
-			},
-			"next_adaptation": map[string]any{"type": "string"},
 		},
 	}
 }

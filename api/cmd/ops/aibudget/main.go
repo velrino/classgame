@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"classgame-api/internal/config"
-	"classgame-api/internal/shared/genai/redisbudget"
+	"classgame-api/internal/modules/ai/providers/genai/redisbudget"
 	"classgame-api/internal/shared/redis"
 )
 

@@ -15,8 +15,6 @@ import (
 	"cloud.google.com/go/auth/credentials"
 	"golang.org/x/sync/singleflight"
 	googlegenai "google.golang.org/genai"
-
-	"classgame-api/internal/shared/requestmeta"
 )
 
 const (
@@ -42,6 +40,8 @@ var (
 )
 
 type Options struct {
+	// GenerationScope returns the host boundary for sharing identical in-flight calls.
+	GenerationScope func(context.Context) string
 	Admission       ProviderAdmission
 	Enabled         bool
 	Backend         string
@@ -61,6 +61,10 @@ type Client struct {
 	providerSlots chan struct{}
 	callSlots     chan struct{}
 	inflight      singleflight.Group
+}
+
+type StructuredGenerator interface {
+	GenerateStructured(context.Context, StructuredRequest, any) (StructuredResult, error)
 }
 
 type StructuredRequest struct {
@@ -188,7 +192,11 @@ func (client *Client) GenerateStructured(
 	defer cancel()
 
 	var result StructuredResult
-	if scope := requestmeta.GenerationScope(ctx); scope != "" {
+	var scope string
+	if client.options.GenerationScope != nil {
+		scope = client.options.GenerationScope(ctx)
+	}
+	if scope != "" {
 		key, err := generationKey(scope, request, schemaJSON)
 		if err != nil {
 			return StructuredResult{}, err

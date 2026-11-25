@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/missions"
 )
 
@@ -38,7 +38,7 @@ func TestRetrievalTokensWordBoundaries(t *testing.T) {
 func TestRetrieveMissionKnowledgePunctuationAndBound(t *testing.T) {
 	lesson := missions.MissionDocument{
 		Subject: "Science", LearningGoal: "Understand physical processes",
-		KnowledgeChunks: []generation.KnowledgeChunk{
+		KnowledgeChunks: []ai.KnowledgeChunk{
 			{ID: "condensation-source", Title: "Condensation", Content: "Condensation changes water vapor into liquid droplets."},
 			{ID: "evaporation-source", Title: "Evaporation", Content: "Evaporation changes liquid water into water vapor."},
 		},

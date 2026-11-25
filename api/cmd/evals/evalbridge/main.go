@@ -15,19 +15,20 @@ import (
 	"time"
 
 	"classgame-api/internal/app"
-	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
+	"classgame-api/internal/modules/ai/providers/genai"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/shared/genai"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/objectstorage"
 )
 
 type batch struct {
-	TutorContext generation.BuildTutorTurnInput `json:"tutor_context"`
-	Mission      missions.MissionDocument       `json:"mission"`
-	Cases        []evalCase                     `json:"cases"`
+	TutorContext ai.BuildTutorTurnInput   `json:"tutor_context"`
+	Mission      missions.MissionDocument `json:"mission"`
+	Cases        []evalCase               `json:"cases"`
 }
 
 type securityInput struct {
@@ -65,9 +66,9 @@ type retrievalInput struct {
 }
 
 type tutorInput struct {
-	ProviderMode    string                        `json:"provider_mode"`
-	RetrievedChunks *[]generation.KnowledgeChunk  `json:"retrieved_chunks,omitempty"`
-	Response        generation.TutorTurnBlueprint `json:"response"`
+	ProviderMode    string                `json:"provider_mode"`
+	RetrievedChunks *[]ai.KnowledgeChunk  `json:"retrieved_chunks,omitempty"`
+	Response        ai.TutorTurnBlueprint `json:"response"`
 }
 
 type authInput struct {
@@ -288,7 +289,7 @@ func runCase(input batch, candidate evalCase) (map[string]any, error) {
 		if err != nil {
 			return nil, err
 		}
-		var tutorContext generation.BuildTutorTurnInput
+		var tutorContext ai.BuildTutorTurnInput
 		if err := json.Unmarshal(encoded, &tutorContext); err != nil {
 			return nil, err
 		}
@@ -308,7 +309,7 @@ func runCase(input batch, candidate evalCase) (map[string]any, error) {
 		}
 		originalPrivate, _ := json.Marshal([]any{tutorContext.StudentMemory, tutorContext.ClassContext})
 		provider := &scriptedProvider{mode: candidate.Tutor.ProviderMode, response: candidate.Tutor.Response}
-		service := generation.NewService(generation.Dependencies{Client: provider})
+		service := orchestrator.NewService(orchestrator.Dependencies{Client: provider})
 		tutor, err := service.BuildTutorTurn(context.Background(), tutorContext)
 		observation["scripted_provider_calls"] = provider.calls
 		observation["provider_input"] = provider.instruction + "\n" + provider.prompt
@@ -418,7 +419,7 @@ func runCase(input batch, candidate evalCase) (map[string]any, error) {
 
 type scriptedProvider struct {
 	mode        string
-	response    generation.TutorTurnBlueprint
+	response    ai.TutorTurnBlueprint
 	calls       int
 	prompt      string
 	instruction string

@@ -10,12 +10,13 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	studentsmodule "classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/pagination"
 )
 
@@ -431,7 +432,7 @@ func activeMissionQuestionCount(activeMission *missions.MissionDocument) int {
 		return 0
 	}
 
-	return min(len(activeMission.PreviewQuestions), generation.StudentPreviewQuestionLimit())
+	return min(len(activeMission.PreviewQuestions), orchestrator.StudentPreviewQuestionLimit())
 }
 
 func latestStudentAttempt(
@@ -490,14 +491,14 @@ func buildClassLearningSummary(students []StudentDashboardItem) ClassLearningSum
 
 func applySemanticClassLearningSynthesis(
 	summary ClassLearningSummary,
-	synthesis generation.ClassLearningSynthesis,
+	synthesis ai.ClassLearningSynthesis,
 	students []StudentDashboardItem,
 ) ClassLearningSummary {
 	studentNames := make(map[string]string, len(students))
 	for _, student := range students {
 		studentNames[student.ID] = student.StudentName
 	}
-	toPatterns := func(clusters []generation.ClassLearningCluster) []ClassLearningPattern {
+	toPatterns := func(clusters []ai.ClassLearningCluster) []ClassLearningPattern {
 		patterns := make([]ClassLearningPattern, 0, len(clusters))
 		for _, cluster := range clusters {
 			ids := make([]string, 0, len(cluster.StudentIDs))
@@ -590,8 +591,8 @@ func sortedClassLearningPatterns(
 	return result
 }
 
-func starterSuggestions() []generation.MissionSuggestion {
-	return []generation.MissionSuggestion{
+func starterSuggestions() []ai.MissionSuggestion {
+	return []ai.MissionSuggestion{
 		{
 			ID:       "starter-diagnostic",
 			Title:    "Start with a short diagnostic",

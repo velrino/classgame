@@ -7,17 +7,17 @@ import (
 	"strings"
 	"unicode"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/missions"
 )
 
 func (service *Service) classTutorContext(
 	ctx context.Context,
 	classID string,
-) (generation.TutorClassContext, error) {
+) (ai.TutorClassContext, error) {
 	attempts, err := service.classLearning.ListLatestFinalizedAttemptsByClassID(ctx, classID, 40)
 	if err != nil {
-		return generation.TutorClassContext{}, err
+		return ai.TutorClassContext{}, err
 	}
 	strengths := make([]string, 0)
 	needs := make([]string, 0)
@@ -26,7 +26,7 @@ func (service *Service) classTutorContext(
 		needs = append(needs, attempt.Trace.ImprovementAreas...)
 	}
 
-	return generation.TutorClassContext{
+	return ai.TutorClassContext{
 		CommonStrengths: mostFrequentSignals(strengths, 4),
 		CommonNeeds:     mostFrequentSignals(needs, 4),
 	}, nil
@@ -37,11 +37,11 @@ func RetrieveMissionKnowledge(
 	document missions.MissionDocument,
 	turn SaveStudentTutorTurnInput,
 	limit int,
-) []generation.KnowledgeChunk {
-	chunks := append([]generation.KnowledgeChunk{}, document.KnowledgeChunks...)
+) []ai.KnowledgeChunk {
+	chunks := append([]ai.KnowledgeChunk{}, document.KnowledgeChunks...)
 	if len(chunks) == 0 {
 		for index, stage := range document.Stages {
-			chunks = append(chunks, generation.KnowledgeChunk{
+			chunks = append(chunks, ai.KnowledgeChunk{
 				ID:       "legacy-stage-" + normalizeRetrievalID(stage.ID, index),
 				Source:   "Published mission",
 				Title:    stage.Title,
@@ -50,7 +50,7 @@ func RetrieveMissionKnowledge(
 			})
 		}
 		for index, question := range document.PreviewQuestions {
-			chunks = append(chunks, generation.KnowledgeChunk{
+			chunks = append(chunks, ai.KnowledgeChunk{
 				ID:       "legacy-question-" + normalizeRetrievalID(question.ID, index),
 				Source:   "Published mission",
 				Title:    question.Prompt,
@@ -68,7 +68,7 @@ func RetrieveMissionKnowledge(
 		turn.ExplicitReasoning,
 	}, " "))
 	type scoredChunk struct {
-		chunk generation.KnowledgeChunk
+		chunk ai.KnowledgeChunk
 		score int
 		index int
 	}
@@ -96,7 +96,7 @@ func RetrieveMissionKnowledge(
 	if limit <= 0 {
 		limit = 5
 	}
-	result := make([]generation.KnowledgeChunk, 0, min(limit, len(scored)))
+	result := make([]ai.KnowledgeChunk, 0, min(limit, len(scored)))
 	for _, entry := range scored {
 		if entry.score == 0 || strings.TrimSpace(entry.chunk.Content) == "" {
 			continue
@@ -135,10 +135,10 @@ func normalizeRetrievalID(value string, index int) string {
 	return value
 }
 
-func toTutorProgress(progress []StudentStageProgress) []generation.LearningTraceStageProgress {
-	result := make([]generation.LearningTraceStageProgress, 0, len(progress))
+func toTutorProgress(progress []StudentStageProgress) []ai.LearningTraceStageProgress {
+	result := make([]ai.LearningTraceStageProgress, 0, len(progress))
 	for _, stage := range progress {
-		result = append(result, generation.LearningTraceStageProgress{
+		result = append(result, ai.LearningTraceStageProgress{
 			StageID:  stage.StageID,
 			Status:   stage.Status,
 			Correct:  stage.Correct,
@@ -149,13 +149,13 @@ func toTutorProgress(progress []StudentStageProgress) []generation.LearningTrace
 	return result
 }
 
-func toTutorTurnHistory(turns []StudentTutorTurn) []generation.TutorTurnHistory {
+func toTutorTurnHistory(turns []StudentTutorTurn) []ai.TutorTurnHistory {
 	if len(turns) > 12 {
 		turns = turns[len(turns)-12:]
 	}
-	result := make([]generation.TutorTurnHistory, 0, len(turns))
+	result := make([]ai.TutorTurnHistory, 0, len(turns))
 	for _, turn := range turns {
-		result = append(result, generation.TutorTurnHistory{
+		result = append(result, ai.TutorTurnHistory{
 			Sequence: turn.Sequence,
 			Type:     turn.Type,
 			StageID:  turn.StageID,
@@ -169,13 +169,13 @@ func toTutorTurnHistory(turns []StudentTutorTurn) []generation.TutorTurnHistory 
 	return result
 }
 
-func toTutorEvents(events []StudentLearningEvent) []generation.LearningTraceEvent {
+func toTutorEvents(events []StudentLearningEvent) []ai.LearningTraceEvent {
 	if len(events) > 24 {
 		events = events[len(events)-24:]
 	}
-	result := make([]generation.LearningTraceEvent, 0, len(events))
+	result := make([]ai.LearningTraceEvent, 0, len(events))
 	for _, event := range events {
-		result = append(result, generation.LearningTraceEvent{
+		result = append(result, ai.LearningTraceEvent{
 			ID:         event.ID,
 			Sequence:   event.Sequence,
 			Type:       event.Type,

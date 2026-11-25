@@ -16,9 +16,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"classgame-api/internal/shared/genai"
-	"classgame-api/internal/shared/genai/redisbudget"
 	"github.com/redis/go-redis/v9"
+
+	"classgame-api/internal/modules/ai/providers/genai"
+	"classgame-api/internal/modules/ai/providers/genai/redisbudget"
 )
 
 type result struct {

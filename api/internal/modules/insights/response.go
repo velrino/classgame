@@ -3,8 +3,9 @@ package insights
 import (
 	"time"
 
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	studentsmodule "classgame-api/internal/modules/students"
 )
@@ -47,39 +48,39 @@ type TeacherClassResponse struct {
 }
 
 type MissionResponse struct {
-	ID                       string                        `json:"id"`
-	MissionCode              string                        `json:"mission_code"`
-	OrganizationID           string                        `json:"organization_id"`
-	DistrictID               string                        `json:"district_id"`
-	SchoolID                 string                        `json:"school_id"`
-	TeacherID                string                        `json:"teacher_id"`
-	ClassID                  string                        `json:"class_id"`
-	ClassCode                string                        `json:"class_code"`
-	ClassName                string                        `json:"class_name"`
-	MissionName              string                        `json:"mission_name"`
-	Title                    string                        `json:"title"`
-	Summary                  string                        `json:"summary"`
-	Subject                  string                        `json:"subject"`
-	GradeLevel               string                        `json:"grade_level"`
-	LearningGoal             string                        `json:"learning_goal"`
-	TeacherPrompt            string                        `json:"teacher_prompt"`
-	Attachments              []AttachmentResponse          `json:"attachments"`
-	PreviewQuestions         []PreviewQuestion             `json:"preview_questions"`
-	KnowledgeChunks          []generation.KnowledgeChunk   `json:"knowledge_chunks"`
-	SuggestedDurationMinutes int                           `json:"suggested_duration_minutes"`
-	Stages                   []StageResponse               `json:"stages"`
-	Suggestions              []SuggestionResponse          `json:"suggestions"`
-	PositiveSignals          []string                      `json:"positive_signals"`
-	ImprovementSignals       []string                      `json:"improvement_signals"`
-	EducationGuardrail       generation.EducationGuardrail `json:"education_guardrail"`
-	MissionFlow              generation.MissionFlow        `json:"mission_flow"`
-	Orchestration            OrchestrationResponse         `json:"orchestration"`
-	Status                   string                        `json:"status"`
-	CreatedBy                TeacherResponse               `json:"created_by"`
-	UpdatedBy                TeacherResponse               `json:"updated_by"`
-	PublishedAt              string                        `json:"published_at"`
-	CreatedAt                string                        `json:"created_at"`
-	UpdatedAt                string                        `json:"updated_at"`
+	ID                       string                `json:"id"`
+	MissionCode              string                `json:"mission_code"`
+	OrganizationID           string                `json:"organization_id"`
+	DistrictID               string                `json:"district_id"`
+	SchoolID                 string                `json:"school_id"`
+	TeacherID                string                `json:"teacher_id"`
+	ClassID                  string                `json:"class_id"`
+	ClassCode                string                `json:"class_code"`
+	ClassName                string                `json:"class_name"`
+	MissionName              string                `json:"mission_name"`
+	Title                    string                `json:"title"`
+	Summary                  string                `json:"summary"`
+	Subject                  string                `json:"subject"`
+	GradeLevel               string                `json:"grade_level"`
+	LearningGoal             string                `json:"learning_goal"`
+	TeacherPrompt            string                `json:"teacher_prompt"`
+	Attachments              []AttachmentResponse  `json:"attachments"`
+	PreviewQuestions         []PreviewQuestion     `json:"preview_questions"`
+	KnowledgeChunks          []ai.KnowledgeChunk   `json:"knowledge_chunks"`
+	SuggestedDurationMinutes int                   `json:"suggested_duration_minutes"`
+	Stages                   []StageResponse       `json:"stages"`
+	Suggestions              []SuggestionResponse  `json:"suggestions"`
+	PositiveSignals          []string              `json:"positive_signals"`
+	ImprovementSignals       []string              `json:"improvement_signals"`
+	EducationGuardrail       ai.EducationGuardrail `json:"education_guardrail"`
+	MissionFlow              ai.MissionFlow        `json:"mission_flow"`
+	Orchestration            OrchestrationResponse `json:"orchestration"`
+	Status                   string                `json:"status"`
+	CreatedBy                TeacherResponse       `json:"created_by"`
+	UpdatedBy                TeacherResponse       `json:"updated_by"`
+	PublishedAt              string                `json:"published_at"`
+	CreatedAt                string                `json:"created_at"`
+	UpdatedAt                string                `json:"updated_at"`
 }
 
 type AttachmentResponse struct {
@@ -171,7 +172,7 @@ type StudentLearningAttemptResponse struct {
 	Status            string                                 `json:"status"`
 	Snapshot          studentsmodule.StudentLearningSnapshot `json:"snapshot"`
 	TutorTurns        []studentsmodule.StudentTutorTurn      `json:"tutor_turns"`
-	Trace             generation.LearningTraceBlueprint      `json:"trace"`
+	Trace             ai.LearningTraceBlueprint              `json:"trace"`
 	TraceState        string                                 `json:"trace_state"`
 	StartedAt         string                                 `json:"started_at"`
 	LastActivityAt    string                                 `json:"last_activity_at"`
@@ -479,7 +480,7 @@ func toClassLearningPatternResponses(patterns []ClassLearningPattern) []ClassLea
 	return responses
 }
 
-func toStageResponses(stages []generation.MissionStage) []StageResponse {
+func toStageResponses(stages []ai.MissionStage) []StageResponse {
 	responses := make([]StageResponse, 0, len(stages))
 
 	for _, stage := range stages {
@@ -515,7 +516,7 @@ func toAttachmentResponses(attachments []missions.MissionAttachment) []Attachmen
 }
 
 func toPreviewQuestions(mission missions.MissionDocument) []PreviewQuestion {
-	questions := generation.PlayablePreviewQuestions(generation.BuildMissionInput{
+	questions := orchestrator.PlayablePreviewQuestions(ai.BuildMissionInput{
 		ClassID:       mission.ClassID,
 		ClassName:     mission.ClassName,
 		MissionName:   mission.MissionName,
@@ -542,7 +543,7 @@ func toPreviewQuestions(mission missions.MissionDocument) []PreviewQuestion {
 	return responses
 }
 
-func toSuggestionResponses(suggestions []generation.MissionSuggestion) []SuggestionResponse {
+func toSuggestionResponses(suggestions []ai.MissionSuggestion) []SuggestionResponse {
 	responses := make([]SuggestionResponse, 0, len(suggestions))
 
 	for _, suggestion := range suggestions {

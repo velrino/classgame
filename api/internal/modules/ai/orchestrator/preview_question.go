@@ -1,20 +1,22 @@
-package generation
+package orchestrator
 
 import (
 	"fmt"
 	"strings"
+
+	"classgame-api/internal/modules/ai"
 )
 
 func StudentPreviewQuestionLimit() int {
-	return maxStudentPreviewQuestions
+	return ai.PreviewQuestionCount
 }
 
-func NormalizePreviewQuestionCollections(questions []PreviewQuestion) []PreviewQuestion {
+func NormalizePreviewQuestionCollections(questions []ai.PreviewQuestion) []ai.PreviewQuestion {
 	limit := len(questions)
-	if limit > maxStudentPreviewQuestions {
-		limit = maxStudentPreviewQuestions
+	if limit > ai.PreviewQuestionCount {
+		limit = ai.PreviewQuestionCount
 	}
-	normalized := make([]PreviewQuestion, 0, limit)
+	normalized := make([]ai.PreviewQuestion, 0, limit)
 	for _, question := range questions {
 		question.AnswerType = "multiple_choice"
 		question.Options = nonNilStrings(question.Options)
@@ -26,7 +28,7 @@ func NormalizePreviewQuestionCollections(questions []PreviewQuestion) []PreviewQ
 			question.MisconceptionTraps,
 		)
 		normalized = append(normalized, question)
-		if len(normalized) >= maxStudentPreviewQuestions {
+		if len(normalized) >= ai.PreviewQuestionCount {
 			break
 		}
 	}
@@ -35,20 +37,20 @@ func NormalizePreviewQuestionCollections(questions []PreviewQuestion) []PreviewQ
 }
 
 func PlayablePreviewQuestions(
-	input BuildMissionInput,
-	questions []PreviewQuestion,
-) []PreviewQuestion {
+	input ai.BuildMissionInput,
+	questions []ai.PreviewQuestion,
+) []ai.PreviewQuestion {
 	questions = NormalizePreviewQuestionCollections(questions)
 	if hasLegacyGenericFallbackQuestion(questions) {
 		return NormalizePreviewQuestionCollections(fallbackPreviewQuestions(input))
 	}
-	if len(questions) < maxStudentPreviewQuestions {
+	if len(questions) < ai.PreviewQuestionCount {
 		seen := make(map[string]struct{}, len(questions))
 		for _, question := range questions {
 			seen[strings.ToLower(strings.TrimSpace(question.ID))] = struct{}{}
 		}
 		for index, question := range NormalizePreviewQuestionCollections(fallbackPreviewQuestions(input)) {
-			if len(questions) >= maxStudentPreviewQuestions {
+			if len(questions) >= ai.PreviewQuestionCount {
 				break
 			}
 			id := strings.ToLower(strings.TrimSpace(question.ID))
@@ -118,7 +120,7 @@ func nonNilStrings(values []string) []string {
 	return values
 }
 
-func hasLegacyGenericFallbackQuestion(questions []PreviewQuestion) bool {
+func hasLegacyGenericFallbackQuestion(questions []ai.PreviewQuestion) bool {
 	for _, question := range questions {
 		id := strings.ToLower(strings.TrimSpace(question.ID))
 		prompt := strings.ToLower(strings.TrimSpace(question.Prompt))

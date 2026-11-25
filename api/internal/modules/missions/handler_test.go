@@ -10,8 +10,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/shared/pagination"
 	"classgame-api/internal/shared/ratelimit"
 )
@@ -180,7 +180,7 @@ func (service *fakeMissionService) Preview(
 ) (MissionDocument, error) {
 	service.previewCalled = true
 	if input.Progress != nil {
-		input.Progress(generation.MissionProgress{
+		input.Progress(ai.MissionProgress{
 			Stage:   "generating_mission",
 			Message: "Building the playable mission preview.",
 			Percent: 72,
@@ -208,7 +208,7 @@ func fakePreviewMission() MissionDocument {
 		HasUnpublishedChanges: true,
 		CreatedAt:             now,
 		UpdatedAt:             now,
-		PreviewQuestions: []generation.PreviewQuestion{
+		PreviewQuestions: []ai.PreviewQuestion{
 			{
 				ID:             "question-1",
 				Prompt:         "What is 1/4 + 1/4?",

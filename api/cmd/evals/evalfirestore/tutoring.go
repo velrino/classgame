@@ -1,16 +1,18 @@
 package main
 
 import (
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/modules/missions"
-	"classgame-api/internal/modules/students"
-	"cloud.google.com/go/firestore"
 	"errors"
 	"fmt"
 	"reflect"
 	"sync"
 	"time"
+
+	"cloud.google.com/go/firestore"
+
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/shared/auth"
 )
 
 func (s *suite) concurrentReservation() error {
@@ -53,7 +55,7 @@ func (s *suite) concurrentReservation() error {
 		return fmt.Errorf("want one admission and %d busy results; got wins=%d busy=%d admissions=%d", count-1, wins, pending, a.GeneratedTurnCount)
 	}
 	input.ReservationOwner = fmt.Sprintf("owner-%d", winner)
-	if _, err := s.repo.AppendStudentTutorTurn(s.ctx, input, generation.TutorTurnBlueprint{}); err != nil {
+	if _, err := s.repo.AppendStudentTutorTurn(s.ctx, input, ai.TutorTurnBlueprint{}); err != nil {
 		return err
 	}
 	return nil
@@ -84,7 +86,7 @@ func (s *suite) durableEvidence() error {
 		input.Feedback = "helpful"
 		input.StudentResponse = "helpful"
 		input.ExpectedAnswer = ""
-		if _, err := s.repo.AppendStudentTutorTurn(s.ctx, input, generation.TutorTurnBlueprint{}); err != nil {
+		if _, err := s.repo.AppendStudentTutorTurn(s.ctx, input, ai.TutorTurnBlueprint{}); err != nil {
 			return fmt.Errorf("append feedback %d: %w", i, err)
 		}
 	}
@@ -100,9 +102,9 @@ func (s *suite) durableEvidence() error {
 			return errors.New("first answer did not leave the recent context window")
 		}
 	}
-	mission := missions.MissionDocument{ID: f.attempt.MissionID, ClassID: f.attempt.ClassID, PublishedRevision: 1, Title: "Synthetic fractions", Stages: []generation.MissionStage{{ID: "synthetic-stage", Title: "Synthetic stage"}}}
+	mission := missions.MissionDocument{ID: f.attempt.MissionID, ClassID: f.attempt.ClassID, PublishedRevision: 1, Title: "Synthetic fractions", Stages: []ai.MissionStage{{ID: "synthetic-stage", Title: "Synthetic stage"}}}
 	for i := 0; i < 3; i++ {
-		mission.PreviewQuestions = append(mission.PreviewQuestions, generation.PreviewQuestion{ID: fmt.Sprintf("synthetic-question-%d", i), StageID: "synthetic-stage", Prompt: "What is one half?", AnswerType: "multiple_choice", Options: []string{"1/2", "1/3", "1/4"}, ExpectedAnswer: "1/2"})
+		mission.PreviewQuestions = append(mission.PreviewQuestions, ai.PreviewQuestion{ID: fmt.Sprintf("synthetic-question-%d", i), StageID: "synthetic-stage", Prompt: "What is one half?", AnswerType: "multiple_choice", Options: []string{"1/2", "1/3", "1/4"}, ExpectedAnswer: "1/2"})
 	}
 	completed, _, started, err := s.repo.SaveStudentLearningSnapshot(s.ctx, students.SaveStudentLearningSnapshotInput{Identity: auth.Identity{ProviderUserID: f.user.ID}, ExpectedAttemptID: f.attempt.ID, PublishedRevision: 1, Mission: mission, MissionID: f.attempt.MissionID, Status: "completed", Snapshot: students.StudentLearningSnapshot{Revision: 4}, Timestamp: time.Now()})
 	if err != nil {
@@ -127,7 +129,7 @@ func (s *suite) durableEvidence() error {
 	if err != nil || !reservation.Completed || reservation.Turn.ID != firstTurn.ID {
 		return fmt.Errorf("exact replay was not free of a new reservation: %v", err)
 	}
-	turn, err := s.repo.AppendStudentTutorTurn(s.ctx, first, generation.TutorTurnBlueprint{})
+	turn, err := s.repo.AppendStudentTutorTurn(s.ctx, first, ai.TutorTurnBlueprint{})
 	if err != nil || turn.ID != firstTurn.ID {
 		return fmt.Errorf("append replay failed: %v", err)
 	}
@@ -136,7 +138,7 @@ func (s *suite) durableEvidence() error {
 	if _, err := s.repo.ReserveTutorGeneration(s.ctx, changed, "changed-owner", time.Now(), time.Now().Add(time.Minute)); !errors.Is(err, students.ErrTutorEventConflict) {
 		return fmt.Errorf("changed event reservation must conflict, got %v", err)
 	}
-	if _, err := s.repo.AppendStudentTutorTurn(s.ctx, changed, generation.TutorTurnBlueprint{}); !errors.Is(err, students.ErrTutorEventConflict) {
+	if _, err := s.repo.AppendStudentTutorTurn(s.ctx, changed, ai.TutorTurnBlueprint{}); !errors.Is(err, students.ErrTutorEventConflict) {
 		return fmt.Errorf("changed event append must conflict, got %v", err)
 	}
 	after, err := s.load(f)
@@ -210,7 +212,7 @@ func (s *suite) reservationFence() error {
 	if err = s.repo.FailTutorGeneration(s.ctx, old, now); err != nil {
 		return err
 	}
-	if _, err = s.repo.AppendStudentTutorTurn(s.ctx, old, generation.TutorTurnBlueprint{}); !errors.Is(err, students.ErrTutorEventPending) {
+	if _, err = s.repo.AppendStudentTutorTurn(s.ctx, old, ai.TutorTurnBlueprint{}); !errors.Is(err, students.ErrTutorEventPending) {
 		return fmt.Errorf("old owner append must remain blocked: %v", err)
 	}
 	event, found, err := s.repo.GetStudentTutorEvent(s.ctx, f.user.ID, f.attempt.ID, input.EventID)
@@ -218,7 +220,7 @@ func (s *suite) reservationFence() error {
 		return fmt.Errorf("old failure replaced new owner: found=%t error=%v", found, err)
 	}
 	input.ReservationOwner = "new-owner"
-	if _, err = s.repo.AppendStudentTutorTurn(s.ctx, input, generation.TutorTurnBlueprint{}); err != nil {
+	if _, err = s.repo.AppendStudentTutorTurn(s.ctx, input, ai.TutorTurnBlueprint{}); err != nil {
 		return err
 	}
 	a, err := s.load(f)

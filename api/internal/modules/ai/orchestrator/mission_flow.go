@@ -1,16 +1,18 @@
-package generation
+package orchestrator
 
 import (
 	"fmt"
 	"strings"
+
+	"classgame-api/internal/modules/ai"
 )
 
 const maxMissionFlowNodes = 8
 
 const maxMissionFlowEdges = 10
 
-func normalizeMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) MissionFlow {
-	nodes := make([]MissionFlowNode, 0, len(blueprint.MissionFlow.Nodes))
+func normalizeMissionFlow(input ai.BuildMissionInput, blueprint ai.MissionBlueprint) ai.MissionFlow {
+	nodes := make([]ai.MissionFlowNode, 0, len(blueprint.MissionFlow.Nodes))
 	seenNodes := make(map[string]struct{}, len(blueprint.MissionFlow.Nodes))
 	for _, node := range blueprint.MissionFlow.Nodes {
 		if len(nodes) >= maxMissionFlowNodes {
@@ -35,12 +37,12 @@ func normalizeMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) M
 		}
 
 		seenNodes[id] = struct{}{}
-		nodes = append(nodes, MissionFlowNode{
+		nodes = append(nodes, ai.MissionFlowNode{
 			ID:          id,
 			Kind:        normalizeFlowKind(node.Kind),
 			Label:       label,
 			Description: description,
-			Position: MissionFlowPosition{
+			Position: ai.MissionFlowPosition{
 				X: clampFloat(node.Position.X, -800, 800),
 				Y: clampFloat(node.Position.Y, -200, 1200),
 			},
@@ -50,7 +52,7 @@ func normalizeMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) M
 		return fallbackMissionFlow(input, blueprint)
 	}
 
-	edges := make([]MissionFlowEdge, 0, len(blueprint.MissionFlow.Edges))
+	edges := make([]ai.MissionFlowEdge, 0, len(blueprint.MissionFlow.Edges))
 	seenEdges := make(map[string]struct{}, len(blueprint.MissionFlow.Edges))
 	for _, edge := range blueprint.MissionFlow.Edges {
 		if len(edges) >= maxMissionFlowEdges {
@@ -78,7 +80,7 @@ func normalizeMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) M
 		}
 
 		seenEdges[id] = struct{}{}
-		edges = append(edges, MissionFlowEdge{
+		edges = append(edges, ai.MissionFlowEdge{
 			ID:     id,
 			Source: source,
 			Target: target,
@@ -89,10 +91,10 @@ func normalizeMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) M
 		return fallbackMissionFlow(input, blueprint)
 	}
 
-	return MissionFlow{Nodes: nodes, Edges: edges}
+	return ai.MissionFlow{Nodes: nodes, Edges: edges}
 }
 
-func fallbackMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) MissionFlow {
+func fallbackMissionFlow(input ai.BuildMissionInput, blueprint ai.MissionBlueprint) ai.MissionFlow {
 	title := normalizeText(blueprint.Title)
 	if title == "" {
 		title = input.MissionName
@@ -101,20 +103,20 @@ func fallbackMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) Mi
 		title = input.Subject + " mission"
 	}
 
-	nodes := []MissionFlowNode{
+	nodes := []ai.MissionFlowNode{
 		{
 			ID:          "start",
 			Kind:        "start",
 			Label:       "Teacher starts mission",
 			Description: "The teacher provides the learning goal, prompt, and optional worksheet files.",
-			Position:    MissionFlowPosition{X: 0, Y: 0},
+			Position:    ai.MissionFlowPosition{X: 0, Y: 0},
 		},
 		{
 			ID:          "generate-preview",
 			Kind:        "setup",
 			Label:       "Mia builds preview",
 			Description: truncateText("Mia turns "+title+" into a short student-safe mission.", 180),
-			Position:    MissionFlowPosition{X: 0, Y: 120},
+			Position:    ai.MissionFlowPosition{X: 0, Y: 120},
 		},
 	}
 
@@ -135,43 +137,43 @@ func fallbackMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) Mi
 			description = "Students practice one part of the learning goal."
 		}
 
-		nodes = append(nodes, MissionFlowNode{
+		nodes = append(nodes, ai.MissionFlowNode{
 			ID:          stageID,
 			Kind:        "activity",
 			Label:       label,
 			Description: description,
-			Position:    MissionFlowPosition{X: 0, Y: float64(240 + index*120)},
+			Position:    ai.MissionFlowPosition{X: 0, Y: float64(240 + index*120)},
 		})
 	}
 
 	decisionY := float64(240 + len(nodes)*90)
 	nodes = append(nodes,
-		MissionFlowNode{
+		ai.MissionFlowNode{
 			ID:          "check-understanding",
 			Kind:        "decision",
 			Label:       "Understanding check",
 			Description: "Mia checks whether the student can explain the answer and the reasoning.",
-			Position:    MissionFlowPosition{X: 0, Y: decisionY},
+			Position:    ai.MissionFlowPosition{X: 0, Y: decisionY},
 		},
-		MissionFlowNode{
+		ai.MissionFlowNode{
 			ID:          "adaptive-feedback",
 			Kind:        "feedback",
 			Label:       "Adaptive feedback",
 			Description: "If the student is stuck, Mia changes the explanation style and records the pattern.",
-			Position:    MissionFlowPosition{X: 260, Y: decisionY},
+			Position:    ai.MissionFlowPosition{X: 260, Y: decisionY},
 		},
-		MissionFlowNode{
+		ai.MissionFlowNode{
 			ID:          "complete",
 			Kind:        "complete",
 			Label:       "Mission complete",
 			Description: "The student finishes with progress and notebook signals saved for the teacher.",
-			Position:    MissionFlowPosition{X: 0, Y: decisionY + 130},
+			Position:    ai.MissionFlowPosition{X: 0, Y: decisionY + 130},
 		},
 	)
 
-	edges := make([]MissionFlowEdge, 0, len(nodes)+1)
+	edges := make([]ai.MissionFlowEdge, 0, len(nodes)+1)
 	for index := 0; index < len(nodes)-4; index++ {
-		edges = append(edges, MissionFlowEdge{
+		edges = append(edges, ai.MissionFlowEdge{
 			ID:     nodes[index].ID + "-to-" + nodes[index+1].ID,
 			Source: nodes[index].ID,
 			Target: nodes[index+1].ID,
@@ -180,25 +182,25 @@ func fallbackMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) Mi
 	}
 	previousID := nodes[len(nodes)-4].ID
 	edges = append(edges,
-		MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     previousID + "-to-check-understanding",
 			Source: previousID,
 			Target: "check-understanding",
 			Label:  "Check",
 		},
-		MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     "check-understanding-to-adaptive-feedback",
 			Source: "check-understanding",
 			Target: "adaptive-feedback",
 			Label:  "Needs support",
 		},
-		MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     "adaptive-feedback-to-complete",
 			Source: "adaptive-feedback",
 			Target: "complete",
 			Label:  "Ready",
 		},
-		MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     "check-understanding-to-complete",
 			Source: "check-understanding",
 			Target: "complete",
@@ -206,42 +208,42 @@ func fallbackMissionFlow(input BuildMissionInput, blueprint MissionBlueprint) Mi
 		},
 	)
 
-	return MissionFlow{Nodes: nodes, Edges: edges}
+	return ai.MissionFlow{Nodes: nodes, Edges: edges}
 }
 
-func guardrailMissionFlow() MissionFlow {
-	return MissionFlow{
-		Nodes: []MissionFlowNode{
+func guardrailMissionFlow() ai.MissionFlow {
+	return ai.MissionFlow{
+		Nodes: []ai.MissionFlowNode{
 			{
 				ID:          "start",
 				Kind:        "start",
 				Label:       "Teacher requests preview",
 				Description: "Mia receives the class context, prompt, and attached files.",
-				Position:    MissionFlowPosition{X: 0, Y: 0},
+				Position:    ai.MissionFlowPosition{X: 0, Y: 0},
 			},
 			{
 				ID:          "guardrail-check",
 				Kind:        "guardrail",
 				Label:       "Education guardrail",
 				Description: "The source must be age-appropriate classroom learning material.",
-				Position:    MissionFlowPosition{X: 0, Y: 130},
+				Position:    ai.MissionFlowPosition{X: 0, Y: 130},
 			},
 			{
 				ID:          "replace-material",
 				Kind:        "setup",
 				Label:       "Replace source",
 				Description: "Attach a readable grade-level worksheet or paste a classroom learning prompt.",
-				Position:    MissionFlowPosition{X: 0, Y: 260},
+				Position:    ai.MissionFlowPosition{X: 0, Y: 260},
 			},
 			{
 				ID:          "regenerate",
 				Kind:        "complete",
 				Label:       "Regenerate safely",
 				Description: "Mia can create a student preview once the material is educational.",
-				Position:    MissionFlowPosition{X: 0, Y: 390},
+				Position:    ai.MissionFlowPosition{X: 0, Y: 390},
 			},
 		},
-		Edges: []MissionFlowEdge{
+		Edges: []ai.MissionFlowEdge{
 			{ID: "start-to-guardrail-check", Source: "start", Target: "guardrail-check", Label: "Review"},
 			{ID: "guardrail-check-to-replace-material", Source: "guardrail-check", Target: "replace-material", Label: "Blocked"},
 			{ID: "replace-material-to-regenerate", Source: "replace-material", Target: "regenerate", Label: "Try again"},

@@ -16,16 +16,17 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/shared/contentpolicy"
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/contentpolicy"
+	"classgame-api/internal/modules/ai/materials/uploadcare"
+	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/shared/pagination"
 	analyticsmodule "classgame-api/internal/shared/analytics"
+	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/shared/httpx"
+	"classgame-api/internal/shared/pagination"
 	"classgame-api/internal/shared/ratelimit"
 	ratehttp "classgame-api/internal/shared/ratelimit/http"
-	"classgame-api/internal/shared/httpx"
-	"classgame-api/internal/shared/uploadcare"
 )
 
 const (
@@ -95,9 +96,9 @@ type ApproveMissionRequest struct {
 }
 
 type ApproveMissionDraftRequest struct {
-	Title            string                       `json:"title"`
-	Summary          string                       `json:"summary"`
-	PreviewQuestions []generation.PreviewQuestion `json:"preview_questions"`
+	Title            string               `json:"title"`
+	Summary          string               `json:"summary"`
+	PreviewQuestions []ai.PreviewQuestion `json:"preview_questions"`
 }
 
 type MissionAttachmentRequest struct {
@@ -177,14 +178,14 @@ func (handler *Handler) PostMissionPreviewStream(ctx *echo.Context) error {
 
 	input := request.toInput(classID)
 	var streamErr error
-	input.Progress = func(progress generation.MissionProgress) {
+	input.Progress = func(progress ai.MissionProgress) {
 		if streamErr != nil {
 			return
 		}
 		streamErr = writeSSE(ctx, "progress", progress)
 	}
 
-	if err := writeSSE(ctx, "progress", generation.MissionProgress{
+	if err := writeSSE(ctx, "progress", ai.MissionProgress{
 		Stage:   "queued",
 		Message: "Starting mission preview.",
 		Percent: 1,
@@ -680,12 +681,12 @@ func validateTargetStudentIDs(value any) error {
 }
 
 func validatePreviewQuestions(value any) error {
-	questions, ok := value.([]generation.PreviewQuestion)
+	questions, ok := value.([]ai.PreviewQuestion)
 	if !ok {
 		return nil
 	}
-	if len(questions) > generation.StudentPreviewQuestionLimit() {
-		return fmt.Errorf("preview_questions cannot contain more than %d questions", generation.StudentPreviewQuestionLimit())
+	if len(questions) > orchestrator.StudentPreviewQuestionLimit() {
+		return fmt.Errorf("preview_questions cannot contain more than %d questions", orchestrator.StudentPreviewQuestionLimit())
 	}
 	for _, question := range questions {
 		if err := validation.Validate(question.ID, validation.Length(0, 128)); err != nil {

@@ -3,7 +3,7 @@ package students
 import (
 	"strings"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/missions"
 )
 
@@ -12,19 +12,19 @@ func toLearningTraceInput(
 	snapshot StudentLearningSnapshot,
 	status string,
 	memory StudentLearningMemory,
-) generation.BuildLearningTraceInput {
-	progress := make([]generation.LearningTraceStageProgress, 0, len(snapshot.Progress))
+) ai.BuildLearningTraceInput {
+	progress := make([]ai.LearningTraceStageProgress, 0, len(snapshot.Progress))
 	for _, stage := range snapshot.Progress {
-		progress = append(progress, generation.LearningTraceStageProgress{
+		progress = append(progress, ai.LearningTraceStageProgress{
 			StageID:  stage.StageID,
 			Status:   stage.Status,
 			Correct:  stage.Correct,
 			Required: stage.Required,
 		})
 	}
-	notes := make([]generation.LearningTraceNote, 0, len(snapshot.Notes))
+	notes := make([]ai.LearningTraceNote, 0, len(snapshot.Notes))
 	for _, note := range snapshot.Notes {
-		notes = append(notes, generation.LearningTraceNote{
+		notes = append(notes, ai.LearningTraceNote{
 			Kind:     note.Kind,
 			Skill:    note.Skill,
 			Text:     note.Text,
@@ -32,17 +32,17 @@ func toLearningTraceInput(
 			Count:    note.Count,
 		})
 	}
-	decisions := make([]generation.LearningTraceDecision, 0, len(snapshot.Decisions))
+	decisions := make([]ai.LearningTraceDecision, 0, len(snapshot.Decisions))
 	for _, decision := range snapshot.Decisions {
-		decisions = append(decisions, generation.LearningTraceDecision{
+		decisions = append(decisions, ai.LearningTraceDecision{
 			Action:  decision.Action,
 			Message: decision.Message,
 			Why:     decision.Why,
 		})
 	}
-	events := make([]generation.LearningTraceEvent, 0, len(snapshot.Events))
+	events := make([]ai.LearningTraceEvent, 0, len(snapshot.Events))
 	for _, event := range snapshot.Events {
-		events = append(events, generation.LearningTraceEvent{
+		events = append(events, ai.LearningTraceEvent{
 			ID:         event.ID,
 			Sequence:   event.Sequence,
 			Type:       event.Type,
@@ -55,28 +55,28 @@ func toLearningTraceInput(
 		})
 	}
 
-	return generation.BuildLearningTraceInput{
-		Mission: generation.LearningTraceMission{
+	return ai.BuildLearningTraceInput{
+		Mission: ai.LearningTraceMission{
 			Title:        missionDocument.Title,
 			Subject:      missionDocument.Subject,
 			GradeLevel:   missionDocument.GradeLevel,
 			LearningGoal: missionDocument.LearningGoal,
 		},
-		Snapshot: generation.LearningTraceSnapshot{
+		Snapshot: ai.LearningTraceSnapshot{
 			Status:     strings.ToLower(normalizeText(status)),
 			Progress:   progress,
 			Notes:      notes,
 			Redirected: snapshot.Redirected,
 			ReturnTo:   snapshot.ReturnTo,
 			LastPod:    snapshot.LastPod,
-			Preferences: generation.LearningTracePreferences{
+			Preferences: ai.LearningTracePreferences{
 				ExplanationStyle: snapshot.Preferences.ExplanationStyle,
 				DifficultyBias:   snapshot.Preferences.DifficultyBias,
 			},
 			Decisions: decisions,
 			Events:    events,
 		},
-		PreviousMemory: generation.LearningTracePreviousMemory{
+		PreviousMemory: ai.LearningTracePreviousMemory{
 			Strengths:            memory.Strengths,
 			ImprovementAreas:     memory.ImprovementAreas,
 			PreferredExplanation: memory.PreferredExplanation,

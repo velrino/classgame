@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/shared/auth"
 )
 
 const maxGeneratedTutorTurnsPerAttempt = 36
@@ -102,15 +103,15 @@ func (service *Service) SaveStudentTutorTurn(
 	safeSnapshot, _ := AssessLearningSnapshotWithEvidence(missionDocument, attempt.Snapshot, attempt.TutorTurns, attempt.AcceptedAnswers, attempt.Status)
 
 	retrievedChunks := RetrieveMissionKnowledge(missionDocument, input, 5)
-	classContext := generation.TutorClassContext{}
+	classContext := ai.TutorClassContext{}
 	if input.Type != "feedback" {
 		classContext, err = service.classTutorContext(ctx, user.Student.ClassID)
 		if err != nil {
 			return StudentTutorTurn{}, err
 		}
 	}
-	turnInput := generation.BuildTutorTurnInput{
-		Mission: generation.TutorMissionContext{
+	turnInput := ai.BuildTutorTurnInput{
+		Mission: ai.TutorMissionContext{
 			ID:           missionDocument.ID,
 			Title:        missionDocument.Title,
 			Subject:      missionDocument.Subject,
@@ -118,20 +119,20 @@ func (service *Service) SaveStudentTutorTurn(
 			LearningGoal: missionDocument.LearningGoal,
 			Stages:       missionDocument.Stages,
 		},
-		StudentMemory: generation.LearningTracePreviousMemory{
+		StudentMemory: ai.LearningTracePreviousMemory{
 			Strengths:            user.Student.LearningMemory.Strengths,
 			ImprovementAreas:     user.Student.LearningMemory.ImprovementAreas,
 			PreferredExplanation: user.Student.LearningMemory.PreferredExplanation,
 			NextAdaptation:       user.Student.LearningMemory.NextAdaptation,
 		},
 		ClassContext: classContext,
-		Attempt: generation.TutorAttemptContext{
+		Attempt: ai.TutorAttemptContext{
 			Status:       attempt.Status,
 			Progress:     toTutorProgress(safeSnapshot.Progress),
 			RecentTurns:  toTutorTurnHistory(attempt.TutorTurns),
 			RecentEvents: toTutorEvents(safeSnapshot.Events),
 		},
-		Turn: generation.TutorTurnEvidence{
+		Turn: ai.TutorTurnEvidence{
 			EventID:           input.EventID,
 			Type:              input.Type,
 			StageID:           input.StageID,
@@ -146,7 +147,7 @@ func (service *Service) SaveStudentTutorTurn(
 		RetrievedChunks: retrievedChunks,
 	}
 
-	tutor := generation.BuildObservedTutorTurn(
+	tutor := orchestrator.BuildObservedTutorTurn(
 		turnInput,
 		"Feedback was recorded for the next tutor interaction without generating new AI content.",
 	)
@@ -202,7 +203,7 @@ func groundStudentTutorTurn(
 		return input, nil
 	}
 
-	var publishedQuestion *generation.PreviewQuestion
+	var publishedQuestion *ai.PreviewQuestion
 	questions := playableMissionQuestions(document)
 	for index := range questions {
 		question := &questions[index]

@@ -3,8 +3,8 @@ package missions
 import (
 	"time"
 
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/tenancy"
 )
 
@@ -28,83 +28,83 @@ const (
 )
 
 type MissionDocument struct {
-	ID                       string                         `firestore:"id" json:"id"`
-	MissionCode              string                         `firestore:"mission_code" json:"mission_code"`
-	OrganizationID           string                         `firestore:"organization_id" json:"organization_id"`
-	DistrictID               string                         `firestore:"district_id" json:"district_id"`
-	SchoolID                 string                         `firestore:"school_id" json:"school_id"`
-	TeacherID                string                         `firestore:"teacher_id" json:"teacher_id"`
-	ClassID                  string                         `firestore:"class_id" json:"class_id"`
-	ClassCode                string                         `firestore:"class_code" json:"class_code"`
-	ClassName                string                         `firestore:"class_name" json:"class_name"`
-	MissionName              string                         `firestore:"mission_name" json:"mission_name"`
-	Title                    string                         `firestore:"title" json:"title"`
-	Summary                  string                         `firestore:"summary" json:"summary"`
-	Subject                  string                         `firestore:"subject" json:"subject"`
-	GradeLevel               string                         `firestore:"grade_level" json:"grade_level"`
-	LearningGoal             string                         `firestore:"learning_goal" json:"learning_goal"`
-	TeacherPrompt            string                         `firestore:"teacher_prompt" json:"teacher_prompt"`
-	AudienceType             string                         `firestore:"audience_type" json:"audience_type"`
-	TargetStudentIDs         []string                       `firestore:"target_student_ids" json:"target_student_ids"`
-	Attachments              []MissionAttachment            `firestore:"attachments" json:"attachments"`
-	PreviewQuestions         []generation.PreviewQuestion   `firestore:"preview_questions" json:"preview_questions"`
-	KnowledgeChunks          []generation.KnowledgeChunk    `firestore:"knowledge_chunks" json:"knowledge_chunks"`
-	SuggestedDurationMinutes int                            `firestore:"suggested_duration_minutes" json:"suggested_duration_minutes"`
-	Stages                   []generation.MissionStage      `firestore:"stages" json:"stages"`
-	Suggestions              []generation.MissionSuggestion `firestore:"suggestions" json:"suggestions"`
-	PositiveSignals          []string                       `firestore:"positive_signals" json:"positive_signals"`
-	ImprovementSignals       []string                       `firestore:"improvement_signals" json:"improvement_signals"`
-	EducationGuardrail       generation.EducationGuardrail  `firestore:"education_guardrail" json:"education_guardrail"`
-	MissionFlow              generation.MissionFlow         `firestore:"mission_flow" json:"mission_flow"`
-	Orchestration            MissionOrchestration           `firestore:"orchestration" json:"orchestration"`
-	Draft                    *MissionSnapshot               `firestore:"draft,omitempty" json:"-"`
-	Published                *MissionSnapshot               `firestore:"published,omitempty" json:"-"`
-	DraftRevision            int64                          `firestore:"draft_revision" json:"draft_revision"`
-	PublishedRevision        int64                          `firestore:"published_revision" json:"published_revision"`
-	ApprovalReceipt          *MissionApprovalReceipt        `firestore:"approval_receipt,omitempty" json:"-"`
-	HasUnpublishedChanges    bool                           `firestore:"has_unpublished_changes" json:"has_unpublished_changes"`
-	Status                   string                         `firestore:"status" json:"status"`
-	StatusBeforeDelete       string                         `firestore:"status_before_delete,omitempty" json:"-"`
-	CreatedBy                classrooms.TeacherSummary      `firestore:"created_by" json:"created_by"`
-	UpdatedBy                classrooms.TeacherSummary      `firestore:"updated_by" json:"updated_by"`
-	DeletedBy                classrooms.TeacherSummary      `firestore:"deleted_by,omitempty" json:"-"`
-	PublishedAt              time.Time                      `firestore:"published_at" json:"published_at"`
-	DeletedAt                time.Time                      `firestore:"deleted_at,omitempty" json:"deleted_at"`
-	CreatedAt                time.Time                      `firestore:"created_at" json:"created_at"`
-	UpdatedAt                time.Time                      `firestore:"updated_at" json:"updated_at"`
+	ID                       string                    `firestore:"id" json:"id"`
+	MissionCode              string                    `firestore:"mission_code" json:"mission_code"`
+	OrganizationID           string                    `firestore:"organization_id" json:"organization_id"`
+	DistrictID               string                    `firestore:"district_id" json:"district_id"`
+	SchoolID                 string                    `firestore:"school_id" json:"school_id"`
+	TeacherID                string                    `firestore:"teacher_id" json:"teacher_id"`
+	ClassID                  string                    `firestore:"class_id" json:"class_id"`
+	ClassCode                string                    `firestore:"class_code" json:"class_code"`
+	ClassName                string                    `firestore:"class_name" json:"class_name"`
+	MissionName              string                    `firestore:"mission_name" json:"mission_name"`
+	Title                    string                    `firestore:"title" json:"title"`
+	Summary                  string                    `firestore:"summary" json:"summary"`
+	Subject                  string                    `firestore:"subject" json:"subject"`
+	GradeLevel               string                    `firestore:"grade_level" json:"grade_level"`
+	LearningGoal             string                    `firestore:"learning_goal" json:"learning_goal"`
+	TeacherPrompt            string                    `firestore:"teacher_prompt" json:"teacher_prompt"`
+	AudienceType             string                    `firestore:"audience_type" json:"audience_type"`
+	TargetStudentIDs         []string                  `firestore:"target_student_ids" json:"target_student_ids"`
+	Attachments              []MissionAttachment       `firestore:"attachments" json:"attachments"`
+	PreviewQuestions         []ai.PreviewQuestion      `firestore:"preview_questions" json:"preview_questions"`
+	KnowledgeChunks          []ai.KnowledgeChunk       `firestore:"knowledge_chunks" json:"knowledge_chunks"`
+	SuggestedDurationMinutes int                       `firestore:"suggested_duration_minutes" json:"suggested_duration_minutes"`
+	Stages                   []ai.MissionStage         `firestore:"stages" json:"stages"`
+	Suggestions              []ai.MissionSuggestion    `firestore:"suggestions" json:"suggestions"`
+	PositiveSignals          []string                  `firestore:"positive_signals" json:"positive_signals"`
+	ImprovementSignals       []string                  `firestore:"improvement_signals" json:"improvement_signals"`
+	EducationGuardrail       ai.EducationGuardrail     `firestore:"education_guardrail" json:"education_guardrail"`
+	MissionFlow              ai.MissionFlow            `firestore:"mission_flow" json:"mission_flow"`
+	Orchestration            MissionOrchestration      `firestore:"orchestration" json:"orchestration"`
+	Draft                    *MissionSnapshot          `firestore:"draft,omitempty" json:"-"`
+	Published                *MissionSnapshot          `firestore:"published,omitempty" json:"-"`
+	DraftRevision            int64                     `firestore:"draft_revision" json:"draft_revision"`
+	PublishedRevision        int64                     `firestore:"published_revision" json:"published_revision"`
+	ApprovalReceipt          *MissionApprovalReceipt   `firestore:"approval_receipt,omitempty" json:"-"`
+	HasUnpublishedChanges    bool                      `firestore:"has_unpublished_changes" json:"has_unpublished_changes"`
+	Status                   string                    `firestore:"status" json:"status"`
+	StatusBeforeDelete       string                    `firestore:"status_before_delete,omitempty" json:"-"`
+	CreatedBy                classrooms.TeacherSummary `firestore:"created_by" json:"created_by"`
+	UpdatedBy                classrooms.TeacherSummary `firestore:"updated_by" json:"updated_by"`
+	DeletedBy                classrooms.TeacherSummary `firestore:"deleted_by,omitempty" json:"-"`
+	PublishedAt              time.Time                 `firestore:"published_at" json:"published_at"`
+	DeletedAt                time.Time                 `firestore:"deleted_at,omitempty" json:"deleted_at"`
+	CreatedAt                time.Time                 `firestore:"created_at" json:"created_at"`
+	UpdatedAt                time.Time                 `firestore:"updated_at" json:"updated_at"`
 }
 
 // MissionSnapshot is one immutable content revision. MissionDocument.Draft is
 // replaced whenever Mia regenerates a preview, while Published changes only
 // after an explicit approval.
 type MissionSnapshot struct {
-	Revision                 int64                          `firestore:"revision" json:"revision"`
-	OrganizationID           string                         `firestore:"organization_id" json:"organization_id"`
-	DistrictID               string                         `firestore:"district_id" json:"district_id"`
-	SchoolID                 string                         `firestore:"school_id" json:"school_id"`
-	TeacherID                string                         `firestore:"teacher_id" json:"teacher_id"`
-	MissionName              string                         `firestore:"mission_name" json:"mission_name"`
-	Title                    string                         `firestore:"title" json:"title"`
-	Summary                  string                         `firestore:"summary" json:"summary"`
-	Subject                  string                         `firestore:"subject" json:"subject"`
-	GradeLevel               string                         `firestore:"grade_level" json:"grade_level"`
-	LearningGoal             string                         `firestore:"learning_goal" json:"learning_goal"`
-	TeacherPrompt            string                         `firestore:"teacher_prompt" json:"teacher_prompt"`
-	AudienceType             string                         `firestore:"audience_type" json:"audience_type"`
-	TargetStudentIDs         []string                       `firestore:"target_student_ids" json:"target_student_ids"`
-	Attachments              []MissionAttachment            `firestore:"attachments" json:"attachments"`
-	PreviewQuestions         []generation.PreviewQuestion   `firestore:"preview_questions" json:"preview_questions"`
-	KnowledgeChunks          []generation.KnowledgeChunk    `firestore:"knowledge_chunks" json:"knowledge_chunks"`
-	SuggestedDurationMinutes int                            `firestore:"suggested_duration_minutes" json:"suggested_duration_minutes"`
-	Stages                   []generation.MissionStage      `firestore:"stages" json:"stages"`
-	Suggestions              []generation.MissionSuggestion `firestore:"suggestions" json:"suggestions"`
-	PositiveSignals          []string                       `firestore:"positive_signals" json:"positive_signals"`
-	ImprovementSignals       []string                       `firestore:"improvement_signals" json:"improvement_signals"`
-	EducationGuardrail       generation.EducationGuardrail  `firestore:"education_guardrail" json:"education_guardrail"`
-	MissionFlow              generation.MissionFlow         `firestore:"mission_flow" json:"mission_flow"`
-	Orchestration            MissionOrchestration           `firestore:"orchestration" json:"orchestration"`
-	UpdatedBy                classrooms.TeacherSummary      `firestore:"updated_by" json:"updated_by"`
-	UpdatedAt                time.Time                      `firestore:"updated_at" json:"updated_at"`
+	Revision                 int64                     `firestore:"revision" json:"revision"`
+	OrganizationID           string                    `firestore:"organization_id" json:"organization_id"`
+	DistrictID               string                    `firestore:"district_id" json:"district_id"`
+	SchoolID                 string                    `firestore:"school_id" json:"school_id"`
+	TeacherID                string                    `firestore:"teacher_id" json:"teacher_id"`
+	MissionName              string                    `firestore:"mission_name" json:"mission_name"`
+	Title                    string                    `firestore:"title" json:"title"`
+	Summary                  string                    `firestore:"summary" json:"summary"`
+	Subject                  string                    `firestore:"subject" json:"subject"`
+	GradeLevel               string                    `firestore:"grade_level" json:"grade_level"`
+	LearningGoal             string                    `firestore:"learning_goal" json:"learning_goal"`
+	TeacherPrompt            string                    `firestore:"teacher_prompt" json:"teacher_prompt"`
+	AudienceType             string                    `firestore:"audience_type" json:"audience_type"`
+	TargetStudentIDs         []string                  `firestore:"target_student_ids" json:"target_student_ids"`
+	Attachments              []MissionAttachment       `firestore:"attachments" json:"attachments"`
+	PreviewQuestions         []ai.PreviewQuestion      `firestore:"preview_questions" json:"preview_questions"`
+	KnowledgeChunks          []ai.KnowledgeChunk       `firestore:"knowledge_chunks" json:"knowledge_chunks"`
+	SuggestedDurationMinutes int                       `firestore:"suggested_duration_minutes" json:"suggested_duration_minutes"`
+	Stages                   []ai.MissionStage         `firestore:"stages" json:"stages"`
+	Suggestions              []ai.MissionSuggestion    `firestore:"suggestions" json:"suggestions"`
+	PositiveSignals          []string                  `firestore:"positive_signals" json:"positive_signals"`
+	ImprovementSignals       []string                  `firestore:"improvement_signals" json:"improvement_signals"`
+	EducationGuardrail       ai.EducationGuardrail     `firestore:"education_guardrail" json:"education_guardrail"`
+	MissionFlow              ai.MissionFlow            `firestore:"mission_flow" json:"mission_flow"`
+	Orchestration            MissionOrchestration      `firestore:"orchestration" json:"orchestration"`
+	UpdatedBy                classrooms.TeacherSummary `firestore:"updated_by" json:"updated_by"`
+	UpdatedAt                time.Time                 `firestore:"updated_at" json:"updated_at"`
 }
 
 type MissionPublishedRevisionDocument struct {
@@ -177,8 +177,8 @@ type CreateMissionInput struct {
 	TargetStudentIDs      []string
 	Attachments           []MissionAttachment
 	Teacher               classrooms.TeacherSummary
-	Blueprint             generation.MissionBlueprint
-	Progress              generation.MissionProgressReporter
+	Blueprint             ai.MissionBlueprint
+	Progress              ai.MissionProgressReporter
 	Status                string
 	PublishedAt           time.Time
 	Timestamp             time.Time
@@ -192,7 +192,7 @@ type ApproveMissionInput struct {
 type MissionDraftEdits struct {
 	Title            string
 	Summary          string
-	PreviewQuestions []generation.PreviewQuestion
+	PreviewQuestions []ai.PreviewQuestion
 	HasChanges       bool
 }
 

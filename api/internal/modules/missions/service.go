@@ -10,11 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
 	attachmentsmodule "classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/tenancy"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/pagination"
 )
 
@@ -39,7 +40,7 @@ const (
 )
 
 type Orchestrator interface {
-	BuildMission(context.Context, generation.BuildMissionInput) (generation.MissionBlueprint, error)
+	BuildMission(context.Context, ai.BuildMissionInput) (ai.MissionBlueprint, error)
 }
 
 type TeacherClassService interface {
@@ -201,7 +202,7 @@ func (service *Service) Approve(
 	return mission, nil
 }
 
-func missionGuardrailBlocked(guardrail generation.EducationGuardrail) bool {
+func missionGuardrailBlocked(guardrail ai.EducationGuardrail) bool {
 	// Older stored missions predate this field and decode to the zero value.
 	// A normalized blocked result always has an explanatory reason.
 	return !guardrail.Allowed && strings.TrimSpace(guardrail.Reason) != ""
@@ -349,7 +350,7 @@ func (service *Service) createDraft(
 		}
 	}
 
-	blueprint, err := service.orchestrator.BuildMission(ctx, generation.BuildMissionInput{
+	blueprint, err := service.orchestrator.BuildMission(ctx, ai.BuildMissionInput{
 		ClassID:       teacherClass.ClassID,
 		ClassName:     teacherClass.ClassName,
 		MissionName:   input.MissionName,
@@ -481,11 +482,11 @@ func normalizeDraftEdits(edits MissionDraftEdits) MissionDraftEdits {
 }
 
 func normalizeEditedPreviewQuestions(
-	questions []generation.PreviewQuestion,
-) []generation.PreviewQuestion {
-	normalized := make([]generation.PreviewQuestion, 0, min(len(questions), generation.StudentPreviewQuestionLimit()))
+	questions []ai.PreviewQuestion,
+) []ai.PreviewQuestion {
+	normalized := make([]ai.PreviewQuestion, 0, min(len(questions), orchestrator.StudentPreviewQuestionLimit()))
 	for index, question := range questions {
-		if len(normalized) >= generation.StudentPreviewQuestionLimit() {
+		if len(normalized) >= orchestrator.StudentPreviewQuestionLimit() {
 			break
 		}
 		id := strings.TrimSpace(question.ID)
@@ -500,13 +501,13 @@ func normalizeEditedPreviewQuestions(
 		}
 
 		answerType := "multiple_choice"
-		options := generation.NormalizeMultipleChoiceOptions(
+		options := orchestrator.NormalizeMultipleChoiceOptions(
 			expectedAnswer,
 			normalizeTextList(question.Options, 4),
 			normalizeTextList(question.MisconceptionTraps, 4),
 		)
 
-		normalized = append(normalized, generation.PreviewQuestion{
+		normalized = append(normalized, ai.PreviewQuestion{
 			ID:                 id,
 			StageID:            strings.TrimSpace(question.StageID),
 			Prompt:             prompt,
@@ -615,10 +616,10 @@ func normalizeAttachments(attachments []MissionAttachment) []MissionAttachment {
 	return normalized
 }
 
-func toOrchestratorAttachments(attachments []MissionAttachment) []generation.AttachmentInput {
-	output := make([]generation.AttachmentInput, 0, len(attachments))
+func toOrchestratorAttachments(attachments []MissionAttachment) []ai.AttachmentInput {
+	output := make([]ai.AttachmentInput, 0, len(attachments))
 	for _, attachment := range attachments {
-		output = append(output, generation.AttachmentInput{
+		output = append(output, ai.AttachmentInput{
 			FileName:   attachment.FileName,
 			MimeType:   attachment.MimeType,
 			CDNURL:     attachment.CDNURL,

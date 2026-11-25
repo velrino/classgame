@@ -1,12 +1,14 @@
-package generation
+package orchestrator
 
 import (
 	"fmt"
 	"strings"
+
+	"classgame-api/internal/modules/ai"
 )
 
-func normalizeKnowledgeChunks(input BuildMissionInput, chunks []KnowledgeChunk) []KnowledgeChunk {
-	result := make([]KnowledgeChunk, 0, min(len(chunks), 12))
+func normalizeKnowledgeChunks(input ai.BuildMissionInput, chunks []ai.KnowledgeChunk) []ai.KnowledgeChunk {
+	result := make([]ai.KnowledgeChunk, 0, min(len(chunks), 12))
 	seen := make(map[string]struct{}, len(chunks))
 	for index, chunk := range chunks {
 		if len(result) >= 12 {
@@ -33,7 +35,7 @@ func normalizeKnowledgeChunks(input BuildMissionInput, chunks []KnowledgeChunk) 
 		}
 
 		seen[id] = struct{}{}
-		result = append(result, KnowledgeChunk{
+		result = append(result, ai.KnowledgeChunk{
 			ID:       id,
 			Source:   source,
 			Title:    title,
@@ -66,10 +68,10 @@ func unsafeKnowledgeChunk(content string) bool {
 }
 
 func fallbackKnowledgeChunks(
-	input BuildMissionInput,
-	stages []MissionStage,
-	questions []PreviewQuestion,
-) []KnowledgeChunk {
+	input ai.BuildMissionInput,
+	stages []ai.MissionStage,
+	questions []ai.PreviewQuestion,
+) []ai.KnowledgeChunk {
 	source := "Teacher mission context"
 	if len(input.Attachments) > 0 {
 		names := make([]string, 0, len(input.Attachments))
@@ -83,13 +85,13 @@ func fallbackKnowledgeChunks(
 		}
 	}
 
-	chunks := make([]KnowledgeChunk, 0, min(12, len(stages)+len(questions)))
+	chunks := make([]ai.KnowledgeChunk, 0, min(12, len(stages)+len(questions)))
 	for index, stage := range stages {
 		content := normalizeText(strings.Join(append([]string{stage.Goal}, stage.Checks...), " "))
 		if content == "" {
 			continue
 		}
-		chunks = append(chunks, KnowledgeChunk{
+		chunks = append(chunks, ai.KnowledgeChunk{
 			ID:       fmt.Sprintf("stage-context-%d", index+1),
 			Source:   source,
 			Title:    stage.Title,
@@ -101,7 +103,7 @@ func fallbackKnowledgeChunks(
 		if len(chunks) >= 12 {
 			break
 		}
-		chunks = append(chunks, KnowledgeChunk{
+		chunks = append(chunks, ai.KnowledgeChunk{
 			ID:      fmt.Sprintf("question-context-%d", index+1),
 			Source:  source,
 			Title:   question.Prompt,

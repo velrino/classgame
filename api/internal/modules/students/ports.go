@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
 )
 
 // SessionStore is the persistence port owned by this workflow.
@@ -38,7 +38,7 @@ type LearningStore interface {
 	AppendStudentTutorTurn(
 		ctx context.Context,
 		input SaveStudentTutorTurnInput,
-		tutor generation.TutorTurnBlueprint,
+		tutor ai.TutorTurnBlueprint,
 	) (StudentTutorTurn, error)
 	GetStudentLearningAttempt(
 		ctx context.Context,
@@ -58,7 +58,7 @@ type LearningStore interface {
 	FinalizeStudentLearningTrace(
 		ctx context.Context,
 		fence FinalizationFence,
-		trace generation.LearningTraceBlueprint,
+		trace ai.LearningTraceBlueprint,
 		memory StudentLearningMemory,
 		timestamp time.Time,
 	) (StudentMissionAttemptDocument, error)

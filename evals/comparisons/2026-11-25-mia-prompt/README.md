@@ -43,7 +43,7 @@ I gave the Gemini judge a clearer rule for examples and follow-up questions, plu
 
 ## Experiment
 
-Mia's current system instruction uses 240 words. The candidate uses 131. It explicitly tells Mia to support examples and follow-up questions with the lesson and to say when a detail is missing. Both prompts received the same student question, retrieved passages and JSON schema. This experiment measures the combined effect of shorter wording and clearer instructions. [Current instruction](../../../api/internal/modules/generation/tutoring.go) · [Compact instruction](../../../api/cmd/evals/evalretrievalmodel/compact.txt)
+Mia's current system instruction uses 240 words. The candidate uses 131. It explicitly tells Mia to support examples and follow-up questions with the lesson and to say when a detail is missing. Both prompts received the same student question, retrieved passages and JSON schema. This experiment measures the combined effect of shorter wording and clearer instructions. [Current instruction](../../../api/internal/modules/ai/agents/tutor/prompt.go) · [Compact instruction](../../../api/cmd/evals/evalretrievalmodel/compact.txt)
 
 The Python runner alternated which version went first. The Go command ran production retrieval and tutor generation, switching only the system instruction at the provider boundary. Vertex AI served Gemini 3.6 Flash with temperature 0.25, a 2,048-token output cap and one attempt per request. The timer covers generation and local response handling after retrieval. [Runner](run.py) · [Go adapter](../../../api/cmd/evals/evalretrievalmodel/main.go)
 

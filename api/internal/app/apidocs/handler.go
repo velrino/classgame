@@ -69,6 +69,8 @@ func (builder *schemaBuilder) schema(typ reflect.Type) object {
 		packagePath := strings.TrimPrefix(typ.PkgPath(), "classgame-api/internal/")
 		// Preserve published component names when their Go packages move.
 		switch packagePath {
+		case "modules/ai":
+			packagePath = "modules/generation"
 		case "modules/health/timeutil":
 			packagePath = "timeutil"
 		case "shared/httpx":

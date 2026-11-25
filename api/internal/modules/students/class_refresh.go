@@ -11,7 +11,7 @@ import (
 	"sort"
 	"time"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/tenancy"
 )
 
@@ -124,18 +124,18 @@ func (service *Service) processClassLearningRefresh(ctx context.Context, job Lea
 	if err != nil {
 		return err
 	}
-	evidence := make([]generation.ClassLearningStudentEvidence, 0, len(attempts))
+	evidence := make([]ai.ClassLearningStudentEvidence, 0, len(attempts))
 	var evidenceAt time.Time
 	for _, attempt := range attempts {
 		if !sameRefreshTenant(attempt, claim) {
 			return ErrStaleClassRefresh
 		}
-		evidence = append(evidence, generation.ClassLearningStudentEvidence{StudentID: attempt.StudentID, StudentName: attempt.StudentName, Strengths: attempt.Trace.Strengths, ImprovementAreas: attempt.Trace.ImprovementAreas})
+		evidence = append(evidence, ai.ClassLearningStudentEvidence{StudentID: attempt.StudentID, StudentName: attempt.StudentName, Strengths: attempt.Trace.Strengths, ImprovementAreas: attempt.Trace.ImprovementAreas})
 		if at := studentAttemptEvidenceTime(attempt); at.After(evidenceAt) {
 			evidenceAt = at
 		}
 	}
-	synthesis, err := service.classLearningGenerator.BuildClassLearningSynthesis(ctx, generation.BuildClassLearningSynthesisInput{ClassID: claim.ClassID, Evidence: evidence})
+	synthesis, err := service.classLearningGenerator.BuildClassLearningSynthesis(ctx, ai.BuildClassLearningSynthesisInput{ClassID: claim.ClassID, Evidence: evidence})
 	if err != nil {
 		return err
 	}

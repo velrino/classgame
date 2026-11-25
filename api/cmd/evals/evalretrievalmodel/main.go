@@ -16,11 +16,13 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/modules/generation"
+	sdk "google.golang.org/genai"
+
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
+	"classgame-api/internal/modules/ai/providers/genai"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/shared/genai"
-	sdk "google.golang.org/genai"
 )
 
 //go:embed compact.txt
@@ -98,9 +100,9 @@ func run() error {
 		return err
 	}
 	var fixture struct {
-		Synthetic bool                           `json:"synthetic"`
-		Mission   missions.MissionDocument       `json:"mission"`
-		Context   generation.BuildTutorTurnInput `json:"tutor_context"`
+		Synthetic bool                     `json:"synthetic"`
+		Mission   missions.MissionDocument `json:"mission"`
+		Context   ai.BuildTutorTurnInput   `json:"tutor_context"`
 		Cases     []struct {
 			ID        string `json:"id"`
 			Retrieval struct {
@@ -144,7 +146,7 @@ func run() error {
 	fixture.Context.RetrievedChunks = students.RetrieveMissionKnowledge(fixture.Mission, c.Retrieval.Turn, c.Retrieval.Limit)
 	fixture.Context.Turn.Prompt = c.Retrieval.Turn.Prompt
 	start := time.Now()
-	answer, err := generation.NewService(generation.Dependencies{Client: p}).BuildTutorTurn(ctx, fixture.Context)
+	answer, err := orchestrator.NewService(orchestrator.Dependencies{Client: p}).BuildTutorTurn(ctx, fixture.Context)
 	if err != nil {
 		return errors.New("production tutor generation failed")
 	}

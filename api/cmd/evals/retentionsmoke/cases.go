@@ -1,20 +1,22 @@
 package main
 
 import (
-	"classgame-api/internal/ops/datarecovery"
-	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/modules/students"
-	"cloud.google.com/go/firestore"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"cloud.google.com/go/firestore"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/ops/datarecovery"
 )
 
 func (s *suite) cases(artifact, keyPath, temp string) []result {
@@ -236,13 +238,13 @@ func (s *suite) cases(artifact, keyPath, temp string) []result {
 	})
 	run("old-finalizer-and-provider-owners-are-fenced", func() error {
 		repo := students.NewFirestoreRepository(store.Client)
-		if _, e := repo.FinalizeStudentLearningTrace(ctx, s.fence, generation.LearningTraceBlueprint{Finalized: true}, students.StudentLearningMemory{}, time.Now()); !errors.Is(e, students.ErrStaleFinalization) {
+		if _, e := repo.FinalizeStudentLearningTrace(ctx, s.fence, ai.LearningTraceBlueprint{Finalized: true}, students.StudentLearningMemory{}, time.Now()); !errors.Is(e, students.ErrStaleFinalization) {
 			return fmt.Errorf("old finalizer result: %v", e)
 		}
 		if e := repo.FailStudentFinalization(ctx, s.fence, time.Now()); e != nil {
 			return e
 		}
-		if _, e := repo.AppendStudentTutorTurn(ctx, s.pendingInput, generation.TutorTurnBlueprint{Message: "late synthetic provider"}); e == nil {
+		if _, e := repo.AppendStudentTutorTurn(ctx, s.pendingInput, ai.TutorTurnBlueprint{Message: "late synthetic provider"}); e == nil {
 			return errors.New("old provider committed")
 		}
 		return nil

@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"classgame-api/internal/modules/ai/materials/uploadcare"
 	attachmentsmodule "classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/shared/uploadcare"
 )
 
 func (repository *FirestoreRepository) Prepare(

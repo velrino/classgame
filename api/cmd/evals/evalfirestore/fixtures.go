@@ -1,13 +1,15 @@
 package main
 
 import (
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/modules/students"
-	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
 	"time"
+
+	"cloud.google.com/go/firestore"
+
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/shared/auth"
 )
 
 type suite struct {
@@ -73,7 +75,7 @@ func (s *suite) reserveAndAppend(input students.SaveStudentTutorTurnInput, owner
 		return r.Turn, nil
 	}
 	input.ReservationOwner = owner
-	return s.repo.AppendStudentTutorTurn(s.ctx, input, generation.TutorTurnBlueprint{Message: "Synthetic feedback", Provider: "emulator-evaluation"})
+	return s.repo.AppendStudentTutorTurn(s.ctx, input, ai.TutorTurnBlueprint{Message: "Synthetic feedback", Provider: "emulator-evaluation"})
 }
 
 func (s *suite) cleanup() error {

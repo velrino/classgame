@@ -1,16 +1,14 @@
-package generation
+package orchestrator
 
 import (
 	"context"
 
-	"classgame-api/internal/shared/genai"
+	"classgame-api/internal/modules/ai/providers/genai"
 )
 
 type GenAIClient interface {
-	GenerateStructured(context.Context, genai.StructuredRequest, any) (genai.StructuredResult, error)
+	genai.StructuredGenerator
 	IsEnabled() bool
-	DefaultModel() string
-	Provider() string
 }
 
 type AttachmentReader interface {

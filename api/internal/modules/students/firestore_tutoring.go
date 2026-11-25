@@ -10,13 +10,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
 )
 
 func (repository *FirestoreRepository) AppendStudentTutorTurn(
 	ctx context.Context,
 	input SaveStudentTutorTurnInput,
-	tutor generation.TutorTurnBlueprint,
+	tutor ai.TutorTurnBlueprint,
 ) (StudentTutorTurn, error) {
 	userRef := repository.client.Collection(usersCollectionName).Doc(input.Identity.ProviderUserID)
 	var result StudentTutorTurn

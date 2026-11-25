@@ -1,11 +1,13 @@
-package generation
+package orchestrator
 
 import (
 	"strings"
+
+	"classgame-api/internal/modules/ai"
 )
 
-func addGenAIUsage(left GenAIUsage, right GenAIUsage) GenAIUsage {
-	return GenAIUsage{
+func addGenAIUsage(left ai.GenAIUsage, right ai.GenAIUsage) ai.GenAIUsage {
+	return ai.GenAIUsage{
 		PromptTokenCount:     left.PromptTokenCount + right.PromptTokenCount,
 		CandidatesTokenCount: left.CandidatesTokenCount + right.CandidatesTokenCount,
 		ThoughtsTokenCount:   left.ThoughtsTokenCount + right.ThoughtsTokenCount,

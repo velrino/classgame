@@ -38,7 +38,7 @@ The capped legacy route, `GET /dashboard/overview`, can apply that synthesis. Th
 
 This is class-level memory and a teacher-facing view. Separate teacher, school, and district AI-memory stores are outside the current scope. Historical evidence remains separate from the compact summary. The `create participant` commands only place existing participants at first use.
 
-Sources: [refresh processor](../../../../api/internal/modules/students/class_refresh.go), [transaction fences](../../../../api/internal/modules/students/firestore_class_refresh.go), [bounded synthesis](../../../../api/internal/modules/generation/class_synthesis.go), [overview service](../../../../api/internal/modules/insights/service.go), [realtime invalidation](../../../../web/src/modules/insights/adapters/realtime.ts), [visible-page refresh](../../../../web/src/modules/insights/adapters/hooks/use-dashboard-snapshots.ts), and [API adapter](../../../../web/src/modules/insights/adapters/http.ts).
+Sources: [refresh processor](../../../../api/internal/modules/students/class_refresh.go), [transaction fences](../../../../api/internal/modules/students/firestore_class_refresh.go), [bounded synthesis](../../../../api/internal/modules/ai/orchestrator/class_synthesis.go), [overview service](../../../../api/internal/modules/insights/service.go), [realtime invalidation](../../../../web/src/modules/insights/adapters/realtime.ts), [visible-page refresh](../../../../web/src/modules/insights/adapters/hooks/use-dashboard-snapshots.ts), and [API adapter](../../../../web/src/modules/insights/adapters/http.ts).
 
 ## Regenerate
 

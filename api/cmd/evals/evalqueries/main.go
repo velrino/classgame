@@ -23,11 +23,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/insights"
 	"classgame-api/internal/modules/students"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/pagination"
 )
 
@@ -148,7 +148,7 @@ func run() error {
 		writes++
 		for a := 0; a < 12; a++ {
 			id := fmt.Sprintf("%s-u%03d-a%03d", prefix, u, a)
-			attempt := students.StudentMissionAttemptDocument{ID: id, StudentID: studentID, StudentName: "Synthetic student", ClassID: prefix, MissionID: "synthetic-mission", PublishedRevision: 1, Status: "completed", EvidenceSchemaVersion: 1, EvidenceRevision: int64(a + 1), LastActivityAt: now.Add(-time.Duration(a/3) * time.Minute), UpdatedAt: now, Trace: generation.LearningTraceBlueprint{Finalized: true, Strengths: []string{"synthetic-skill"}}}
+			attempt := students.StudentMissionAttemptDocument{ID: id, StudentID: studentID, StudentName: "Synthetic student", ClassID: prefix, MissionID: "synthetic-mission", PublishedRevision: 1, Status: "completed", EvidenceSchemaVersion: 1, EvidenceRevision: int64(a + 1), LastActivityAt: now.Add(-time.Duration(a/3) * time.Minute), UpdatedAt: now, Trace: ai.LearningTraceBlueprint{Finalized: true, Strengths: []string{"synthetic-skill"}}}
 			attempt.Snapshot.Revision = int64(a + 1)
 			ref := client.Collection("student_mission_attempts").Doc(id)
 			owned = append(owned, ref)
@@ -427,7 +427,7 @@ func run() error {
 		if err != nil || !ok {
 			return fmt.Errorf("claim:%v", err)
 		}
-		_, err = learning.FinalizeStudentLearningTrace(ctx, students.CaptureFinalizationFence(claimed), generation.LearningTraceBlueprint{Finalized: true, Strengths: []string{"synthetic-live-skill"}}, students.StudentLearningMemory{}, now)
+		_, err = learning.FinalizeStudentLearningTrace(ctx, students.CaptureFinalizationFence(claimed), ai.LearningTraceBlueprint{Finalized: true, Strengths: []string{"synthetic-live-skill"}}, students.StudentLearningMemory{}, now)
 		if err != nil {
 			return err
 		}

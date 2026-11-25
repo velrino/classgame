@@ -1,13 +1,15 @@
-package generation
+package orchestrator
 
 import (
 	"strings"
+
+	"classgame-api/internal/modules/ai"
 )
 
-func buildFallbackBlueprint(input BuildMissionInput, reason string) MissionBlueprint {
+func buildFallbackBlueprint(input ai.BuildMissionInput, reason string) ai.MissionBlueprint {
 	input = normalizeInput(input)
 
-	blueprint := MissionBlueprint{
+	blueprint := ai.MissionBlueprint{
 		Title:                    input.Subject + " Review Mission",
 		Summary:                  input.TeacherPrompt,
 		Subject:                  input.Subject,
@@ -25,7 +27,7 @@ func buildFallbackBlueprint(input BuildMissionInput, reason string) MissionBluep
 			"Mia should watch for repeated reasoning slips.",
 			"Students who mark explanations as confusing need a visual follow-up.",
 		},
-		EducationGuardrail: EducationGuardrail{
+		EducationGuardrail: ai.EducationGuardrail{
 			Allowed:         true,
 			Reason:          "Fallback stayed within the requested classroom learning context.",
 			UsedAttachments: false,
@@ -44,21 +46,21 @@ func buildFallbackBlueprint(input BuildMissionInput, reason string) MissionBluep
 	return blueprint
 }
 
-func buildGuardrailFallbackBlueprint(input BuildMissionInput, reason string) MissionBlueprint {
+func buildGuardrailFallbackBlueprint(input ai.BuildMissionInput, reason string) ai.MissionBlueprint {
 	input = normalizeInput(input)
 	reason = normalizeText(reason)
 	if reason == "" {
 		reason = "The request could not be safely grounded in age-appropriate classroom learning content."
 	}
 
-	blueprint := MissionBlueprint{
+	blueprint := ai.MissionBlueprint{
 		Title:                    "Educational Material Needed",
 		Summary:                  "Mia could not create a safe mission from the provided material. Add a grade-level worksheet or a classroom learning prompt, then regenerate the preview.",
 		Subject:                  safeEducationalSubject(input.Subject),
 		GradeLevel:               safeEducationalGradeLevel(input.GradeLevel),
 		LearningGoal:             "Confirm the mission source is grade-level educational material before students start.",
 		SuggestedDurationMinutes: 6,
-		Stages: []MissionStage{
+		Stages: []ai.MissionStage{
 			{
 				ID:          "review-source",
 				Title:       "Review the source",
@@ -81,7 +83,7 @@ func buildGuardrailFallbackBlueprint(input BuildMissionInput, reason string) Mis
 				UnlocksWhen: "The teacher approves the corrected preview.",
 			},
 		},
-		PreviewQuestions: []PreviewQuestion{
+		PreviewQuestions: []ai.PreviewQuestion{
 			{
 				ID:                 "confirm-learning-topic",
 				Prompt:             "What classroom topic should this mission help students practice?",
@@ -107,7 +109,7 @@ func buildGuardrailFallbackBlueprint(input BuildMissionInput, reason string) Mis
 				MisconceptionTraps: []string{"Publishing before the source is checked."},
 			},
 		},
-		Suggestions: []MissionSuggestion{
+		Suggestions: []ai.MissionSuggestion{
 			{
 				ID:          "use-grade-level-source",
 				Title:       "Use a grade-level source",
@@ -132,7 +134,7 @@ func buildGuardrailFallbackBlueprint(input BuildMissionInput, reason string) Mis
 		ImprovementSignals: []string{
 			"Uploaded material should be replaced when it is empty, unrelated, or not readable.",
 		},
-		EducationGuardrail: EducationGuardrail{
+		EducationGuardrail: ai.EducationGuardrail{
 			Allowed:         false,
 			Reason:          reason,
 			UsedAttachments: false,
@@ -150,7 +152,7 @@ func buildGuardrailFallbackBlueprint(input BuildMissionInput, reason string) Mis
 	return blueprint
 }
 
-func fallbackAttachmentNotes(input BuildMissionInput) string {
+func fallbackAttachmentNotes(input ai.BuildMissionInput) string {
 	if len(input.Attachments) == 0 {
 		return "No attachments were provided."
 	}
@@ -158,8 +160,8 @@ func fallbackAttachmentNotes(input BuildMissionInput) string {
 	return "Fallback could not inspect attachments directly; filenames and teacher context were used safely."
 }
 
-func fallbackStages(input BuildMissionInput) []MissionStage {
-	return []MissionStage{
+func fallbackStages(input ai.BuildMissionInput) []ai.MissionStage {
+	return []ai.MissionStage{
 		{
 			ID:          "diagnostic",
 			Title:       "Quick diagnostic",
@@ -184,11 +186,11 @@ func fallbackStages(input BuildMissionInput) []MissionStage {
 	}
 }
 
-func fallbackSuggestions(input BuildMissionInput) []MissionSuggestion {
+func fallbackSuggestions(input ai.BuildMissionInput) []ai.MissionSuggestion {
 	text := missionInputSearchText(input)
 
 	if strings.Contains(text, "fraction") || strings.Contains(text, "equation") || strings.Contains(text, "algebra") {
-		return []MissionSuggestion{
+		return []ai.MissionSuggestion{
 			{
 				ID:       "fraction-bridge",
 				Title:    "Bridge fractions before equations",
@@ -214,7 +216,7 @@ func fallbackSuggestions(input BuildMissionInput) []MissionSuggestion {
 		}
 	}
 
-	return []MissionSuggestion{
+	return []ai.MissionSuggestion{
 		{
 			ID:       "core-recall",
 			Title:    "Start with recall, then explain",

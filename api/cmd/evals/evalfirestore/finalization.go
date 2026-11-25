@@ -1,15 +1,16 @@
 package main
 
 import (
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/modules/missions"
-	"classgame-api/internal/modules/students"
 	"errors"
 	"fmt"
 	"reflect"
 	"sync"
 	"time"
+
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/modules/students"
+	"classgame-api/internal/shared/auth"
 )
 
 func (s *suite) claim(f fixture, token string, now time.Time) (students.StudentMissionAttemptDocument, error) {
@@ -85,11 +86,11 @@ func (s *suite) staleFinalizer(change string) error {
 		input.Type = "feedback"
 		input.StudentResponse = "helpful"
 		input.Feedback = "helpful"
-		if _, err = s.repo.AppendStudentTutorTurn(s.ctx, input, generation.TutorTurnBlueprint{}); err != nil {
+		if _, err = s.repo.AppendStudentTutorTurn(s.ctx, input, ai.TutorTurnBlueprint{}); err != nil {
 			return err
 		}
 	case "resume":
-		mission := missions.MissionDocument{ID: f.attempt.MissionID, ClassID: f.attempt.ClassID, PublishedRevision: 1, Title: "Synthetic fractions", Stages: []generation.MissionStage{{ID: "synthetic-stage", Title: "Synthetic stage"}}, PreviewQuestions: []generation.PreviewQuestion{{ID: "synthetic-question", StageID: "synthetic-stage", Prompt: "What is one half?", AnswerType: "multiple_choice", Options: []string{"1/2", "1/3", "1/4"}, ExpectedAnswer: "1/2"}}}
+		mission := missions.MissionDocument{ID: f.attempt.MissionID, ClassID: f.attempt.ClassID, PublishedRevision: 1, Title: "Synthetic fractions", Stages: []ai.MissionStage{{ID: "synthetic-stage", Title: "Synthetic stage"}}, PreviewQuestions: []ai.PreviewQuestion{{ID: "synthetic-question", StageID: "synthetic-stage", Prompt: "What is one half?", AnswerType: "multiple_choice", Options: []string{"1/2", "1/3", "1/4"}, ExpectedAnswer: "1/2"}}}
 		_, _, _, err = s.repo.SaveStudentLearningSnapshot(s.ctx, students.SaveStudentLearningSnapshotInput{Identity: auth.Identity{ProviderUserID: f.user.ID}, ExpectedAttemptID: f.attempt.ID, PublishedRevision: 1, Mission: mission, MissionID: f.attempt.MissionID, Status: "learning", Snapshot: students.StudentLearningSnapshot{Revision: 4}, Timestamp: now.Add(time.Second)})
 		if err != nil {
 			return err
@@ -99,7 +100,7 @@ func (s *suite) staleFinalizer(change string) error {
 	if err != nil {
 		return err
 	}
-	if _, err = s.repo.FinalizeStudentLearningTrace(s.ctx, fence, generation.LearningTraceBlueprint{Summary: "stale synthetic result"}, students.StudentLearningMemory{}, now.Add(3*time.Minute)); !errors.Is(err, students.ErrStaleFinalization) {
+	if _, err = s.repo.FinalizeStudentLearningTrace(s.ctx, fence, ai.LearningTraceBlueprint{Summary: "stale synthetic result"}, students.StudentLearningMemory{}, now.Add(3*time.Minute)); !errors.Is(err, students.ErrStaleFinalization) {
 		return fmt.Errorf("stale finalizer %s must be fenced: %v", change, err)
 	}
 	if err = s.repo.FailStudentFinalization(s.ctx, fence, now.Add(3*time.Minute)); err != nil {
@@ -127,7 +128,7 @@ func (s *suite) finalizationReady() error {
 	}
 	fence := students.CaptureFinalizationFence(a)
 	memory := students.StudentLearningMemory{LastMissionID: f.attempt.MissionID, EvidenceAt: f.attempt.LastActivityAt, NextAdaptation: "synthetic next step"}
-	if _, err = s.repo.FinalizeStudentLearningTrace(s.ctx, fence, generation.LearningTraceBlueprint{Summary: "synthetic final result"}, memory, now); err != nil {
+	if _, err = s.repo.FinalizeStudentLearningTrace(s.ctx, fence, ai.LearningTraceBlueprint{Summary: "synthetic final result"}, memory, now); err != nil {
 		return err
 	}
 	before, err := s.load(f)
@@ -140,7 +141,7 @@ func (s *suite) finalizationReady() error {
 	if err = s.repo.FailStudentFinalization(s.ctx, fence, now.Add(time.Second)); err != nil {
 		return err
 	}
-	if _, err = s.repo.FinalizeStudentLearningTrace(s.ctx, fence, generation.LearningTraceBlueprint{Summary: "late duplicate"}, memory, now.Add(time.Second)); err != nil {
+	if _, err = s.repo.FinalizeStudentLearningTrace(s.ctx, fence, ai.LearningTraceBlueprint{Summary: "late duplicate"}, memory, now.Add(time.Second)); err != nil {
 		return err
 	}
 	after, err := s.load(f)

@@ -3,7 +3,7 @@ package missions
 import (
 	"time"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/tenancy"
 )
 
@@ -242,20 +242,20 @@ func ensureMissionFlow(mission *MissionDocument) {
 		title = "Class mission"
 	}
 
-	nodes := []generation.MissionFlowNode{
+	nodes := []ai.MissionFlowNode{
 		{
 			ID:          "start",
 			Kind:        "start",
 			Label:       "Teacher starts mission",
 			Description: "The teacher provides the learning goal, prompt, and optional worksheet files.",
-			Position:    generation.MissionFlowPosition{X: 0, Y: 0},
+			Position:    ai.MissionFlowPosition{X: 0, Y: 0},
 		},
 		{
 			ID:          "preview",
 			Kind:        "setup",
 			Label:       "Mia builds preview",
 			Description: "Mia turns " + title + " into a short student-safe mission.",
-			Position:    generation.MissionFlowPosition{X: 0, Y: 120},
+			Position:    ai.MissionFlowPosition{X: 0, Y: 120},
 		},
 	}
 
@@ -272,43 +272,43 @@ func ensureMissionFlow(mission *MissionDocument) {
 			description = "Students practice one part of the learning goal."
 		}
 
-		nodes = append(nodes, generation.MissionFlowNode{
+		nodes = append(nodes, ai.MissionFlowNode{
 			ID:          "stage-" + string(rune('1'+index)),
 			Kind:        "activity",
 			Label:       label,
 			Description: description,
-			Position:    generation.MissionFlowPosition{X: 0, Y: float64(240 + index*120)},
+			Position:    ai.MissionFlowPosition{X: 0, Y: float64(240 + index*120)},
 		})
 	}
 
 	decisionY := float64(240 + len(nodes)*90)
 	nodes = append(nodes,
-		generation.MissionFlowNode{
+		ai.MissionFlowNode{
 			ID:          "check-understanding",
 			Kind:        "decision",
 			Label:       "Understanding check",
 			Description: "Mia checks whether the student can explain the answer and reasoning.",
-			Position:    generation.MissionFlowPosition{X: 0, Y: decisionY},
+			Position:    ai.MissionFlowPosition{X: 0, Y: decisionY},
 		},
-		generation.MissionFlowNode{
+		ai.MissionFlowNode{
 			ID:          "adaptive-feedback",
 			Kind:        "feedback",
 			Label:       "Adaptive feedback",
 			Description: "Mia changes the explanation style when the student needs support.",
-			Position:    generation.MissionFlowPosition{X: 260, Y: decisionY},
+			Position:    ai.MissionFlowPosition{X: 260, Y: decisionY},
 		},
-		generation.MissionFlowNode{
+		ai.MissionFlowNode{
 			ID:          "complete",
 			Kind:        "complete",
 			Label:       "Mission complete",
 			Description: "Progress and notebook signals are saved for the teacher.",
-			Position:    generation.MissionFlowPosition{X: 0, Y: decisionY + 130},
+			Position:    ai.MissionFlowPosition{X: 0, Y: decisionY + 130},
 		},
 	)
 
-	edges := make([]generation.MissionFlowEdge, 0, len(nodes))
+	edges := make([]ai.MissionFlowEdge, 0, len(nodes))
 	for index := 0; index < len(nodes)-4; index++ {
-		edges = append(edges, generation.MissionFlowEdge{
+		edges = append(edges, ai.MissionFlowEdge{
 			ID:     nodes[index].ID + "-to-" + nodes[index+1].ID,
 			Source: nodes[index].ID,
 			Target: nodes[index+1].ID,
@@ -317,25 +317,25 @@ func ensureMissionFlow(mission *MissionDocument) {
 	}
 	previousID := nodes[len(nodes)-4].ID
 	edges = append(edges,
-		generation.MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     previousID + "-to-check-understanding",
 			Source: previousID,
 			Target: "check-understanding",
 			Label:  "Check",
 		},
-		generation.MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     "check-understanding-to-adaptive-feedback",
 			Source: "check-understanding",
 			Target: "adaptive-feedback",
 			Label:  "Needs support",
 		},
-		generation.MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     "adaptive-feedback-to-complete",
 			Source: "adaptive-feedback",
 			Target: "complete",
 			Label:  "Ready",
 		},
-		generation.MissionFlowEdge{
+		ai.MissionFlowEdge{
 			ID:     "check-understanding-to-complete",
 			Source: "check-understanding",
 			Target: "complete",
@@ -343,7 +343,7 @@ func ensureMissionFlow(mission *MissionDocument) {
 		},
 	)
 
-	mission.MissionFlow = generation.MissionFlow{
+	mission.MissionFlow = ai.MissionFlow{
 		Nodes: nodes,
 		Edges: edges,
 	}

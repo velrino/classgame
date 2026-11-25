@@ -1,12 +1,13 @@
-package generation
+package orchestrator
 
 import (
 	"strings"
 
-	"classgame-api/internal/shared/contentpolicy"
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/contentpolicy"
 )
 
-func normalizeInput(input BuildMissionInput) BuildMissionInput {
+func normalizeInput(input ai.BuildMissionInput) ai.BuildMissionInput {
 	input.ClassID = normalizeCode(input.ClassID)
 	input.ClassName = normalizeText(input.ClassName)
 	input.MissionName = normalizeText(input.MissionName)
@@ -35,7 +36,7 @@ func normalizeInput(input BuildMissionInput) BuildMissionInput {
 	return input
 }
 
-func normalizeBlueprint(input BuildMissionInput, blueprint MissionBlueprint) MissionBlueprint {
+func normalizeBlueprint(input ai.BuildMissionInput, blueprint ai.MissionBlueprint) ai.MissionBlueprint {
 	blueprint.EducationGuardrail = normalizeEducationGuardrail(input, blueprint.EducationGuardrail)
 	if blocked, reason := missionSafetyBlockReason(input, blueprint.EducationGuardrail); blocked {
 		return buildGuardrailFallbackBlueprint(input, reason)
@@ -90,7 +91,7 @@ func normalizeBlueprint(input BuildMissionInput, blueprint MissionBlueprint) Mis
 	return blueprint
 }
 
-func normalizeEducationGuardrail(input BuildMissionInput, guardrail EducationGuardrail) EducationGuardrail {
+func normalizeEducationGuardrail(input ai.BuildMissionInput, guardrail ai.EducationGuardrail) ai.EducationGuardrail {
 	guardrail.Reason = truncateText(normalizeText(guardrail.Reason), 240)
 	guardrail.AttachmentNotes = truncateText(normalizeText(guardrail.AttachmentNotes), 240)
 	if guardrail.Allowed && guardrail.Reason == "" {
@@ -115,7 +116,7 @@ func normalizeEducationGuardrail(input BuildMissionInput, guardrail EducationGua
 	return guardrail
 }
 
-func missionSafetyBlockReason(input BuildMissionInput, guardrail EducationGuardrail) (bool, string) {
+func missionSafetyBlockReason(input ai.BuildMissionInput, guardrail ai.EducationGuardrail) (bool, string) {
 	requestText := strings.Join([]string{
 		input.MissionName,
 		input.Subject,
@@ -142,7 +143,7 @@ func missionSafetyBlockReason(input BuildMissionInput, guardrail EducationGuardr
 	return false, ""
 }
 
-func attachmentFileNames(attachments []AttachmentInput) string {
+func attachmentFileNames(attachments []ai.AttachmentInput) string {
 	names := make([]string, 0, len(attachments))
 	for _, attachment := range attachments {
 		names = append(names, attachment.FileName)

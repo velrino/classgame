@@ -6,50 +6,51 @@ import (
 	"strings"
 	"time"
 
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 )
 
 type MissionResponse struct {
-	ID                       string                         `json:"id"`
-	MissionCode              string                         `json:"mission_code"`
-	OrganizationID           string                         `json:"organization_id"`
-	DistrictID               string                         `json:"district_id"`
-	SchoolID                 string                         `json:"school_id"`
-	TeacherID                string                         `json:"teacher_id"`
-	ClassID                  string                         `json:"class_id"`
-	ClassCode                string                         `json:"class_code"`
-	ClassName                string                         `json:"class_name"`
-	MissionName              string                         `json:"mission_name"`
-	Title                    string                         `json:"title"`
-	Summary                  string                         `json:"summary"`
-	Subject                  string                         `json:"subject"`
-	GradeLevel               string                         `json:"grade_level"`
-	LearningGoal             string                         `json:"learning_goal"`
-	TeacherPrompt            string                         `json:"teacher_prompt"`
-	AudienceType             string                         `json:"audience_type"`
-	TargetStudentIDs         []string                       `json:"target_student_ids"`
-	Attachments              []MissionAttachment            `json:"attachments"`
-	PreviewQuestions         []generation.PreviewQuestion   `json:"preview_questions"`
-	KnowledgeChunks          []generation.KnowledgeChunk    `json:"knowledge_chunks"`
-	SuggestedDurationMinutes int                            `json:"suggested_duration_minutes"`
-	Stages                   []generation.MissionStage      `json:"stages"`
-	Suggestions              []generation.MissionSuggestion `json:"suggestions"`
-	PositiveSignals          []string                       `json:"positive_signals"`
-	ImprovementSignals       []string                       `json:"improvement_signals"`
-	EducationGuardrail       generation.EducationGuardrail  `json:"education_guardrail"`
-	MissionFlow              generation.MissionFlow         `json:"mission_flow"`
-	Orchestration            MissionOrchestrationResponse   `json:"orchestration"`
-	DraftRevision            int64                          `json:"draft_revision"`
-	PublishedRevision        int64                          `json:"published_revision"`
-	HasUnpublishedChanges    bool                           `json:"has_unpublished_changes"`
-	Status                   string                         `json:"status"`
-	CreatedBy                classrooms.TeacherResponse     `json:"created_by"`
-	UpdatedBy                classrooms.TeacherResponse     `json:"updated_by"`
-	PublishedAt              string                         `json:"published_at"`
-	DeletedAt                string                         `json:"deleted_at"`
-	CreatedAt                string                         `json:"created_at"`
-	UpdatedAt                string                         `json:"updated_at"`
+	ID                       string                       `json:"id"`
+	MissionCode              string                       `json:"mission_code"`
+	OrganizationID           string                       `json:"organization_id"`
+	DistrictID               string                       `json:"district_id"`
+	SchoolID                 string                       `json:"school_id"`
+	TeacherID                string                       `json:"teacher_id"`
+	ClassID                  string                       `json:"class_id"`
+	ClassCode                string                       `json:"class_code"`
+	ClassName                string                       `json:"class_name"`
+	MissionName              string                       `json:"mission_name"`
+	Title                    string                       `json:"title"`
+	Summary                  string                       `json:"summary"`
+	Subject                  string                       `json:"subject"`
+	GradeLevel               string                       `json:"grade_level"`
+	LearningGoal             string                       `json:"learning_goal"`
+	TeacherPrompt            string                       `json:"teacher_prompt"`
+	AudienceType             string                       `json:"audience_type"`
+	TargetStudentIDs         []string                     `json:"target_student_ids"`
+	Attachments              []MissionAttachment          `json:"attachments"`
+	PreviewQuestions         []ai.PreviewQuestion         `json:"preview_questions"`
+	KnowledgeChunks          []ai.KnowledgeChunk          `json:"knowledge_chunks"`
+	SuggestedDurationMinutes int                          `json:"suggested_duration_minutes"`
+	Stages                   []ai.MissionStage            `json:"stages"`
+	Suggestions              []ai.MissionSuggestion       `json:"suggestions"`
+	PositiveSignals          []string                     `json:"positive_signals"`
+	ImprovementSignals       []string                     `json:"improvement_signals"`
+	EducationGuardrail       ai.EducationGuardrail        `json:"education_guardrail"`
+	MissionFlow              ai.MissionFlow               `json:"mission_flow"`
+	Orchestration            MissionOrchestrationResponse `json:"orchestration"`
+	DraftRevision            int64                        `json:"draft_revision"`
+	PublishedRevision        int64                        `json:"published_revision"`
+	HasUnpublishedChanges    bool                         `json:"has_unpublished_changes"`
+	Status                   string                       `json:"status"`
+	CreatedBy                classrooms.TeacherResponse   `json:"created_by"`
+	UpdatedBy                classrooms.TeacherResponse   `json:"updated_by"`
+	PublishedAt              string                       `json:"published_at"`
+	DeletedAt                string                       `json:"deleted_at"`
+	CreatedAt                string                       `json:"created_at"`
+	UpdatedAt                string                       `json:"updated_at"`
 }
 
 type MissionOrchestrationResponse struct {
@@ -86,7 +87,7 @@ func ToResponse(mission MissionDocument) MissionResponse {
 		AudienceType:     mission.AudienceType,
 		TargetStudentIDs: mission.TargetStudentIDs,
 		Attachments:      attachmentsWithPublicStorageURLs(mission.Attachments),
-		PreviewQuestions: generation.PlayablePreviewQuestions(generation.BuildMissionInput{
+		PreviewQuestions: orchestrator.PlayablePreviewQuestions(ai.BuildMissionInput{
 			ClassID:       mission.ClassID,
 			ClassName:     mission.ClassName,
 			MissionName:   mission.MissionName,

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/shared/ratelimit"
 )
@@ -50,15 +50,15 @@ type MissionRevisionReader interface {
 }
 
 type LearningTraceGenerator interface {
-	BuildLearningTrace(context.Context, generation.BuildLearningTraceInput) (generation.LearningTraceBlueprint, error)
+	BuildLearningTrace(context.Context, ai.BuildLearningTraceInput) (ai.LearningTraceBlueprint, error)
 }
 
 type TutorTurnGenerator interface {
-	BuildTutorTurn(context.Context, generation.BuildTutorTurnInput) (generation.TutorTurnBlueprint, error)
+	BuildTutorTurn(context.Context, ai.BuildTutorTurnInput) (ai.TutorTurnBlueprint, error)
 }
 
 type ClassLearningGenerator interface {
-	BuildClassLearningSynthesis(context.Context, generation.BuildClassLearningSynthesisInput) (generation.ClassLearningSynthesis, error)
+	BuildClassLearningSynthesis(context.Context, ai.BuildClassLearningSynthesisInput) (ai.ClassLearningSynthesis, error)
 }
 
 type Dependencies struct {

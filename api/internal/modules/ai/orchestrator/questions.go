@@ -1,16 +1,16 @@
-package generation
+package orchestrator
 
 import (
 	"fmt"
 	"strings"
+
+	"classgame-api/internal/modules/ai"
 )
 
-const maxStudentPreviewQuestions = 3
-
-func fallbackPreviewQuestions(input BuildMissionInput) []PreviewQuestion {
+func fallbackPreviewQuestions(input ai.BuildMissionInput) []ai.PreviewQuestion {
 	text := missionInputSearchText(input)
 	if isGradeFiveMathMission(text) {
-		return []PreviewQuestion{
+		return []ai.PreviewQuestion{
 			{
 				ID:             "place-value-build",
 				Prompt:         "Which number is built from 50,000 + 3,000 + 200 + 40 + 6?",
@@ -59,7 +59,7 @@ func fallbackPreviewQuestions(input BuildMissionInput) []PreviewQuestion {
 		}
 	}
 	if strings.Contains(text, "fraction") || strings.Contains(text, "equation") || strings.Contains(text, "algebra") {
-		return []PreviewQuestion{
+		return []ai.PreviewQuestion{
 			{
 				ID:             "fraction-denominator-check",
 				Prompt:         "Which move clears the denominator in x/3 = 4?",
@@ -96,7 +96,7 @@ func fallbackPreviewQuestions(input BuildMissionInput) []PreviewQuestion {
 		}
 	}
 
-	return []PreviewQuestion{
+	return []ai.PreviewQuestion{
 		{
 			ID:         "mission-first-step",
 			Prompt:     "What should you do first in this mission?",
@@ -136,7 +136,7 @@ func fallbackPreviewQuestions(input BuildMissionInput) []PreviewQuestion {
 	}
 }
 
-func missionInputSearchText(input BuildMissionInput) string {
+func missionInputSearchText(input ai.BuildMissionInput) string {
 	return strings.ToLower(strings.Join([]string{
 		input.Subject,
 		input.GradeLevel,
@@ -161,14 +161,14 @@ func isGradeFiveMathMission(text string) bool {
 }
 
 func normalizePreviewQuestions(
-	input BuildMissionInput,
-	stages []MissionStage,
-	questions []PreviewQuestion,
-) []PreviewQuestion {
-	result := make([]PreviewQuestion, 0, maxStudentPreviewQuestions)
+	input ai.BuildMissionInput,
+	stages []ai.MissionStage,
+	questions []ai.PreviewQuestion,
+) []ai.PreviewQuestion {
+	result := make([]ai.PreviewQuestion, 0, ai.PreviewQuestionCount)
 	seen := make(map[string]struct{}, len(questions))
-	appendQuestion := func(index int, question PreviewQuestion) bool {
-		if len(result) >= maxStudentPreviewQuestions {
+	appendQuestion := func(index int, question ai.PreviewQuestion) bool {
+		if len(result) >= ai.PreviewQuestionCount {
 			return false
 		}
 		id := normalizeFlowID(question.ID)
@@ -202,7 +202,7 @@ func normalizePreviewQuestions(
 		}
 
 		seen[id] = struct{}{}
-		result = append(result, PreviewQuestion{
+		result = append(result, ai.PreviewQuestion{
 			ID:                 id,
 			StageID:            stageID,
 			Prompt:             prompt,
@@ -218,14 +218,14 @@ func normalizePreviewQuestions(
 
 	for index, question := range questions {
 		appendQuestion(index, question)
-		if len(result) >= maxStudentPreviewQuestions {
+		if len(result) >= ai.PreviewQuestionCount {
 			break
 		}
 	}
 
-	if len(result) < maxStudentPreviewQuestions {
+	if len(result) < ai.PreviewQuestionCount {
 		for index, question := range fallbackPreviewQuestions(input) {
-			if len(result) >= maxStudentPreviewQuestions {
+			if len(result) >= ai.PreviewQuestionCount {
 				break
 			}
 			id := normalizeFlowID(question.ID)

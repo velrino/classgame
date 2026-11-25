@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/missions"
+	"classgame-api/internal/shared/auth"
 )
 
 func (service *Service) SaveStudentLearningSnapshot(
@@ -55,7 +55,7 @@ func (service *Service) SaveStudentLearningSnapshot(
 		Subject: "Classroom learning",
 	}, normalizedSnapshot, normalizedStatus, StudentLearningMemory{})
 	liveInput.Snapshot.Status = "in_progress"
-	liveTrace := generation.BuildObservedLearningTrace(liveInput, "")
+	liveTrace := orchestrator.BuildObservedLearningTrace(liveInput, "")
 	liveTrace.Finalized = false
 
 	attempt, _, _, err := service.learning.SaveStudentLearningSnapshot(ctx, SaveStudentLearningSnapshotInput{

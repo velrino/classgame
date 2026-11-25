@@ -34,9 +34,22 @@ The tree shows optional layers, not folders to create now. Current capabilities 
 - Modules use explicit contracts rather than another module's collection names or persistence documents. Preserve cross-document transactions such as publication as an explicit operation.
 - Use synchronous calls for synchronous work. Add events or an outbox only for a documented delivery requirement, with idempotency and recovery behavior.
 
+### AI workflows
+
+The [AI module](../../api/internal/modules/ai/) owns the inputs and results for mission generation, tutoring, student learning traces and class synthesis.
+
+| Package | Responsibility |
+| --- | --- |
+| [orchestrator](../../api/internal/modules/ai/orchestrator/) | Chooses the steps, prepares safe context, handles fallback and checks results. |
+| [agents](../../api/internal/modules/ai/agents/) | Each task has its own Go entry point, prompt and response schema. |
+| [providers/genai](../../api/internal/modules/ai/providers/genai/) | Calls Gemini, reports usage and applies request budgets. |
+| [contentpolicy](../../api/internal/modules/ai/contentpolicy/) and [materials/uploadcare](../../api/internal/modules/ai/materials/uploadcare/) | Check educational content and allowed attachment URLs. |
+
+For a mission with worksheets, the orchestrator asks the materials agent for a summary of each usable file. It passes the prepared input to the mission agent and combines token usage. Go selects the agents and their order. The API supplies attachment access, request scope and provider settings at startup. Classroom access and Firestore writes belong to the calling application. [Mission workflow](../../api/internal/modules/ai/orchestrator/mission.go)
+
 ### Shared Go code
 
-Share a package only when consumers share its meaning and an owner is clear. Prefer focused names such as `ratelimit`, `contentpolicy`, or `timeutil`; keep provider packages separate from business policy. Technical shared packages must not import business modules. The shared content policy is used by missions and generation. Keep helpers with a single consumer next to that consumer.
+Share a package only when consumers share its meaning and an owner is clear. Prefer focused names such as `ratelimit` or `timeutil`; keep provider packages separate from business policy. Technical shared packages must not import business modules. Keep helpers with a single consumer next to that consumer.
 
 The technical [rate-limit capability](RATE-LIMITING.md) lives under `internal/shared/ratelimit`, with standard-library core policy and separate `redis/` and `http/` adapters. Business quota rules stay outside that technical package.
 

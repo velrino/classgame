@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai/orchestrator"
 )
 
 func (service *Service) ProcessLearningJob(ctx context.Context, job LearningJob) error {
@@ -88,7 +88,7 @@ func (service *Service) finalizeStudentAttempt(
 		attempt.Status,
 		memoryContext,
 	)
-	trace := generation.BuildObservedLearningTrace(traceInput, "learning trace generator is not configured")
+	trace := orchestrator.BuildObservedLearningTrace(traceInput, "learning trace generator is not configured")
 	if service.learningTraceGenerator != nil {
 		if service.allowLearningGeneration(ctx, attempt.ClassID) {
 			trace, err = service.learningTraceGenerator.BuildLearningTrace(ctx, traceInput)
@@ -97,7 +97,7 @@ func (service *Service) finalizeStudentAttempt(
 				return StudentMissionAttemptDocument{}, err
 			}
 		} else {
-			trace = generation.BuildObservedLearningTrace(traceInput, "learning generation quota reached")
+			trace = orchestrator.BuildObservedLearningTrace(traceInput, "learning generation quota reached")
 		}
 	}
 	trace.Finalized = true

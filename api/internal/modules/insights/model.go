@@ -3,11 +3,11 @@ package insights
 import (
 	"time"
 
-	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/modules/ai"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
+	"classgame-api/internal/shared/auth"
 )
 
 const (
@@ -106,7 +106,7 @@ type DashboardOverview struct {
 	Metrics         DashboardMetrics
 	Students        []StudentDashboardItem
 	ClassLearning   ClassLearningSummary
-	Suggestions     []generation.MissionSuggestion
+	Suggestions     []ai.MissionSuggestion
 	GeneratedByAI   bool
 	GeneratedByMock bool
 	Teacher         TeacherSummary

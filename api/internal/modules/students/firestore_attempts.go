@@ -10,7 +10,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"classgame-api/internal/modules/generation"
+	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/tenancy"
 )
 
@@ -135,7 +136,7 @@ func (repository *FirestoreRepository) SaveStudentLearningSnapshot(
 
 		input.Snapshot, input.Status = AssessLearningSnapshotWithEvidence(input.Mission, input.Snapshot, tutorTurns, evidence.AcceptedAnswers, input.Status)
 		liveInput := toLearningTraceInput(input.Mission, input.Snapshot, "in_progress", StudentLearningMemory{})
-		trace = generation.BuildObservedLearningTrace(liveInput, "")
+		trace = orchestrator.BuildObservedLearningTrace(liveInput, "")
 		trace.Finalized = false
 		if input.Status == "completed" && completedAt.IsZero() {
 			completedAt = input.Timestamp
@@ -421,7 +422,7 @@ func (repository *FirestoreRepository) MarkStudentAttemptAbandoned(
 func (repository *FirestoreRepository) FinalizeStudentLearningTrace(
 	ctx context.Context,
 	fence FinalizationFence,
-	trace generation.LearningTraceBlueprint,
+	trace ai.LearningTraceBlueprint,
 	memory StudentLearningMemory,
 	timestamp time.Time,
 ) (StudentMissionAttemptDocument, error) {
