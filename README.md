@@ -27,6 +27,7 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
   - [Database](#database)
     - [Monthly database cost](#monthly-database-cost)
   - [Authentication](#authentication)
+  - [LLM models](#llm-models)
   - [Evaluation tooling](#evaluation-tooling)
   - [Frontend framework](#frontend-framework)
 
@@ -68,7 +69,7 @@ The Excalidraw version below shows the same architecture as editable boxes and c
 
 ## Architecture decisions and trade-offs
 
-See the [technology trade-offs](#technology-trade-offs) for the API, database, authentication, evals, and frontend. The choices below cover job delivery and application structure.
+See the [technology trade-offs](#technology-trade-offs) for the API, database, authentication, LLMs, evals, and frontend. The choices below cover job delivery and application structure.
 
 | Decision and current choice | Relevant alternatives | Why it fits ClassGame | Trade-off / when to reconsider |
 | --- | --- | --- | --- |
@@ -186,7 +187,7 @@ firestore.indexes.json  Firestore query indexes
 
 ## Technology trade-offs
 
-[API runtime](#api-runtime) · [Database](#database) · [Monthly database cost](#monthly-database-cost) · [Authentication](#authentication) · [Evaluation tooling](#evaluation-tooling) · [Frontend framework](#frontend-framework)
+[API runtime](#api-runtime) · [Database](#database) · [Monthly database cost](#monthly-database-cost) · [Authentication](#authentication) · [LLM models](#llm-models) · [Evaluation tooling](#evaluation-tooling) · [Frontend framework](#frontend-framework)
 
 These tables compare the choices I would make if I built ClassGame from scratch as a solo developer.
 
@@ -256,6 +257,20 @@ Teachers sign in with Google or email and password. Students join a class with a
 | What I maintain | I configure providers and maintain teacher eligibility, class membership, and Firestore rules. | I own session expiry and revocation, credential storage and recovery, and sign-in abuse controls. | Clerk manages teacher sign-in UI and sessions. I maintain the classroom access rules, guest flow, and Firestore integration. |
 
 I chose Firebase Auth because teacher sign-in, anonymous student entry, and live Firestore reads can use the same identity. Clerk is attractive if prebuilt teacher sign-in screens matter most. Custom auth gives me control over the guest flow and adds day-to-day work around credentials and sessions. [ClassGame API access](docs/reference/API.md) · [Firestore rules](firestore.rules) · [Firebase anonymous sign-in](https://firebase.google.com/docs/auth/web/anonymous-auth) · [Firebase token verification](https://firebase.google.com/docs/auth/admin/verify-id-tokens) · [Clerk sign-in](https://clerk.com/docs/nextjs/reference/components/authentication/sign-in) · [Clerk Firebase integration status](https://clerk.com/docs/guides/development/integrations/databases/firebase)
+
+### LLM models
+
+Mia needs a model that can read worksheets, answer from selected lesson passages, and return JSON that the Go API can validate.
+
+| Criterion | Gemini 3.7 Flash **(chosen)** | GPT-5.4 mini | Claude Sonnet 5.5 |
+| --- | --- | --- | --- |
+| Role in ClassGame | Configured as the default Gemini model on Vertex AI. It supports short tutor turns and worksheet summaries. | A candidate for frequent short tutor turns. I would check whether it follows the lesson and keeps follow-up questions useful. | A candidate for more demanding worksheet analysis. I would check whether its answers justify the higher token rate. |
+| Worksheet inputs | Accepts PDF and image inputs. | Can read PDFs through the Responses API, which sends both extracted text and page images. | Accepts PDF and image inputs through the Claude API. |
+| Structured tutor output | Supports schema-based JSON. | Supports Structured Outputs. | Supports structured JSON output. |
+| Standard input / output, USD per 1M tokens | $0.75 / $3.75 on global Vertex through December 31, 2026. $1.50 / $7.50 from January 1, 2027. | $0.75 / $4.50 through the OpenAI API. | $2.00 / $10.00 through the Claude API. |
+| Evidence from ClassGame | The saved comparison tested Gemini 3.6 Flash and Gemini 4 Argon. Both returned valid tutor responses on all four cases. | No ClassGame benchmark yet. | No ClassGame benchmark yet. |
+
+I chose Gemini Flash because one model supports both worksheet reading and structured tutor turns at a token rate that fits frequent calls. I serve it through Vertex AI. The four-case experiment also showed the trade-off within Gemini. Flash 3.6 had a lower median turn time than Argon (5.15 s vs. 7.20 s), while Argon kept every factual claim within the lesson on three cases versus one for Flash. To compare GPT or Claude, I would run the same lesson cases and measure answer quality, latency, and cost per accepted turn. [Mia comparison](evals/comparisons/2026-11-25-mia-water-cycle/README.md) · [Gemini 3.7 Flash](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-7-flash) · [Vertex pricing](https://cloud.google.com/model-garden/pricing) · [GPT-5.4 mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) · [OpenAI PDF inputs](https://developers.openai.com/api/docs/guides/file-inputs) · [Claude Sonnet 5.5](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Claude PDF inputs](https://platform.claude.com/docs/en/build-with-claude/pdf-support) · [Claude structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
 
 ### Evaluation tooling
 
