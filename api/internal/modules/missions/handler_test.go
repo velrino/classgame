@@ -10,9 +10,9 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 	"classgame-api/internal/shared/ratelimit"
 )
 

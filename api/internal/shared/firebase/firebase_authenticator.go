@@ -7,7 +7,7 @@ import (
 
 	firebaseauth "firebase.google.com/go/v4/auth"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 )
 
 type FirebaseAuthenticator struct {

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"classgame-api/internal/auth"
-	"classgame-api/internal/datarecovery"
+	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/ops/datarecovery"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"

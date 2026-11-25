@@ -11,8 +11,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/auth"
-	"classgame-api/internal/transport/httpx"
+	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/shared/httpx"
 )
 
 const maximumAttachmentDownloadBytes int64 = 20 * 1024 * 1024

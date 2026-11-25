@@ -13,11 +13,11 @@ import (
 	"cloud.google.com/go/firestore"
 	"golang.org/x/sync/errgroup"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 )
 
 var ErrPaginationRequired = errors.New("use the paged dashboard endpoint for this class")

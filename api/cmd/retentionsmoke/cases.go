@@ -1,7 +1,7 @@
 package main
 
 import (
-	"classgame-api/internal/datarecovery"
+	"classgame-api/internal/ops/datarecovery"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/students"
 	"cloud.google.com/go/firestore"

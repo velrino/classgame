@@ -10,7 +10,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/ratelimit"
 )
 

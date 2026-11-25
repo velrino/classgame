@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 )
 
 const (

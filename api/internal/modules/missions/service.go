@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	attachmentsmodule "classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/tenancy"
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 )
 
 var (

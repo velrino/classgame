@@ -12,7 +12,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/timeutil"
+	"classgame-api/internal/modules/health/timeutil"
 )
 
 const (

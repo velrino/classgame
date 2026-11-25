@@ -16,16 +16,16 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"classgame-api/internal/auth"
-	"classgame-api/internal/contentpolicy"
+	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/shared/contentpolicy"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 	analyticsmodule "classgame-api/internal/shared/analytics"
 	"classgame-api/internal/shared/ratelimit"
 	ratehttp "classgame-api/internal/shared/ratelimit/http"
-	"classgame-api/internal/transport/httpx"
-	"classgame-api/internal/uploadcare"
+	"classgame-api/internal/shared/httpx"
+	"classgame-api/internal/shared/uploadcare"
 )
 
 const (

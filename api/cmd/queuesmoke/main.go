@@ -22,7 +22,7 @@ import (
 
 	"classgame-api/internal/shared/redisqueue"
 	"classgame-api/internal/shared/requestmeta"
-	"classgame-api/internal/taskqueue"
+	"classgame-api/internal/shared/taskqueue"
 )
 
 func main() {

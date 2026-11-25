@@ -22,7 +22,7 @@ import (
 	"firebase.google.com/go/v4/auth"
 	"google.golang.org/api/option"
 
-	"classgame-api/internal/demoaccount"
+	"classgame-api/internal/shared/demoaccount"
 	"classgame-api/internal/shared/firebase"
 )
 

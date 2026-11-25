@@ -7,7 +7,7 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"classgame-api/internal/demoaccount"
+	"classgame-api/internal/shared/demoaccount"
 )
 
 type Config struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 
 	"classgame-api/internal/modules/students"
 )

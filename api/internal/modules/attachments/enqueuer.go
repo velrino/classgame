@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"classgame-api/internal/taskqueue"
+	"classgame-api/internal/shared/taskqueue"
 )
 
 const defaultScheduleDelay = 2 * time.Second

@@ -2,7 +2,7 @@
 
 Background attachment copying and learning jobs now use Go workers with [Asynq v0.26.0](https://github.com/hibiken/asynq/tree/v0.26.0) and a dedicated Redis broker. The Cloud Tasks adapter, SDK dependency, worker HTTP endpoints and OIDC delivery configuration have been removed. No hosted resources were changed.
 
-[Message](../../api/internal/taskqueue/message.go) carries a stable ID, JSON payload, correlation metadata and delivery time. Module-owned schedulers keep job meaning and IDs. [The Redis adapter](../../api/internal/shared/redisqueue/client.go) owns delivery, delay, retries and archived work. [Application wiring](../../api/internal/app/background.go) connects it to the existing domain processors; it does not copy their policies.
+[Message](../../api/internal/shared/taskqueue/message.go) carries a stable ID, JSON payload, correlation metadata and delivery time. Module-owned schedulers keep job meaning and IDs. [The Redis adapter](../../api/internal/shared/redisqueue/client.go) owns delivery, delay, retries and archived work. [Application wiring](../../api/internal/app/background.go) connects it to the existing domain processors; it does not copy their policies.
 
 `TASKS_ENABLED=false` remains the local default. Learning finalization uses its inline fallback; attachment copying and scheduled inactivity jobs need a worker. `APP_ROLE=api` serves HTTP, `worker` processes jobs, and `all` does both using the same manual setup. Interactive Mia remains in its synchronous request path.
 

@@ -14,8 +14,8 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"classgame-api/internal/app"
-	"classgame-api/internal/auth"
-	"classgame-api/internal/bootstrap"
+	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/app/bootstrap"
 	"classgame-api/internal/config"
 	"classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/classrooms"

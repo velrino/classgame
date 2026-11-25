@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/tenancy"
 )

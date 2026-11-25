@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 )

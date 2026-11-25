@@ -7,6 +7,7 @@ Use business capabilities as code boundaries. Keep one Go module, one web app, a
 ```text
 api/cmd/api/                   # Composition, HTTP registration, lifecycle
 api/internal/
+  app/                         # Server setup, API reference, bootstrap
   config/                      # Environment parsing and validation
   modules/<capability>/
     domain/                    # Pure models, invariants, errors
@@ -16,7 +17,8 @@ api/internal/
       firestore/               # Documents, mappings, queries, transactions
       genai/                   # Capability-specific generation
       tasks/                   # Enqueue and worker integration
-  shared/                      # Shared infrastructure and provider clients
+  ops/                         # Backup and recovery tools
+  shared/                      # Infrastructure, contracts, and common rules
 ```
 
 The tree shows optional layers, not folders to create now. Current capabilities use focused files in one package. Create a subpackage when it gives a useful boundary.
@@ -30,7 +32,7 @@ The tree shows optional layers, not folders to create now. Current capabilities 
 
 ### Shared Go code
 
-Share a package only when consumers share its meaning and an owner is clear. Prefer focused names such as `ratelimit`, `contentpolicy`, or `timeutil`; keep provider packages separate from business policy. Technical shared packages must not import business modules.
+Share a package only when consumers share its meaning and an owner is clear. Prefer focused names such as `ratelimit`, `contentpolicy`, or `timeutil`; keep provider packages separate from business policy. Technical shared packages must not import business modules. The shared content policy is used by missions and generation. Keep helpers with a single consumer next to that consumer.
 
 The technical [rate-limit capability](RATE-LIMITING.md) lives under `internal/shared/ratelimit`, with standard-library core policy and separate `redis/` and `http/` adapters. Business quota rules stay outside that technical package.
 

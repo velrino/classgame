@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"classgame-api/internal/shared/genai"
-	"classgame-api/internal/uploadcare"
+	"classgame-api/internal/shared/uploadcare"
 )
 
 const maxInlineAttachmentBytes = 20 * 1024 * 1024

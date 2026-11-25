@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 )
 
 func ProxyNetworks(value string) ([]*net.IPNet, error) {

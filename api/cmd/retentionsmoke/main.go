@@ -2,7 +2,7 @@
 package main
 
 import (
-	"classgame-api/internal/datarecovery"
+	"classgame-api/internal/ops/datarecovery"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
