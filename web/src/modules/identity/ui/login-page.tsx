@@ -38,7 +38,7 @@ const HERO_PHRASE_HOLD_MS = 2200;
 const HERO_PHRASE_TYPE_DELAY_MS = 28;
 const HERO_PHRASE_DELETE_DELAY_MS = 16;
 
-export function LoginPage() {
+export function LoginPage({ initialLogin }: { initialLogin?: { email: string; password: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = safeNextPath(searchParams.get("next"));
@@ -50,8 +50,8 @@ export function LoginPage() {
     status,
   } = useTeacherAuth();
   const [exchanging, setExchanging] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(initialLogin?.email ?? "");
+  const [password, setPassword] = useState(initialLogin?.password ?? "");
   const [apiAvailable, setApiAvailable] = useState(false);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
