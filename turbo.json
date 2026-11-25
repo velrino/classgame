@@ -8,6 +8,10 @@
     "dev:api": {
       "cache": false,
       "persistent": true
+    },
+    "eval:ui": {
+      "cache": false,
+      "persistent": true
     }
   }
 }
