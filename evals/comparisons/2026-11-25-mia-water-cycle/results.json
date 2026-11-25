@@ -1,0 +1,471 @@
+{
+  "schema_version": 1,
+  "real_requests": 8,
+  "scripted_requests": 0,
+  "run_mode": "live_vertex_global",
+  "reviewer": "Codex, qualitative rubric review, not blinded or teacher-reviewed",
+  "usd_rate_source": "https://cloud.google.com/model-garden/pricing",
+  "design": "One run per model and case. Serial requests, alternating first model across cases. Identical tutor prompt builder, inputs, retrieval, schema and 2048-token limit. Model defaults for thinking.",
+  "execution_order": [
+    "gemini-4-argon/definition",
+    "gemini-3.6-flash/definition",
+    "gemini-3.6-flash/misconception",
+    "gemini-4-argon/misconception",
+    "gemini-4-argon/source-limit",
+    "gemini-3.6-flash/source-limit",
+    "gemini-3.6-flash/compare",
+    "gemini-4-argon/compare"
+  ],
+  "summary": {
+    "gemini-3.6-flash": {
+      "task_met": 4,
+      "source_only": 1,
+      "useful_follow_up": 0,
+      "source_ids": 4,
+      "prompt_token_count": 4473,
+      "candidates_token_count": 614,
+      "thoughts_token_count": 2790,
+      "total_token_count": 7877,
+      "median_elapsed_ms": 5148.0,
+      "estimated_usd": 0.01611975,
+      "global_effective_rate_usd_per_million_tokens": {
+        "input": 0.75,
+        "output_and_thinking": 3.75
+      }
+    },
+    "gemini-4-argon": {
+      "task_met": 4,
+      "source_only": 3,
+      "useful_follow_up": 4,
+      "source_ids": 4,
+      "prompt_token_count": 5028,
+      "candidates_token_count": 732,
+      "thoughts_token_count": 0,
+      "total_token_count": 5760,
+      "median_elapsed_ms": 7203.0,
+      "estimated_usd": 0.017376,
+      "global_effective_rate_usd_per_million_tokens": {
+        "input": 2,
+        "output_and_thinking": 10
+      }
+    }
+  },
+  "runs": [
+    {
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5609,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:48:00.629292Z",
+      "tutor": {
+        "message": "Condensation happens when warm water vapor in the air cools down and turns back into liquid water droplets!",
+        "why_prompt": "Where have you noticed water droplets forming in everyday life, like on a cold glass on a hot day?",
+        "explanation_steps": [
+          "Water exists in the air as an invisible gas called water vapor.",
+          "When the water vapor cools down, it changes physical state.",
+          "The vapor turns back into tiny liquid water droplets, forming condensation."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1095,
+          "candidates_token_count": 163,
+          "thoughts_token_count": 704,
+          "total_token_count": 1962
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "source_ids": true,
+        "note": "The direction is correct. Warm air, cooling, invisibility and the cold-glass example go beyond the one-sentence source. The follow-up asks for an everyday observation."
+      }
+    },
+    {
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 6316,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:48:06.965046Z",
+      "tutor": {
+        "message": "Not quite! Evaporation actually goes in the opposite direction, changing liquid water into water vapor.",
+        "why_prompt": "What do you notice happening to a outdoor puddle on a hot sunny day?",
+        "explanation_steps": [
+          "Start with liquid water in a container or puddle.",
+          "Add heat energy from the sun or a heat source.",
+          "The liquid water changes into an invisible gas called water vapor."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1105,
+          "candidates_token_count": 145,
+          "thoughts_token_count": 902,
+          "total_token_count": 2152
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "source_ids": true,
+        "note": "Corrects the reversed direction, then introduces a container or puddle, sunlight, heat and invisibility. The follow-up requires an outside observation."
+      }
+    },
+    {
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 4416,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:48:26.189608Z",
+      "tutor": {
+        "message": "According to our lesson, condensation changes water vapor into liquid droplets, but a specific starting temperature is not given in this text.",
+        "why_prompt": "What do you notice happens to water vapor when it cools down?",
+        "explanation_steps": [
+          "Condensation changes water vapor into liquid water droplets.",
+          "Our lesson materials do not state an exact temperature for when condensation begins."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1103,
+          "candidates_token_count": 140,
+          "thoughts_token_count": 491,
+          "total_token_count": 1734
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": false,
+        "source_ids": true,
+        "note": "Correctly acknowledges the missing temperature. The follow-up assumes cooling, which is absent from the source."
+      }
+    },
+    {
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 4687,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-3.6-flash",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:48:30.888861Z",
+      "tutor": {
+        "message": "Evaporation and condensation move water between liquid and gas states in opposite directions! Evaporation turns liquid water into water vapor. Condensation turns water vapor back into liquid water droplets.",
+        "why_prompt": "Can you share a real-world example where you have seen condensation or evaporation happen?",
+        "explanation_steps": [
+          "Evaporation direction: Liquid water changes into water vapor (gas).",
+          "Condensation direction: Water vapor (gas) changes into liquid water droplets.",
+          "They are opposite physical processes in the water cycle."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "ask_reasoning",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source",
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-3.6-flash",
+        "model_version": "gemini-3.6-flash",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1170,
+          "candidates_token_count": 166,
+          "thoughts_token_count": 693,
+          "total_token_count": 2029
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": false,
+        "source_ids": true,
+        "note": "Explains both directions and their relationship. Its request for a personal example relies on experience beyond the lesson, without asserting a new fact."
+      }
+    },
+    {
+      "case_id": "definition",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 5604,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-4-argon",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:47:55.002423Z",
+      "tutor": {
+        "message": "Let's explore the water cycle! We are looking at the process of condensation.",
+        "why_prompt": "In your own words, what happens to water vapor during condensation?",
+        "explanation_steps": [
+          "Start with water vapor in the air.",
+          "Condensation changes that water vapor into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-4-argon",
+        "model_version": "gemini-4-argon",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1235,
+          "candidates_token_count": 152,
+          "thoughts_token_count": 0,
+          "total_token_count": 1387
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": false,
+        "useful_follow_up": true,
+        "source_ids": true,
+        "note": "The direction is correct. The source does not specify that the vapor is in the air. The follow-up can be answered directly from the lesson."
+      }
+    },
+    {
+      "case_id": "misconception",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 7507,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-4-argon",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:48:14.487782Z",
+      "tutor": {
+        "message": "Not quite! You have the two states of water right, but the direction is actually the opposite.",
+        "why_prompt": "Based on these steps, how would you describe what happens to liquid water during evaporation?",
+        "explanation_steps": [
+          "Start with liquid water.",
+          "During evaporation, the liquid water changes into water vapor."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-4-argon",
+        "model_version": "gemini-4-argon",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1242,
+          "candidates_token_count": 152,
+          "thoughts_token_count": 0,
+          "total_token_count": 1394
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "source_ids": true,
+        "note": "Acknowledges what the learner got right, corrects the direction and asks the learner to explain it back."
+      }
+    },
+    {
+      "case_id": "source-limit",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 7249,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-4-argon",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:48:21.754881Z",
+      "tutor": {
+        "message": "Our lesson doesn't list an exact temperature for when condensation starts. Instead, it tells us what happens during condensation: water vapor changes into liquid droplets!",
+        "why_prompt": "Using our lesson info, how would you describe what happens to water vapor during condensation?",
+        "explanation_steps": [
+          "Our lesson notes explain that condensation is a physical process in the water cycle.",
+          "During condensation, water vapor changes into liquid droplets.",
+          "The lesson material does not state a specific temperature for when this change begins."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-4-argon",
+        "model_version": "gemini-4-argon",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1242,
+          "candidates_token_count": 256,
+          "thoughts_token_count": 0,
+          "total_token_count": 1498
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "source_ids": true,
+        "note": "Acknowledges that the temperature is absent and checks the phase change the lesson does explain. The mission explicitly covers physical processes."
+      }
+    },
+    {
+      "case_id": "compare",
+      "dataset_sha256": "143520fc713b502cfc70a6c876a5e3019584d55df385781c654e66fdbcdc5889",
+      "dirty": true,
+      "elapsed_milliseconds": 7157,
+      "max_provider_calls": 1,
+      "model_requested": "gemini-4-argon",
+      "phase": "after",
+      "real_provider_calls": 1,
+      "retrieved_chunk_ids": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "revision": "a27bc349afb68b3c7329d2369a322fc921aeaac8",
+      "scope": "Synthetic, single live sample through production retrieval and tutor generation; dedicated SDK adapter with no retries, no database or application configuration loading.",
+      "sdk_attempts": 1,
+      "timestamp": "2026-11-25T00:48:38.059207Z",
+      "tutor": {
+        "message": "Let's compare evaporation and condensation step by step! They are opposite changes between liquid water and water vapor.",
+        "why_prompt": "In your own words, which process starts with liquid water, and which one starts with water vapor?",
+        "explanation_steps": [
+          "Step 1: Evaporation changes liquid water into water vapor.",
+          "Step 2: Condensation goes the opposite direction, changing water vapor back into liquid droplets."
+        ],
+        "explanation_style": "steps",
+        "difficulty_bias": 0,
+        "next_action": "explain",
+        "teacher_observation": "",
+        "retrieved_chunk_ids": [
+          "evaporation-source",
+          "condensation-source"
+        ],
+        "evidence_event_ids": [],
+        "generated_by_ai": true,
+        "provider": "google_genai_vertex_ai",
+        "model": "gemini-4-argon",
+        "model_version": "gemini-4-argon",
+        "fallback_reason": "",
+        "usage": {
+          "prompt_token_count": 1309,
+          "candidates_token_count": 172,
+          "thoughts_token_count": 0,
+          "total_token_count": 1481
+        }
+      },
+      "review": {
+        "task_met": true,
+        "source_only": true,
+        "useful_follow_up": true,
+        "source_ids": true,
+        "note": "Explains both directions and asks the learner to identify the starting state for each."
+      }
+    }
+  ]
+}
