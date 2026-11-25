@@ -20,7 +20,7 @@ Read one page without writes, enqueueing or model calls:
 
 ```bash
 cd api
-go run ./cmd/learning-recovery --limit 25
+go run ./cmd/ops/learning-recovery --limit 25
 # Pass the returned next_cursor to --after for the next page.
 ```
 
@@ -38,9 +38,9 @@ After reviewing the same page, explicit actions are available with the dedicated
 
 ```sh
 # Enqueue pending work with existing IDs; no model runs in this command.
-go run ./cmd/learning-recovery --limit 25 --enqueue
+go run ./cmd/ops/learning-recovery --limit 25 --enqueue
 # Only after reviewing archived/exhausted work; changes dispatch generations.
-go run ./cmd/learning-recovery --limit 25 --redrive
+go run ./cmd/ops/learning-recovery --limit 25 --redrive
 ```
 
 Both actions require the same project/cursor settings as the reviewed listing. They can affect every eligible record in that bounded page. Stop or coordinate concurrent operator runs. Workers may process the newly queued jobs immediately; these commands are operational writes, never part of the offline evaluation suite.

@@ -60,7 +60,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="classgame-provider-budget-") as temporary:
         directory = Path(temporary)
         binary = str(directory / "budgetsmoke")
-        subprocess.run(["go", "build", "-o", binary, "./cmd/budgetsmoke"], cwd=ROOT / "api",
+        subprocess.run(["go", "build", "-o", binary, "./cmd/evals/budgetsmoke"], cwd=ROOT / "api",
                        env=dict(os.environ, GOPROXY="off"), check=True, capture_output=True, timeout=180)
         with socket.socket() as available:
             available.bind(("127.0.0.1", 0))

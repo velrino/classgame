@@ -131,7 +131,7 @@ def main():
     print(dest, flush=True)
     with tempfile.TemporaryDirectory() as tmp:
         binary = Path(tmp) / "evalgenkit"
-        go("build", "-o", str(binary), "./cmd/evalgenkit")
+        go("build", "-o", str(binary), "./cmd/evals/evalgenkit")
         exact = ExactMatchMetric()
         metric = SourceSupportMetric(binary, env, dataset["rubric"]["source_only"])
         def check_ids(actual, expected):

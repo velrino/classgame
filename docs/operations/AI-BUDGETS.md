@@ -33,7 +33,7 @@ Budget keys use `classgame:provider_budget:{scope_hash}:*`. Use private Redis ac
 From `api/`, with the normal application environment configured:
 
 ```sh
-go run ./cmd/aibudget
+go run ./cmd/ops/aibudget
 ```
 
 This command reads current active leases, accepted requests, and reserved output tokens. It starts no API, database, worker, or model request. It changes no budget counters. Logs use `genai shared admission rejected` and `genai shared lease release failed`, without prompts, credentials, or student text.

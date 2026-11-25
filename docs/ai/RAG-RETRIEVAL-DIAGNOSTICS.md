@@ -59,12 +59,12 @@ After explicit approval for at most six calls, one real Gemini 3.6 Flash request
 
 The answer explained the supported core phase change, but also added cooling, heat loss and everyday examples absent from the supplied sentence. Human review therefore does **not** mark it fully grounded. Passing schema validation and carrying a valid source ID did not prove every claim was supported. The [live record](RAG-RETRIEVAL-LIVE.json) preserves both outputs and this review.
 
-The separate `api/cmd/evalretrievalmodel` command requires `-run`, `-phase before|after`, `-model` and a new `-output` file. It permits at most one request per invocation and disables SDK retries. It reuses production retrieval and tutor generation with a dedicated live SDK adapter, not the deployed Redis admission path. The label does not alter retrieval; use the old tokenizer in a separate baseline build. Do not treat it as a general live-evaluation runner.
+The separate `api/cmd/evals/evalretrievalmodel` command requires `-run`, `-phase before|after`, `-model` and a new `-output` file. It permits at most one request per invocation and disables SDK retries. It reuses production retrieval and tutor generation with a dedicated live SDK adapter, not the deployed Redis admission path. The label does not alter retrieval; use the old tokenizer in a separate baseline build. Do not treat it as a general live-evaluation runner.
 
 Example from `api/`, after explicit paid-call approval and with Vertex project, location and application credentials already set in the process environment:
 
 ```sh
-go run ./cmd/evalretrievalmodel -run -phase after -model gemini-3.6-flash -output ../evals/output/approved-live-after.json
+go run ./cmd/evals/evalretrievalmodel -run -phase after -model gemini-3.6-flash -output ../evals/output/approved-live-after.json
 ```
 
 The output file must not already exist. The command does not load `.env`, application configuration, databases or private classroom data. The regular Python runner remains offline and rejects live mode.

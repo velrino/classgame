@@ -30,15 +30,15 @@ The operator command uses only `TASKS_REDIS_URL`; it does not load Firebase, cop
 
 ```sh
 cd api
-go run ./cmd/jobs
-go run ./cmd/jobs --id JOB_ID
+go run ./cmd/ops/jobs
+go run ./cmd/ops/jobs --id JOB_ID
 # Explicit write: run the job's existing stored body again after review.
-go run ./cmd/jobs --retry JOB_ID
+go run ./cmd/ops/jobs --retry JOB_ID
 ```
 
 Fix dependency/configuration failures before retrying. Invalid jobs remain archived for review. A terminal archive is not a successful domain result. A changed body under the same ID returns a conflict instead of silently accepting different work.
 
-Learning pending markers are scanned in bounded pages by worker recovery. Active claims and current scope/version checks remain authoritative. After exhausted retries, use `go run ./cmd/learning-recovery --limit 25 --redrive` after reviewing the same read-only page to advance the dispatch generation; normal scans must retain the stable ID.
+Learning pending markers are scanned in bounded pages by worker recovery. Active claims and current scope/version checks remain authoritative. After exhausted retries, use `go run ./cmd/ops/learning-recovery --limit 25 --redrive` after reviewing the same read-only page to advance the dispatch generation; normal scans must retain the stable ID.
 
 Class synthesis has its own durable `class_learning_refreshes/{class_id}` intent. Evidence writes/removals and rebuild transitions advance its generation in the source transaction. The `class_refresh` job uses class, source generation, and dispatch generation as its stable identity. Owner/lease and tenant/source checks fence the summary commit. Failed processing stays pending even when the student trace is already finalized.
 
@@ -46,12 +46,12 @@ Each worker process scans up to 50 class intents per minute. With jobs disabled,
 
 ```sh
 # Read-only pending page, then explicitly enqueue the reviewed page.
-go run ./cmd/learning-recovery --class-refresh --limit 25
-go run ./cmd/learning-recovery --class-refresh --limit 25 --enqueue
+go run ./cmd/ops/learning-recovery --class-refresh --limit 25
+go run ./cmd/ops/learning-recovery --class-refresh --limit 25 --enqueue
 # After reviewing archived/exhausted work, advance dispatch generation.
-go run ./cmd/learning-recovery --class-refresh --limit 25 --redrive
+go run ./cmd/ops/learning-recovery --class-refresh --limit 25 --redrive
 # Explicit bootstrap for one legacy class without a durable intent.
-go run ./cmd/learning-recovery --class-refresh --class-id CLASS_ID --enqueue
+go run ./cmd/ops/learning-recovery --class-refresh --class-id CLASS_ID --enqueue
 ```
 
 Normal scans never create historical class intents or regrade students. Upgrade all workers before producers of `class_refresh`; older strict job decoders cannot consume this new kind. During rollback, pause compatible producers and preserve/reconcile pending work before removing compatible workers.
@@ -59,7 +59,7 @@ Normal scans never create historical class intents or regrade students. Upgrade 
 Attachment transfer markers live in immutable mission revisions. Automatic attachment scans are not installed. After broker loss, inspect the stored `attachment_transfer_status`, class, mission and revision, then explicitly re-enqueue the known revision:
 
 ```sh
-go run ./cmd/jobs --enqueue-attachment-class CLASS_ID \
+go run ./cmd/ops/jobs --enqueue-attachment-class CLASS_ID \
   --enqueue-attachment-mission MISSION_ID --enqueue-attachment-revision REVISION
 ```
 

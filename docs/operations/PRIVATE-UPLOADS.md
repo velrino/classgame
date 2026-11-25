@@ -17,7 +17,7 @@ Use a dedicated private bucket. Public access prevention is a useful bucket guar
 From `api/`, run:
 
 ```sh
-go run ./cmd/evalstorage -run
+go run ./cmd/evals/evalstorage -run
 ```
 
 The command invokes the production copier and Storage SDK through a scripted HTTP transport. It has no socket transport, credentials, application configuration, or real provider calls. It checks private upload requests, uniform mode, public and unreadable access, existing-file replay, download tokens, and verification after upload. It rejects a missing opt-in or unknown arguments. This checks SDK requests and local policy; it does not establish deployed permissions, Firebase download behavior, or cache expiry.

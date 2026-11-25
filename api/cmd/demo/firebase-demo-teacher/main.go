@@ -2,7 +2,7 @@
 // with a password supplied out of band. Normal API startup creates the account
 // when missing; use this command to rotate credentials or repair drift:
 //
-//	go run ./cmd/firebase-demo-teacher --project allthingsagentichackatho-ee359 \
+//	go run ./cmd/demo/firebase-demo-teacher --project allthingsagentichackatho-ee359 \
 //	  --credentials-file /path/to/service-account.json --password '...'
 //
 // It creates the user if missing, otherwise sets the password on the existing

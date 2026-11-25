@@ -99,7 +99,7 @@ Use the canonical [local setup](docs/development/LOCAL-SETUP.md), [configuration
 
 Clone [velrino/classgame](https://github.com/velrino/classgame), configure Firebase and Redis, then start `api/` and `web/` as described in [local setup](docs/development/LOCAL-SETUP.md). Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home).
 
-See [evaluations](evals/README.md) for synthetic policy checks and optional local integration suites. The default Python runner sends JSON through standard input to a Go bridge built from `api/cmd/evalbridge`. The bridge calls the API's production functions and returns JSON through standard output for Python to check and report. Frontend policy suites use Node bridges. Default checks run offline without a running API server or paid AI calls.
+See [evaluations](evals/README.md) for synthetic policy checks and optional local integration suites. The default Python runner sends JSON through standard input to a Go bridge built from `api/cmd/evals/evalbridge`. The bridge calls the API's production functions and returns JSON through standard output for Python to check and report. Frontend policy suites use Node bridges. Default checks run offline without a running API server or paid AI calls.
 
 ## Documentation
 

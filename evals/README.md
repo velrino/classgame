@@ -14,7 +14,7 @@ cases.json → Python runner → JSON on stdin → Go evalbridge
 output/ ← Python checks expected results ← JSON on stdout
 ```
 
-[run.py](run.py) builds [api/cmd/evalbridge](../api/cmd/evalbridge/main.go) into a temporary executable using the API's Go module. It sends the selected inputs as one JSON batch through standard input (`stdin`), without the expected results. The bridge imports the API modules and calls their functions directly, using scripted AI and authentication dependencies. It returns observations as JSON through standard output (`stdout`); Python compares them with the dataset expectations and writes the reports.
+[run.py](run.py) builds [api/cmd/evals/evalbridge](../api/cmd/evals/evalbridge/main.go) into a temporary executable using the API's Go module. It sends the selected inputs as one JSON batch through standard input (`stdin`), without the expected results. The bridge imports the API modules and calls their functions directly, using scripted AI and authentication dependencies. It returns observations as JSON through standard output (`stdout`); Python compares them with the dataset expectations and writes the reports.
 
 The default run needs no running HTTP server, database connection, credentials, or paid AI calls. It checks application policies, not real model teaching quality. The `offline-evidence` and `frontend-recovery` datasets use Node bridges to call frontend TypeScript policies through the same JSON exchange. Real local HTTP flows have a separate [opt-in suite](platform/local-http/README.md).
 
@@ -38,9 +38,9 @@ Prepare Go dependencies normally first (`go -C api mod download`). Evaluation bu
 | [platform/ai-policy/cases.json](platform/ai-policy/cases.json) | Versioned synthetic inputs and expected policy behavior |
 | [platform/offline-evidence/cases.json](platform/offline-evidence/cases.json) | Scope, queue capacity, replay, retry, and completion policies; requires Node.js 24+ |
 | [platform/frontend-recovery](platform/frontend-recovery/README.md) | Production reducer retries, completion, local repair, and server resume mapping; requires Node.js 24+ |
-| [api/cmd/evalbridge](../api/cmd/evalbridge/main.go) | Production Go calls with scripted provider/authentication ports |
+| [api/cmd/evals/evalbridge](../api/cmd/evals/evalbridge/main.go) | Production Go calls with scripted provider/authentication ports |
 | [platform/retention/run.py](platform/retention/run.py) | Opt-in demo emulator export/delete/restore with actual Firestore types and stale worker checks |
-| [api/cmd/evalfirestore](../api/cmd/evalfirestore/README.md) | Optional real transaction checks on a guarded local emulator |
+| [api/cmd/evals/evalfirestore](../api/cmd/evals/evalfirestore/README.md) | Optional real transaction checks on a guarded local emulator |
 | [platform/provider-budget/run.py](platform/provider-budget/run.py) | Opt-in local Redis budget checks with two Go processes and a real broker outage |
 | [platform/browser-store](platform/browser-store/README.md) | Real two-tab IndexedDB and reload checks on a separate local origin |
 | [platform/local-http](platform/local-http/README.md) | Opt-in real API/Auth/rules flows and browser outage controls on demo emulators |
@@ -65,11 +65,11 @@ These checks cover local transport behavior. They do not prove exactly-once effe
 With a separately running loopback Firestore emulator, from `api/`:
 
 ```sh
-FIRESTORE_EMULATOR_HOST=127.0.0.1:8787 go run ./cmd/evalqueries -run -project demo-classgame-query
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8787 go run ./cmd/evals/evalqueries -run -project demo-classgame-query
 ```
 
 This opt-in command seeds 120 synthetic students and 1,440 attempts, measures returned query/point documents and local time, checks paging, owner/cursor scope, legacy caps, projection rebuilds, stale sources, and live finalization. It deletes only owned fixture documents and calls no real provider. It refuses hosted endpoints and non-demo projects. Local document counts are not production billing or index-scan measurements.
 
 ## Private upload SDK checks
 
-From `api/`, run `go run ./cmd/evalstorage -run`. The production copier and Storage SDK use only a scripted HTTP transport, with no sockets, credentials, or cloud writes. It checks explicit private ACLs with a public default, uniform buckets, public or unreadable access, existing-file replay, download tokens, bucket identity, and post-upload checks. This does not verify deployed access or cache expiry. See [private uploads](../docs/operations/PRIVATE-UPLOADS.md).
+From `api/`, run `go run ./cmd/evals/evalstorage -run`. The production copier and Storage SDK use only a scripted HTTP transport, with no sockets, credentials, or cloud writes. It checks explicit private ACLs with a public default, uniform buckets, public or unreadable access, existing-file replay, download tokens, bucket identity, and post-upload checks. This does not verify deployed access or cache expiry. See [private uploads](../docs/operations/PRIVATE-UPLOADS.md).

@@ -32,7 +32,7 @@ Flash's everyday examples offer a way to connect the lesson to a learner's exper
 ## Method and limits
 
 - Four synthetic prompts shared the same two sentences about water changing state. The cases covered a definition, a reversed explanation, a missing fact and a comparison. Production retrieval returned the expected passages for both models in every pair.
-- The existing live runner called the production tutor function with a dedicated Vertex SDK adapter. Each model received the same case, prompt builder, JSON schema and 2,048-token output cap. Eight requests ran in sequence with one attempt each. The first model alternated across cases. Gemini 4 Argon returned four accepted responses, so the 3.7 fallback was unnecessary. [Live runner](../../../api/cmd/evalretrievalmodel/main.go)
+- The existing live runner called the production tutor function with a dedicated Vertex SDK adapter. Each model received the same case, prompt builder, JSON schema and 2,048-token output cap. Eight requests ran in sequence with one attempt each. The first model alternated across cases. Gemini 4 Argon returned four accepted responses, so the 3.7 fallback was unnecessary. [Live runner](../../../api/cmd/evals/evalretrievalmodel/main.go)
 - The adapter requests temperature 0.25 and leaves thinking settings at each model's default. Argon ignores custom temperature. Its zero reported thinking tokens describe the usage record. The experiment had no independent measure of internal reasoning. [Argon model guide](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/guides/gemini-4-argon)
 - Codex reviewed the student-visible message, steps and follow-up against the saved rubric, with model names visible. Each question ran once per model. The timer includes generation, application checks and a small amount of Git reporting. It starts after retrieval. A 5 ms difference on the definition is too small to interpret.
 - Cost uses the published global promotional rates applicable on the run date. Per million tokens, Flash cost $0.75 for input and $3.75 for output including thinking. Argon cost $2 and $10 respectively. Estimated combined cost was $0.03350, assuming the promotional credits apply. Actual billing can differ. [Google Cloud model pricing](https://cloud.google.com/model-garden/pricing)
@@ -42,7 +42,7 @@ Flash's everyday examples offer a way to connect the lesson to a learner's exper
 From `api/`, with the Vertex project, global location and application credentials configured in the environment, run:
 
 ```sh
-go run ./cmd/evalretrievalmodel -run -phase after -model gemini-4-argon \
+go run ./cmd/evals/evalretrievalmodel -run -phase after -model gemini-4-argon \
   -dataset ../evals/comparisons/2026-11-25-mia-water-cycle/cases.json \
   -case misconception -output /tmp/classgame-argon-misconception.json
 ```

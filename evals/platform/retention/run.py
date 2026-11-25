@@ -30,8 +30,9 @@ def main():
         parser.error("requires --run, a demo- project and numeric loopback FIRESTORE_EMULATOR_HOST")
     with tempfile.TemporaryDirectory(prefix="classgame-retention-commands-") as temporary:
         directory = Path(temporary)
-        for command in ["classbackup", "retentionsmoke"]:
-            result = subprocess.run(["go", "build", "-o", str(directory / command), "./cmd/" + command], cwd=ROOT / "api",
+        commands = {"classbackup": "./cmd/ops/classbackup", "retentionsmoke": "./cmd/evals/retentionsmoke"}
+        for command, package in commands.items():
+            result = subprocess.run(["go", "build", "-o", str(directory / command), package], cwd=ROOT / "api",
                                     env=dict(os.environ, GOPROXY="off"), text=True, capture_output=True, timeout=180)
             if result.returncode:
                 raise RuntimeError(result.stderr)

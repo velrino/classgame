@@ -6,7 +6,7 @@ The legacy audit command is read-only by default. Create a local review manifest
 
 ```sh
 cd api
-go run ./cmd/backfill-mission-attachment-storage-urls \
+go run ./cmd/ops/audit-attachment-access \
   --project PROJECT --bucket BUCKET --manifest-out /private/local/access-plan.json
 ```
 
@@ -15,7 +15,7 @@ The manifest contains private object paths. It is created with mode `0600`, neve
 After review and explicit authorization, the separate apply command is:
 
 ```sh
-go run ./cmd/backfill-mission-attachment-storage-urls \
+go run ./cmd/ops/audit-attachment-access \
   --project PROJECT --bucket BUCKET --apply-manifest /private/local/access-plan.json \
   --confirm-project PROJECT --revoke-public
 ```
