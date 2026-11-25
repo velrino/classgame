@@ -183,6 +183,7 @@ func OpenAPI() object {
 	save["responses"].(object)["409"] = response("Supplied attempt or revision differs from the active pinned attempt", errorSchema)
 	tutor["responses"].(object)["409"] = response("Supplied scope is stale or the session changed during generation", errorSchema)
 
+	add("/dashboard/teacher-login", "post", "recordTeacherLogin", "Record a successful teacher sign-in", "teachers", nil, builder.of(insights.TeacherSummary{}))
 	overview := add("/dashboard/overview", "get", "getDashboardOverview", "Teacher-owned classroom overview and learning evidence", "teachers", nil, builder.of(insights.OverviewResponse{}))
 	appendParams(overview, query("class_id", "Optional teacher-owned class ID", false, object{"type": "string"}))
 	overview["description"] = "Bounded compatibility route. A full result is returned only when the class has at most 100 scanned student rows and 100 attempts. Larger classes return 409 pagination_required; use /dashboard/overview/page and student history pages. No partial result is labeled as complete."

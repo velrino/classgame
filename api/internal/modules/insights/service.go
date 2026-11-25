@@ -29,7 +29,7 @@ type TeacherClassReader interface {
 }
 
 type MissionReader interface {
-	GetActive(context.Context, auth.Identity, string) (missions.MissionDocument, bool, error)
+	GetActiveForClass(context.Context, classrooms.TeacherClassDocument) (missions.MissionDocument, bool, error)
 }
 
 type Service struct {
@@ -59,10 +59,10 @@ func (service *Service) GetOverviewPage(ctx context.Context, identity auth.Ident
 }
 
 func (service *Service) getOverview(ctx context.Context, identity auth.Identity, classID string, page pagination.Params, legacy bool) (DashboardOverview, error) {
-	teacher, err := service.teacher(ctx, identity)
-	if err != nil {
-		return DashboardOverview{}, err
+	if !auth.IsTeacherAuthMethod(identity.AuthMethod) {
+		return DashboardOverview{}, ErrTeacherAuthRequired
 	}
+	teacher := teacherSummaryFromIdentity(teacherIdentity(identity))
 
 	normalizedClassID := normalizeClassID(classID)
 	if normalizedClassID != "" && service.teacherClassReader == nil {
@@ -117,9 +117,9 @@ func (service *Service) getOverview(ctx context.Context, identity auth.Identity,
 	var synthesisExists bool
 
 	group, groupContext := errgroup.WithContext(ctx)
-	if service.missionReader != nil {
+	if service.missionReader != nil && teacherClass != nil && teacherClass.ActiveMissionID != "" {
 		group.Go(func() error {
-			missionDocument, exists, err := service.missionReader.GetActive(groupContext, identity, normalizedClassID)
+			missionDocument, exists, err := service.missionReader.GetActiveForClass(groupContext, *teacherClass)
 			if err != nil {
 				return err
 			}
@@ -157,11 +157,13 @@ func (service *Service) getOverview(ctx context.Context, identity auth.Identity,
 		attempts, err = service.repository.ListLatestAttempts(groupContext, normalizedClassID, ids)
 		return err
 	})
-	group.Go(func() error {
-		var err error
-		synthesis, synthesisExists, err = service.repository.GetClassLearningSynthesis(groupContext, normalizedClassID)
-		return err
-	})
+	if legacy {
+		group.Go(func() error {
+			var err error
+			synthesis, synthesisExists, err = service.repository.GetClassLearningSynthesis(groupContext, normalizedClassID)
+			return err
+		})
+	}
 	if err := group.Wait(); err != nil {
 		return DashboardOverview{}, err
 	}
@@ -183,7 +185,7 @@ func (service *Service) getOverview(ctx context.Context, identity auth.Identity,
 		metadata = &OverviewPageMetadata{Limit: page.Limit, Returned: len(students), NextCursor: studentPage.NextCursor, ReadAt: readAt.UTC().Format(time.RFC3339Nano), MetricsScope: "student_page", HistoryScope: "latest_attempt_summary"}
 	}
 	classLearning := buildClassLearningSummary(students)
-	if synthesisExists && legacy {
+	if synthesisExists {
 		classLearning = applySemanticClassLearningSynthesis(classLearning, synthesis.Synthesis, students)
 	}
 
@@ -220,12 +222,16 @@ func (service *Service) getOverview(ctx context.Context, identity auth.Identity,
 	}, nil
 }
 
-func (service *Service) teacher(ctx context.Context, identity auth.Identity) (TeacherSummary, error) {
+func (service *Service) RecordTeacherLogin(ctx context.Context, identity auth.Identity) (TeacherSummary, error) {
 	if !auth.IsTeacherAuthMethod(identity.AuthMethod) {
 		return TeacherSummary{}, ErrTeacherAuthRequired
 	}
 
-	return service.repository.UpsertTeacher(ctx, TeacherIdentity{
+	return service.repository.UpsertTeacher(ctx, teacherIdentity(identity), time.Now())
+}
+
+func teacherIdentity(identity auth.Identity) TeacherIdentity {
+	return TeacherIdentity{
 		Provider:       identity.Provider,
 		ProviderUserID: identity.ProviderUserID,
 		AuthMethod:     identity.AuthMethod,
@@ -235,7 +241,7 @@ func (service *Service) teacher(ctx context.Context, identity auth.Identity) (Te
 		PhotoURL:       identity.PhotoURL,
 		ProviderIDs:    identity.ProviderIDs,
 		SignInProvider: identity.SignInProvider,
-	}, time.Now())
+	}
 }
 
 func buildStudentDashboardItems(

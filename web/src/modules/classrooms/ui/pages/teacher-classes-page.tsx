@@ -44,14 +44,16 @@ export function TeacherClassesPage() {
 
     Promise.resolve()
       .then(async () => {
+        if (cancelled) return;
         setLoading(true);
         setError(null);
 
         const token = await user.getIdToken();
+        if (cancelled) return;
         return classroomsApi.list(token);
       })
       .then((response) => {
-        if (!cancelled) {
+        if (!cancelled && response) {
           setTeacherClasses(sortTeacherClasses(response.teacher_classes));
         }
       })

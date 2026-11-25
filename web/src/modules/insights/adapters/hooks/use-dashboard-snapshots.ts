@@ -18,7 +18,8 @@ import { missionsApi } from "@/modules/missions";
 import { useEffect, useMemo, useRef, useState } from "react";
 export function useDashboardSnapshots(
   auth: Pick<ReturnType<typeof useTeacherAuth>, "status" | "user">,
-  initialClassId?: string,
+  initialClassId: string | undefined,
+  showMissions: boolean,
 ) {
   const [overview, setOverview] = useState<DashboardOverviewResponse | null>(
     null,
@@ -26,7 +27,7 @@ export function useDashboardSnapshots(
 
   const [teacherClasses, setTeacherClasses] = useState<TeacherClassDto[]>([]);
 
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(initialClassId ?? null);
 
   const [rosterPage, setRosterPage] = useState<{classId: string; cursor: string; trail: string[]}>({classId: "", cursor: "", trail: []});
   const rosterCursor = rosterPage.classId === selectedClassId ? rosterPage.cursor : "";
@@ -56,14 +57,16 @@ export function useDashboardSnapshots(
 
     Promise.resolve()
       .then(async () => {
+        if (cancelled) return;
         setClassesLoading(true);
         setError(null);
 
         const token = await user.getIdToken();
+        if (cancelled) return;
         return classroomsApi.list(token);
       })
       .then((response) => {
-        if (cancelled) {
+        if (cancelled || !response) {
           return;
         }
 
@@ -109,19 +112,21 @@ export function useDashboardSnapshots(
 
     Promise.resolve()
       .then(async () => {
+        if (cancelled) return;
         setOverviewLoading(true);
         setOverview(null);
         setSelectedStudent(null);
         setError(null);
 
         const token = await user.getIdToken();
+        if (cancelled) return;
         return insightsApi.overview(token, {
           class_id: selectedClassId,
           limit: 25, cursor: rosterCursor,
         });
       })
       .then((response) => {
-        if (cancelled) {
+        if (cancelled || !response) {
           return;
         }
 
@@ -155,7 +160,7 @@ export function useDashboardSnapshots(
   }, [auth.status, auth.user, selectedClassId, rosterCursor]);
 
   useEffect(() => {
-    if (auth.status !== "signed_in" || !auth.user || !selectedClassId) {
+    if (!showMissions || auth.status !== "signed_in" || !auth.user || !selectedClassId) {
       return;
     }
 
@@ -165,12 +170,14 @@ export function useDashboardSnapshots(
 
     Promise.resolve()
       .then(async () => {
+        if (cancelled) return;
         setMissionsLoading(true);
         const token = await user.getIdToken();
+        if (cancelled) return;
         return missionsApi.list(token, classId);
       })
       .then((response) => {
-        if (!cancelled) {
+        if (!cancelled && response) {
           setMissions(response.missions);
         }
       })
@@ -192,7 +199,7 @@ export function useDashboardSnapshots(
     return () => {
       cancelled = true;
     };
-  }, [auth.status, auth.user, selectedClassId]);
+  }, [auth.status, auth.user, selectedClassId, showMissions]);
 
   useEffect(() => {
     if (auth.status !== "signed_in" || !auth.user || !selectedClassId) {
@@ -201,6 +208,11 @@ export function useDashboardSnapshots(
 
     let cancelled = false;
     let refreshing = false;
+    let timer: number;
+    function scheduleRefresh() {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(refreshOverviewInBackground, 15_000);
+    }
     const user = auth.user;
     const classId = selectedClassId;
 
@@ -237,6 +249,7 @@ export function useDashboardSnapshots(
         // Keep the last successful dashboard snapshot during transient refresh failures.
       } finally {
         refreshing = false;
+        if (!cancelled) scheduleRefresh();
       }
     }
 
@@ -244,7 +257,7 @@ export function useDashboardSnapshots(
       classId,
       () => void refreshOverviewInBackground(),
     );
-    const interval = window.setInterval(refreshOverviewInBackground, 15_000);
+    scheduleRefresh();
     const refreshWhenVisible = () => {
       if (document.visibilityState === "visible") {
         void refreshOverviewInBackground();
@@ -255,7 +268,7 @@ export function useDashboardSnapshots(
     return () => {
       cancelled = true;
       unsubscribeRealtime();
-      window.clearInterval(interval);
+      window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [auth.status, auth.user, selectedClassId, rosterCursor]);

@@ -14,10 +14,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/shared/pagination"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/httpx"
+	"classgame-api/internal/shared/pagination"
 )
 
 const (
@@ -32,6 +32,7 @@ var classIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{1,39}$`)
 type Authenticator = auth.Authenticator
 
 type DashboardService interface {
+	RecordTeacherLogin(context.Context, auth.Identity) (TeacherSummary, error)
 	GetOverview(context.Context, auth.Identity, string) (DashboardOverview, error)
 	GetOverviewPage(context.Context, auth.Identity, string, pagination.Params) (DashboardOverview, error)
 	GetStudentHistory(context.Context, auth.Identity, string, string, pagination.Params) (StudentHistoryResponse, error)
@@ -64,9 +65,27 @@ func RegisterRoutes(server *echo.Echo, options HandlerOptions) {
 	}
 
 	group := server.Group("/dashboard", dashboardRateLimiter(options))
+	group.POST("/teacher-login", handler.RecordTeacherLogin)
 	group.GET("/overview", handler.GetOverview)
 	group.GET("/overview/page", handler.GetOverviewPage)
 	group.GET("/students/:student_id/attempts", handler.GetStudentHistory)
+}
+
+func (handler *Handler) RecordTeacherLogin(ctx *echo.Context) error {
+	if handler.authenticator == nil || handler.dashboardService == nil {
+		return httpx.JSONError(ctx, http.StatusInternalServerError, "not_configured", "Dashboard is not configured.")
+	}
+	requestContext, cancel := context.WithTimeout(ctx.Request().Context(), handler.dashboardTimeout)
+	defer cancel()
+	identity, ok, err := handler.authenticate(requestContext, ctx)
+	if err != nil || !ok {
+		return err
+	}
+	teacher, err := handler.dashboardService.RecordTeacherLogin(requestContext, identity)
+	if err != nil {
+		return handler.serviceError(ctx, err)
+	}
+	return ctx.JSON(http.StatusOK, teacher)
 }
 
 func (handler *Handler) GetOverview(ctx *echo.Context) error     { return handler.overview(ctx, false) }

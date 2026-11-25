@@ -3,6 +3,7 @@ import {
   getFirebaseAuth,
   isFirebaseConfigured,
 } from "@/shared/firebase/client";
+import { identityApi } from "@/modules/identity/adapters/http";
 import { FirebaseError } from "firebase/app";
 import {
   GoogleAuthProvider,
@@ -88,6 +89,10 @@ export function useTeacherAuthState() {
         }
 
         const credential = await signIn(auth);
+        // Profile bookkeeping must not block a successful Firebase sign-in.
+        void credential.user.getIdToken().then(identityApi.recordTeacherLogin).catch(() => {
+          console.warn("Could not record teacher sign-in.");
+        });
         setState({
           status: "signed_in",
           user: credential.user,

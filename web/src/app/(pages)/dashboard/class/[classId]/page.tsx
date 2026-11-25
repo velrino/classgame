@@ -9,5 +9,5 @@ export default async function DashboardClassRoute({
 }: DashboardClassRouteProps) {
   const { classId } = await params;
 
-  return <DashboardPage initialClassId={classId} />;
+  return <DashboardPage key={classId} initialClassId={classId} />;
 }

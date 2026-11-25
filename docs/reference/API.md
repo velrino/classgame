@@ -19,6 +19,7 @@ Protected browser requests send `Authorization: Bearer <Firebase ID token>`. Tea
 | `GET /users/student-learning?mission_id=...` | Restore student-safe learning state |
 | `POST /users/student-learning` | Save checkpoint/evidence and request finalization |
 | `POST /users/student-tutor-turn` | Generate or replay a grounded tutor turn |
+| `POST /dashboard/teacher-login` | Record teacher profile and activity after Firebase sign-in |
 | `GET /dashboard/overview?class_id=...` | Authorized classroom insights |
 | `GET /teacher-classes`, `POST /teacher-classes` | List or create/update teacher classes |
 | `GET /teacher-classes/{class_id}` | Read an owned class |

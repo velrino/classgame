@@ -30,6 +30,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 export function useDashboardController(initialClassId?: string) {
+  const [activeTab, setActiveTab] = useState<DashboardTab>(defaultDashboardTab);
   const router = useRouter();
   const auth = useTeacherAuth();
   const {
@@ -49,8 +50,7 @@ export function useDashboardController(initialClassId?: string) {
     selectedClass,
     loadOverview,
     canGoBack, nextStudentPage, previousStudentPage,
-  } = useDashboardSnapshots(auth, initialClassId);
-  const [activeTab, setActiveTab] = useState<DashboardTab>(defaultDashboardTab);
+  } = useDashboardSnapshots(auth, initialClassId, activeTab === "mission");
   const [missionBuilderOpen, setMissionBuilderOpen] = useState(false);
   const [previewMission, setPreviewMission] =
     useState<TeacherClassMissionDto | null>(null);

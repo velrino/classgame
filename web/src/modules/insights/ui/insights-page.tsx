@@ -193,7 +193,7 @@ export function DashboardPage({
           </TabsContent>
 
           <TabsContent value="overview" className="mt-3 space-y-5">
-            {classesLoading || overviewLoading ? (
+            {(classesLoading && !overview) || overviewLoading ? (
               <DashboardLoadingState />
             ) : (
               <>

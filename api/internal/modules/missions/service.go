@@ -241,15 +241,8 @@ func (service *Service) Delete(
 	return err
 }
 
-func (service *Service) GetActive(
-	ctx context.Context,
-	identity auth.Identity,
-	classID string,
-) (MissionDocument, bool, error) {
-	teacherClass, exists, err := service.teacherClassService.Get(ctx, identity, classID)
-	if err != nil || !exists || teacherClass.ActiveMissionID == "" {
-		return MissionDocument{}, false, err
-	}
+// GetActiveForClass reads the published mission for a class already authorized by the caller.
+func (service *Service) GetActiveForClass(ctx context.Context, teacherClass classrooms.TeacherClassDocument) (MissionDocument, bool, error) {
 
 	mission, exists, err := service.repository.Get(ctx, teacherClass.ClassID, teacherClass.ActiveMissionID)
 	if err != nil || !exists {
