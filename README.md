@@ -29,6 +29,7 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
   - [Authentication](#authentication)
   - [LLM models](#llm-models)
     - [Monthly LLM cost](#monthly-llm-cost)
+    - [Vertex AI cost per PDF mission](#vertex-ai-cost-per-pdf-mission)
   - [Evaluation tooling](#evaluation-tooling)
   - [Frontend framework](#frontend-framework)
 
@@ -288,6 +289,22 @@ I use the same assumptions as the [project cost estimate](#monthly-costs). Each 
 | **Claude Sonnet 5.5** | **$0.12** | **$12.00** | **$120.00** | **$1,200.00** | **$12,000.00** |
 
 At 1,000 users, the Gemini estimate through December 31 is 15 million input tokens at $0.75 per million plus 9 million output tokens at $3.75 per million, for **$45/month**. At the published January 2027 rates, GPT-5.4 mini costs less than Gemini at the same token volume. Actual token counts can differ by model and response. These estimates cover standard model calls. Caching, batch discounts, tool fees, and taxes are outside the estimate. [Vertex pricing](https://cloud.google.com/model-garden/pricing) · [GPT-5.4 mini pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini) · [Claude Sonnet 5.5 pricing](https://platform.claude.com/docs/en/models/sonnet-5-5/overview)
+
+#### Vertex AI cost per PDF mission
+
+One ClassGame run used 2,326 input tokens, 2,816 response tokens and 255 reasoning tokens to summarize a PDF and generate three questions. The estimates below apply Vertex AI prices to the same 5,397 tokens for every model. They assume standard requests to the global endpoint, uncached input and text output. Actual token use can vary by model.
+
+| Gemini model | Input per 1M tokens | Output per 1M tokens, including reasoning | 1 mission | 100 missions |
+| --- | ---: | ---: | ---: | ---: |
+| 3.1 Flash-Lite | $0.25 | $1.50 | $0.0052 | $0.52 |
+| 3.5 Flash-Lite | $0.30 | $2.50 | $0.0084 | $0.84 |
+| 3.6, 3.7 or 3.8 Flash | $0.75 | $3.75 | $0.0133 | $1.33 |
+| 4 Hydrogen | $1.50 | $7.50 | $0.0265 | $2.65 |
+| 3.5 Flash | $1.50 | $9.00 | $0.0311 | $3.11 |
+| 4 Argon or Carbon | $2.00 | $10.00 | $0.0354 | $3.54 |
+| 4 Neon | $3.00 | $15.00 | $0.0530 | $5.30 |
+
+Prices are in USD as of November 25, 2026, including applicable promotional credits. On December 1, 2026, Argon and Carbon rise to $4 input and $20 output per million tokens. On January 1, 2027, Flash 3.6, 3.7 and 3.8 rise to $1.50 input and $7.50 output. [Google Cloud pricing](https://cloud.google.com/model-garden/pricing)
 
 ### Evaluation tooling
 

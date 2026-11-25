@@ -163,6 +163,7 @@ func run() (runErr error) {
 	defer providerBudget.Close()
 	genAIClient, err := genai.Connect(context.Background(), genai.Options{
 		GenerationScope: requestmeta.GenerationScope,
+		RequestID:       requestmeta.RequestID,
 		Admission:       providerBudget,
 		Enabled:         cfg.GenAIEnabled,
 		Backend:         cfg.GenAIBackend,

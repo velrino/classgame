@@ -139,7 +139,6 @@ function AttachmentPreview({ attachment, access }: AttachmentProps) {
         <iframe
           title={attachment.file_name}
           src={resource.url}
-          sandbox="allow-same-origin"
           className="h-[70svh] w-full rounded-md border border-border bg-white"
         />
       ) : kind === "txt" ? (

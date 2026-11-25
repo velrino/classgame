@@ -1,4 +1,5 @@
 "use client";
+import { LoaderCircle } from "lucide-react";
 import type { EvidenceSyncState } from "../adapters/hooks/use-evidence-sync";
 export function EvidenceSyncStatus({
   state,
@@ -11,15 +12,24 @@ export function EvidenceSyncStatus({
   readonly onRetry: () => void;
   readonly onDelete: () => void;
 }) {
-  if (
-    !state.actorPending &&
-    !state.pending &&
-    !state.message &&
-    !state.blocked &&
-    !state.accepting &&
-    !completionPending
-  )
-    return null;
+  const otherAttemptsPending = state.actorPending > state.pending;
+  const needsAttention = state.message || state.paused || otherAttemptsPending ||
+    (state.blocked && state.pending > 0);
+  if (!needsAttention) {
+    const label = state.accepting ? "Saving…"
+      : state.pending > 0 && state.syncing ? "Sending…"
+      : state.pending > 0 ? "Saved on this device"
+      : null;
+    if (label) {
+      return (
+        <span role="status" className="inline-flex w-fit items-center gap-1.5 rounded-full bg-slate-950/80 px-2 py-1 text-xs text-slate-200">
+          {(state.accepting || state.syncing) && <LoaderCircle aria-hidden className="size-3 animate-spin motion-reduce:animate-none" />}
+          {label}
+        </span>
+      );
+    }
+    if (!completionPending) return null;
+  }
   const message = state.accepting
     ? "Saving your response in this browser…"
     : (state.message ??

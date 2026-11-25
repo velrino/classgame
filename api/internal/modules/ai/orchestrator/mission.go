@@ -22,7 +22,7 @@ func (service *Service) BuildMission(
 		reportMissionProgress(normalizedInput.Progress, ai.MissionProgress{
 			Stage:   "guardrail",
 			Message: "The request needs safer classroom material.",
-			Percent: 100,
+			Percent: 90,
 		})
 		return buildGuardrailFallbackBlueprint(normalizedInput, reason), nil
 	}
@@ -31,25 +31,35 @@ func (service *Service) BuildMission(
 		reportMissionProgress(normalizedInput.Progress, ai.MissionProgress{
 			Stage:   "fallback",
 			Message: "GenAI is not configured; using local fallback.",
-			Percent: 100,
+			Percent: 90,
 		})
 		return buildFallbackBlueprint(normalizedInput, "genai is not configured"), nil
 	}
 
-	missionInput, summaryUsage := service.prepareMissionInput(ctx, normalizedInput)
+	missionInput, files, summaryUsage := service.prepareMissionInput(ctx, normalizedInput)
+	if err := ctx.Err(); err != nil {
+		return ai.MissionBlueprint{}, err
+	}
+	message := "Building the playable mission preview."
+	if len(files) > 0 {
+		message = "Creating questions and activities from the PDF."
+	}
 	reportMissionProgress(normalizedInput.Progress, ai.MissionProgress{
 		Stage:   "generating_mission",
-		Message: "Building the playable mission preview.",
+		Message: message,
 		Percent: 72,
 	})
 
-	blueprint, result, err := mission.Run(ctx, service.genAI, missionInput)
+	blueprint, result, err := mission.Run(ctx, service.genAI, missionInput, files...)
 	if err != nil {
+		if ctx.Err() != nil {
+			return ai.MissionBlueprint{}, ctx.Err()
+		}
 		slog.Warn("class mission genai fallback", "error", err)
 		reportMissionProgress(normalizedInput.Progress, ai.MissionProgress{
 			Stage:   "fallback",
-			Message: "The model timed out; using local fallback.",
-			Percent: 100,
+			Message: "The model could not finish; using local fallback.",
+			Percent: 90,
 		})
 		return buildFallbackBlueprint(normalizedInput, err.Error()), nil
 	}
@@ -72,11 +82,6 @@ func (service *Service) BuildMission(
 		CandidatesTokenCount: result.CandidatesTokenCount,
 		ThoughtsTokenCount:   result.ThoughtsTokenCount,
 		TotalTokenCount:      result.TotalTokenCount,
-	})
-	reportMissionProgress(normalizedInput.Progress, ai.MissionProgress{
-		Stage:   "done",
-		Message: "Mission preview ready.",
-		Percent: 100,
 	})
 
 	return blueprint, nil

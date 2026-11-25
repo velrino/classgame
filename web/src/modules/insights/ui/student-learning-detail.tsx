@@ -51,9 +51,7 @@ export function StudentLearningDetail({
   onOpenChange,
 }: StudentLearningDetailProps) {
   const history = useStudentHistory(student, open, completeHistory);
-  const [selectedAttemptId, setSelectedAttemptId] = useState(
-    safeList(student?.attempts)[0]?.id ?? "",
-  );
+  const [selectedAttemptId, setSelectedAttemptId] = useState("");
   const [activeTab, setActiveTab] = useState("conversation");
   const attempts = history.page.attempts;
   const attempt = useMemo(
@@ -80,7 +78,7 @@ export function StudentLearningDetail({
           {!completeHistory ? <Button variant="ghost" size="sm" disabled={history.loading} onClick={history.refresh}>Refresh</Button> : null}
           <span className="text-xs text-muted-foreground">{history.loading ? "Loading history…" : `${attempts.length} ${completeHistory ? "recorded attempts" : "attempts on this page"}`}</span>
         </div>
-        {history.page.read_at ? <p className="mt-1 text-xs text-muted-foreground">History snapshot read at {new Date(history.page.read_at).toLocaleTimeString()}. Refresh for new work.</p> : null}
+        {history.page.read_at ? <p className="mt-1 text-xs text-muted-foreground">Updated at {new Date(history.page.read_at).toLocaleTimeString()}. {history.canGoBack ? "Viewing older history." : "Checking for new activity automatically."}</p> : null}
         {history.error ? <p role="alert" className="mt-2 text-destructive">{history.error}</p> : null}
       </section>
       {attempt ? (

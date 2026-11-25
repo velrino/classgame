@@ -142,8 +142,10 @@ export function useEvidenceSync(
               : "This work could not be accepted for this attempt. It is kept in this browser. Ask your teacher for help before deleting it."
             : first?.attempts >= EVIDENCE_LIMITS.automaticAttempts
               ? "Unsent work is paused. Check your connection and select Retry."
-              : rows.length
-                ? `${rows.length} responses are waiting to send. Keep this browser data until they are sent.`
+              : rows.length >= EVIDENCE_LIMITS.perScope
+                ? "The response queue is full. Send pending work before answering again."
+                : rows.length && !navigator.onLine
+                  ? "Your work is saved in this browser. Sending will resume when you are online."
                 : null,
       }));
     } catch {

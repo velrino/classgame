@@ -31,8 +31,7 @@ type MissionFlowPreviewProps = {
   readonly emptyMessage?: string;
   readonly flow?: MissionFlowDto | null;
   /**
-   * The backend always lays the path out top-to-bottom; `horizontal` transposes it so the
-   * path reads left-to-right (better for wide panels with few tall cards).
+   * Vertical previews stack the mission steps. Horizontal traces keep their event lanes.
    */
   readonly orientation?: MissionFlowOrientation;
   /** Appends a spinner node after the last node, for paths still being recorded. */
@@ -43,7 +42,7 @@ type MissionReactFlowNode = Node<{ label: ReactNode }>;
 
 const pendingNodeId = "flow-pending";
 
-/** Backend spacing between stacked nodes (before nodePositionScale is applied). */
+/** Spacing in the source coordinates for an extra trace step. */
 const stackedNodeGap = 135;
 
 const nodeBaseStyle: CSSProperties = {
@@ -52,11 +51,6 @@ const nodeBaseStyle: CSSProperties = {
   fontFamily: "var(--font-geist-sans)",
   padding: 0,
   width: 215,
-};
-
-const nodePositionScale = {
-  x: 1.55,
-  y: 1.45,
 };
 
 /**
@@ -79,7 +73,7 @@ const orientationHandles: Record<
 
 type FlowPosition = MissionFlowNodeDto["position"];
 
-type PositionMapper = (position: FlowPosition) => { x: number; y: number };
+type PositionMapper = (position: FlowPosition, index: number) => { x: number; y: number };
 
 /** Backend positions are authored top-to-bottom; horizontal mode transposes them by rank. */
 function createPositionMapper(
@@ -87,10 +81,7 @@ function createPositionMapper(
   orientation: MissionFlowOrientation,
 ): PositionMapper {
   if (orientation === "vertical") {
-    return (position) => ({
-      x: position.x * nodePositionScale.x,
-      y: position.y * nodePositionScale.y,
-    });
+    return (_, index) => ({ x: 0, y: index * 200 });
   }
 
   const columnByY = rankValues(positions.map((position) => position.y));
@@ -247,7 +238,7 @@ function buildReactFlow(
   }
 
   const handles = orientationHandles[orientation];
-  const anchor = flowNodes.reduce<MissionFlowNodeDto | null>(
+  const anchor = orientation === "vertical" ? flowNodes.at(-1) : flowNodes.reduce<MissionFlowNodeDto | null>(
     (lowest, node) =>
       lowest && lowest.position.y >= node.position.y ? lowest : node,
     null,
@@ -265,10 +256,10 @@ function buildReactFlow(
     ],
     orientation,
   );
-  const nodes = flowNodes.map<MissionReactFlowNode>((node) => ({
+  const nodes = flowNodes.map<MissionReactFlowNode>((node, index) => ({
     id: node.id,
     type: "default",
-    position: toCanvasPosition(node.position),
+    position: toCanvasPosition(node.position, index),
     ...handles,
     data: {
       label: <MissionFlowNodeCard node={node} />,
@@ -300,7 +291,7 @@ function buildReactFlow(
     nodes.push({
       id: pendingNodeId,
       type: "default",
-      position: toCanvasPosition(pendingPosition),
+      position: toCanvasPosition(pendingPosition, flowNodes.length),
       ...handles,
       data: { label: <PendingFlowNodeCard pending={pending} /> },
       style: {

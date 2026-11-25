@@ -42,6 +42,7 @@ var (
 type Options struct {
 	// GenerationScope returns the host boundary for sharing identical in-flight calls.
 	GenerationScope func(context.Context) string
+	RequestID       func(context.Context) string
 	Admission       ProviderAdmission
 	Enabled         bool
 	Backend         string
@@ -327,7 +328,11 @@ func (client *Client) generate(ctx context.Context, request StructuredRequest) (
 	var response *googlegenai.GenerateContentResponse
 	err = RunAdmitted(ctx, client.options.Admission, request.MaxOutputTokens, func() error {
 		var providerErr error
+		started := time.Now()
 		response, providerErr = client.client.Models.GenerateContent(ctx, model, buildUserContents(request), config)
+		if response != nil && response.UsageMetadata != nil {
+			client.logUsage(ctx, request, response.UsageMetadata, time.Since(started))
+		}
 		return providerErr
 	})
 	if err != nil {

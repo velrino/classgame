@@ -3,7 +3,7 @@ import { useTeacherAuth } from "@/modules/identity";
 import { missionsApi } from "@/modules/missions/adapters/http";
 import type { AttachmentAccess } from "@/modules/missions/adapters/types/attachment-access";
 import type { MissionAttachmentDto } from "@/modules/missions/adapters/types/contracts";
-import { attachmentOriginalURL } from "@/modules/missions/domain/attachments";
+import { attachmentOriginalURL, getAttachmentKind } from "@/modules/missions/domain/attachments";
 import { readBoundedBlob } from "@/shared/http/blob";
 import { useEffect, useState } from "react";
 
@@ -23,9 +23,10 @@ export function useAttachmentResource(
   const uuid = attachment.uploadcare_uuid;
   const stored = attachment.storage?.status === "stored";
   const source = attachmentOriginalURL(attachment);
+  const kind = getAttachmentKind(attachment);
   const version =
     attachment.storage?.updated_at ?? attachment.storage?.stored_at ?? "";
-  const key = `${user?.uid ?? "signed-out"}:${stored}:${classId}:${missionId}:${revision ?? "current"}:${uuid}:${version}:${source}`;
+  const key = `${user?.uid ?? "signed-out"}:${stored}:${classId}:${missionId}:${revision ?? "current"}:${uuid}:${version}:${kind}:${source}`;
   useEffect(() => {
     const controller = new AbortController();
     let objectUrl = "";
@@ -46,6 +47,11 @@ export function useAttachmentResource(
           const response = await fetch(source, { signal: controller.signal });
           if (!response.ok) throw new Error("Could not load this attachment.");
           blob = await readBoundedBlob(response, 20 * 1024 * 1024);
+        }
+        if (kind === "pdf") {
+          if (await blob.slice(0, 5).text() !== "%PDF-")
+            throw new Error("This file does not have a valid PDF header.");
+          blob = blob.slice(0, blob.size, "application/pdf");
         }
         if (controller.signal.aborted) return;
         objectUrl = URL.createObjectURL(blob);
@@ -68,6 +74,6 @@ export function useAttachmentResource(
       controller.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [classId, key, missionId, revision, source, stored, user, uuid]);
+  }, [classId, key, kind, missionId, revision, source, stored, user, uuid]);
   return state.key === key ? state : { url: "", loading: true, error: null };
 }

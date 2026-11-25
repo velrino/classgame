@@ -367,6 +367,9 @@ func (service *Service) createDraft(
 	input.Status = StatusDraft
 	input.Timestamp = timestamp
 
+	if input.Progress != nil {
+		input.Progress(ai.MissionProgress{Stage: "saving_draft", Message: "Saving the mission draft.", Percent: 95})
+	}
 	var mission MissionDocument
 	if input.MissionID == "" {
 		if input.AudienceType == AudienceSelected {
@@ -381,6 +384,9 @@ func (service *Service) createDraft(
 		return MissionDocument{}, err
 	}
 
+	if input.Progress != nil {
+		input.Progress(ai.MissionProgress{Stage: "done", Message: "Mission preview ready.", Percent: 100})
+	}
 	return draftView(mission), nil
 }
 

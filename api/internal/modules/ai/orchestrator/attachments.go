@@ -24,14 +24,14 @@ const maxAttachmentSummaryCharacters = 1400
 func (service *Service) prepareMissionInput(
 	ctx context.Context,
 	input ai.BuildMissionInput,
-) (ai.BuildMissionInput, ai.GenAIUsage) {
+) (ai.BuildMissionInput, []genai.FilePart, ai.GenAIUsage) {
 	if len(input.Attachments) == 0 {
 		reportMissionProgress(input.Progress, ai.MissionProgress{
 			Stage:   "preparing_context",
 			Message: "Preparing the mission context.",
 			Percent: 30,
 		})
-		return input, ai.GenAIUsage{}
+		return input, nil, ai.GenAIUsage{}
 	}
 
 	output := input
@@ -44,6 +44,22 @@ func (service *Service) prepareMissionInput(
 		Percent: 15,
 		Total:   total,
 	})
+
+	if total == 1 && normalizeMIMEType(input.Attachments[0].MimeType) == "application/pdf" {
+		attachment := input.Attachments[0]
+		data, err := service.fetchAttachment(ctx, attachment)
+		if err == nil && len(data) > 0 {
+			return input, []genai.FilePart{{Data: data, MIMEType: "application/pdf"}}, usage
+		}
+		reportMissionProgress(input.Progress, ai.MissionProgress{
+			Stage: "attachment_unavailable", Message: "The PDF could not be opened. Continuing with available context.", Percent: 40,
+		})
+		if attachment.Summary == "" {
+			attachment.Summary = "Attachment content could not be read during preview generation. Use filename and teacher prompt only."
+		}
+		output.Attachments = append(output.Attachments, attachment)
+		return output, nil, usage
+	}
 
 	for index, attachment := range input.Attachments {
 		progress := 20 + int(float64(index)/float64(max(total, 1))*40)
@@ -85,7 +101,7 @@ func (service *Service) prepareMissionInput(
 		Percent: 65,
 	})
 
-	return output, usage
+	return output, nil, usage
 }
 
 func (service *Service) summarizeAttachment(
