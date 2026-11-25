@@ -186,9 +186,28 @@ ClassGame needs to store mission revisions and student attempts, update related 
 | --- | --- | --- |
 | **Cloud Firestore + Firebase Auth (chosen)** | Documents fit mission revisions and student attempts. The browser can listen to selected class progress views in real time. Firebase Auth provides identity, Firestore rules control what each user can read, and the Go API handles writes. | I model documents around known queries, add indexes for combined filters, and keep some views up to date for the dashboard. Cross-class reporting takes more planning, and the app depends on Firebase SDKs and rules. |
 | **MongoDB** | Documents fit variable mission content, and aggregation pipelines can support more flexible reports. Change streams let a backend watch relevant database changes. | I would build the path from change streams to authorized browser updates, including reconnect handling. I would also wire identity and access checks into the API and plan which records to embed or update in a transaction. |
-| **PostgreSQL** | Foreign keys and constraints can enforce relationships between classes, enrollments, missions, and attempts. SQL joins and aggregates suit reporting across those records. | I would design tables and schema migrations. Live dashboard updates would need a delivery layer, such as an API that authorizes users and relays changes to browsers over SSE. |
+| **PostgreSQL on Supabase** | Foreign keys and constraints can enforce relationships between classes, enrollments, missions, and attempts. SQL joins suit reporting across those records. Supabase Realtime can send changes to the browser. | I would design tables, schema migrations, and row-level access policies. I would size database compute and check how the dashboard uses Realtime messages and connections. |
 
-I chose Firestore because I can deliver a live teacher dashboard with managed browser listeners and access rules while keeping writes in the Go API. That reduces the amount of realtime infrastructure I maintain on my own. MongoDB is attractive if document queries and aggregation are the priority. PostgreSQL is attractive if relational constraints and cross-class reporting drive the design. [ClassGame data model](docs/reference/DATA-MODEL.md) · [Access rules](firestore.rules) · [Firestore listeners](https://firebase.google.com/docs/firestore/query-data/listen) · [MongoDB change streams](https://www.mongodb.com/docs/manual/changestreams/) · [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)
+I chose Firestore because I can deliver a live teacher dashboard with managed browser listeners and access rules while keeping writes in the Go API. That reduces the amount of realtime infrastructure I maintain on my own. MongoDB is attractive if document queries and aggregation are the priority. Supabase is attractive if relational constraints and cross-class reporting drive the design. [ClassGame data model](docs/reference/DATA-MODEL.md) · [Access rules](firestore.rules) · [Firestore listeners](https://firebase.google.com/docs/firestore/query-data/listen) · [MongoDB change streams](https://www.mongodb.com/docs/manual/changestreams/) · [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html) · [Supabase Realtime](https://supabase.com/docs/guides/realtime/postgres-changes)
+
+#### Monthly database cost
+
+I use the same workload assumptions as the [project cost estimate](#monthly-costs). Each monthly active user generates 300 reads and 100 writes, including reads for live updates, and accounts for 0.1 MiB of stored data and 0.25 MiB of outbound data. The 30-day model spreads operations evenly and treats the stored volume as a monthly snapshot. Actual database size depends on indexes, copies of data, and retention.
+
+| Workload or estimated cost (USD/month) | 1 user | 100 users | 1,000 users | 10,000 users | 100,000 users |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Stored data | 0.10 MiB | 10 MiB | 100 MiB | 0.977 GiB | 9.766 GiB |
+| Reads / writes per month | 300 / 100 | 30,000 / 10,000 | 300,000 / 100,000 | 3,000,000 / 1,000,000 | 30,000,000 / 10,000,000 |
+| Outbound data per month | 0.25 MiB | 25 MiB | 250 MiB | 2.441 GiB | 24.414 GiB |
+| **Cloud Firestore Standard** | **$0.00** | **$0.00** | **$0.00** | **$0.81** | **$20.05** |
+| **MongoDB Atlas** | **$0.00** (Free) | **$0.00** (Free) | **$0.00** (Free) | **$7.92** (Flex) | **$57.60+** (Dedicated base estimate) |
+| **PostgreSQL on Supabase** | **$0.00** (Free) | **$0.00** (Free) | **$0.00** (Free) | **$25.00** (Pro) | **$25.50** (Pro + disk) |
+
+- **Firestore Standard** uses the regional rates and default-database free quotas from the project estimate. The $20.05 covers $17.01 in operations and $3.04 in storage and outbound data. [Firestore pricing](https://cloud.google.com/firestore/pricing)
+- **MongoDB Atlas** assumes the first three workloads fit the 512 MB Free cluster and its usage limits. Flex includes 5 GB of storage and costs $0.011/hour in the 0–100 operations/sec tier. The largest scenario uses the published Dedicated starting rate of about $0.08/hour for 720 hours. Actual cluster pricing depends on region, disk size, and network use. [Atlas pricing](https://www.mongodb.com/pricing) · [Atlas Flex rates](https://www.mongodb.com/docs/atlas/billing/atlas-flex-costs/)
+- **Supabase PostgreSQL** uses Free up to 500 MB of database size and 5 GB of egress. Pro starts at $25/month, includes 8 GB of disk and 250 GB of egress, and provides compute credits for one Micro instance. I model 12 GB of provisioned disk in the largest scenario, adding about $0.50 for 4 GB above the included disk at $0.125/GB-month. The estimate assumes Micro can handle the workload. A larger instance or disk would raise the bill. [Supabase pricing](https://supabase.com/pricing) · [Disk size billing](https://supabase.com/docs/guides/platform/manage-your-usage/disk-size)
+
+The table covers database charges and the required plan fee. Auth, backup add-ons, and additional realtime delivery charges are outside this estimate.
 
 ### Evaluation tooling
 
