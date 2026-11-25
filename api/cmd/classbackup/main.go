@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"classgame-api/internal/datarecovery"
+	"classgame-api/internal/ops/datarecovery"
 )
 
 func main() {

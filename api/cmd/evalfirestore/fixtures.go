@@ -1,7 +1,7 @@
 package main
 
 import (
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/students"
 	"cloud.google.com/go/firestore"

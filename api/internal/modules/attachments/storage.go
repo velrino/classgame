@@ -17,7 +17,7 @@ import (
 
 	"cloud.google.com/go/storage"
 
-	"classgame-api/internal/uploadcare"
+	"classgame-api/internal/shared/uploadcare"
 )
 
 const (

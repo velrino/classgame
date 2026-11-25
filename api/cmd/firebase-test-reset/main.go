@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
-	"classgame-api/internal/demoaccount"
+	"classgame-api/internal/shared/demoaccount"
 )
 
 const (

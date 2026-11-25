@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/taskqueue"
+	"classgame-api/internal/shared/taskqueue"
 )
 
 const (

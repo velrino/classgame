@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 )
 
 // ClassroomStore is the persistence port owned by this workflow.

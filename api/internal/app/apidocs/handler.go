@@ -66,7 +66,15 @@ func (builder *schemaBuilder) schema(typ reflect.Type) object {
 	case reflect.Map:
 		return object{"type": "object", "additionalProperties": builder.schema(typ.Elem())}
 	case reflect.Struct:
-		name := strings.ReplaceAll(strings.TrimPrefix(typ.PkgPath(), "classgame-api/internal/"), "/", "_") + "_" + typ.Name()
+		packagePath := strings.TrimPrefix(typ.PkgPath(), "classgame-api/internal/")
+		// Preserve published component names when their Go packages move.
+		switch packagePath {
+		case "modules/health/timeutil":
+			packagePath = "timeutil"
+		case "shared/httpx":
+			packagePath = "transport/httpx"
+		}
+		name := strings.ReplaceAll(packagePath, "/", "_") + "_" + typ.Name()
 		ref := object{"$ref": "#/components/schemas/" + name}
 		if _, exists := builder.definitions[name]; exists {
 			return ref

@@ -3,7 +3,7 @@ package generation
 import (
 	"strings"
 
-	"classgame-api/internal/contentpolicy"
+	"classgame-api/internal/shared/contentpolicy"
 )
 
 func normalizeInput(input BuildMissionInput) BuildMissionInput {

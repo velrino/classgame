@@ -9,7 +9,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 )
 
 type ErrorResponse struct {

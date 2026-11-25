@@ -14,10 +14,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/pagination"
-	"classgame-api/internal/transport/httpx"
+	"classgame-api/internal/shared/pagination"
+	"classgame-api/internal/shared/httpx"
 )
 
 const (

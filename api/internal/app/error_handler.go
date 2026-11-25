@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"classgame-api/internal/transport/httpx"
+	"classgame-api/internal/shared/httpx"
 )
 
 type errorResponse = httpx.ErrorResponse

@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"classgame-api/internal/apidocs"
+	"classgame-api/internal/app/apidocs"
 	"classgame-api/internal/config"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/health"

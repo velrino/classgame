@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"classgame-api/internal/app"
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"

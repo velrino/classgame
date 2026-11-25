@@ -10,7 +10,7 @@ import (
 	"classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/students"
 	"classgame-api/internal/shared/redisqueue"
-	"classgame-api/internal/taskqueue"
+	"classgame-api/internal/shared/taskqueue"
 )
 
 type LearningProcessor interface {

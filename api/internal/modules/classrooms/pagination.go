@@ -6,8 +6,8 @@ import (
 
 	"cloud.google.com/go/firestore"
 
-	"classgame-api/internal/auth"
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/shared/pagination"
 )
 
 func (service *Service) ListPage(ctx context.Context, identity auth.Identity, page pagination.Params) ([]TeacherClassDocument, string, error) {

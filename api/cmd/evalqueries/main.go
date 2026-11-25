@@ -23,12 +23,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/insights"
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 )
 
 type counterStream struct {

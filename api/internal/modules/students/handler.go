@@ -16,11 +16,11 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	analyticsmodule "classgame-api/internal/shared/analytics"
 	"classgame-api/internal/shared/ratelimit"
 	ratehttp "classgame-api/internal/shared/ratelimit/http"
-	"classgame-api/internal/transport/httpx"
+	"classgame-api/internal/shared/httpx"
 )
 
 const (

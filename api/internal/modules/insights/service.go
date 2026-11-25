@@ -10,13 +10,13 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"classgame-api/internal/auth"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	studentsmodule "classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
-	"classgame-api/internal/pagination"
+	"classgame-api/internal/shared/pagination"
 )
 
 var ErrTeacherAuthRequired = errors.New("dashboard requires a configured teacher sign-in provider")

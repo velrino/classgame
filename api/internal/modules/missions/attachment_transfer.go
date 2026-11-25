@@ -15,7 +15,7 @@ import (
 
 	attachmentsmodule "classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/classrooms"
-	"classgame-api/internal/uploadcare"
+	"classgame-api/internal/shared/uploadcare"
 )
 
 func (repository *FirestoreRepository) Prepare(
