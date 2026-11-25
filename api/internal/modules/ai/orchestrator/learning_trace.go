@@ -228,7 +228,7 @@ func BuildObservedLearningTrace(input ai.BuildLearningTraceInput, fallbackReason
 	}
 
 	return ai.LearningTraceBlueprint{
-		Summary:          truncateText(summary, 420),
+		Summary:          summary,
 		Strengths:        normalizeLearningSignals(strengths, 4),
 		ImprovementAreas: normalizeLearningSignals(improvementAreas, 4),
 		NextAdaptation:   truncateText(nextAdaptation, 280),
@@ -247,7 +247,7 @@ func normalizeLearningTraceBlueprint(
 	blueprint ai.LearningTraceBlueprint,
 ) ai.LearningTraceBlueprint {
 	fallback := BuildObservedLearningTrace(input, "")
-	blueprint.Summary = truncateText(normalizeText(blueprint.Summary), 420)
+	blueprint.Summary = normalizeText(blueprint.Summary)
 	if blueprint.Summary == "" {
 		blueprint.Summary = fallback.Summary
 	}
