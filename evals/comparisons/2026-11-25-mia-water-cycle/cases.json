@@ -1,0 +1,114 @@
+{
+  "version": "1.0.0",
+  "synthetic": true,
+  "mission": {
+    "id": "synthetic-water-cycle",
+    "title": "Water cycle",
+    "subject": "Science",
+    "learning_goal": "Understand physical processes",
+    "knowledge_chunks": [
+      {
+        "id": "condensation-source",
+        "source": "Synthetic lesson",
+        "title": "Condensation",
+        "content": "Condensation changes water vapor into liquid droplets.",
+        "keywords": [
+          "condensation"
+        ]
+      },
+      {
+        "id": "evaporation-source",
+        "source": "Synthetic lesson",
+        "title": "Evaporation",
+        "content": "Evaporation changes liquid water into water vapor.",
+        "keywords": [
+          "evaporation"
+        ]
+      }
+    ]
+  },
+  "tutor_context": {
+    "mission": {
+      "id": "synthetic-water-cycle",
+      "title": "Water cycle",
+      "subject": "Science",
+      "grade_level": "Grade 5",
+      "learning_goal": "Understand physical processes",
+      "stages": []
+    },
+    "student_memory": {},
+    "class_context": {},
+    "attempt": {
+      "status": "learning",
+      "progress": [],
+      "recent_turns": [],
+      "recent_events": []
+    },
+    "turn": {
+      "prompt": "Explain the term.",
+      "type": "question"
+    },
+    "retrieved_chunks": []
+  },
+  "cases": [
+    {
+      "id": "definition",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain “condensation”."
+        },
+        "limit": 1
+      },
+      "expected_sources": [
+        "condensation-source"
+      ],
+      "learning_goal": "Describe vapor changing into liquid droplets."
+    },
+    {
+      "id": "misconception",
+      "retrieval": {
+        "turn": {
+          "Prompt": "I think evaporation turns vapor into liquid. Is my direction right?"
+        },
+        "limit": 1
+      },
+      "expected_sources": [
+        "evaporation-source"
+      ],
+      "learning_goal": "Explicitly correct the reversed direction and explain liquid to vapor."
+    },
+    {
+      "id": "source-limit",
+      "retrieval": {
+        "turn": {
+          "Prompt": "At exactly what temperature does condensation start, according to this lesson?"
+        },
+        "limit": 1
+      },
+      "expected_sources": [
+        "condensation-source"
+      ],
+      "learning_goal": "Say the lesson gives no exact temperature. Avoid supplying a number."
+    },
+    {
+      "id": "compare",
+      "retrieval": {
+        "turn": {
+          "Prompt": "How are condensation and evaporation different? Show me the direction of each change."
+        },
+        "limit": 2
+      },
+      "expected_sources": [
+        "condensation-source",
+        "evaporation-source"
+      ],
+      "learning_goal": "Give both directions and distinguish them."
+    }
+  ],
+  "rubric": {
+    "task_met": "The visible answer addresses the specific learning goal correctly.",
+    "source_only": "Every factual claim and example in the visible response is supported by the retrieved text or follows directly from it.",
+    "useful_follow_up": "The follow-up gives a grade-five learner a concrete step to check understanding using the lesson.",
+    "source_ids": "Returned source IDs match the expected set after application normalization."
+  }
+}

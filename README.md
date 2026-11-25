@@ -10,7 +10,13 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
 
 ## Architecture
 
-One Next.js application, one Go API, and Firebase-backed learning state form a modular monolith. Optional Go workers use a dedicated Redis/Asynq broker; interactive tutoring stays synchronous.
+The teacher dashboard uses Next.js, React and TypeScript. Three.js renders the student classroom in the browser. A Go API manages missions and tutoring. Firestore stores student progress and sends live updates to the dashboard. Optional Go workers use Asynq and a dedicated Redis broker for background jobs.
+
+### Running and evaluating Mia
+
+- **Tooling.** Run `pnpm run dev` from the repository root. Turborepo starts Next.js and the Go API together. Air rebuilds the API when Go files change. The offline Python eval runner checks the same Go policies that handle tutor requests. [Local setup](docs/development/LOCAL-SETUP.md) · [Evaluation guide](evals/README.md)
+- **Models.** Gemini 3.6 Flash and Gemini 4 Argon each answered the same four synthetic science questions through Vertex AI. Both got the core answer right in all four. All factual claims stayed within the lesson in three Argon responses and one Flash response. Flash had the lower median turn time (5.15 s versus 7.20 s). [Comparison report, questions and results](evals/comparisons/2026-11-25-mia-water-cycle/README.md)
+- **Token optimization.** For each tutor turn, the API retrieves up to five lesson passages. If none are usable, Mia uses the published question and skips the model call. Worksheet summaries have a 900-token output limit. Firestore records input, response, thinking and total tokens reported for accepted AI tutor turns. [Tutor retrieval](api/internal/modules/students/tutoring.go) · [Tutor generation](api/internal/modules/generation/tutoring.go) · [Worksheet summaries](api/internal/modules/generation/attachments.go)
 
 ### System design
 
