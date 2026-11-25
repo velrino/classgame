@@ -36,8 +36,8 @@ Safety:
   This script refuses projects other than allthingsagentichackatho-ee359 unless
   ALLOW_OTHER_FIREBASE_PROJECT=1 is set.
   The demo teacher (velrino@gmail.com) is never deleted; see --keep-emails in
-  api/cmd/firebase-test-reset. Recreate or re-key it with
-  api/cmd/firebase-demo-teacher.
+  api/cmd/demo/firebase-test-reset. Recreate or re-key it with
+  api/cmd/demo/firebase-demo-teacher.
 EOF
 }
 
@@ -168,7 +168,7 @@ fi
 
 (
   cd "${API_DIR}"
-  go run ./cmd/firebase-test-reset "${reset_flags[@]}"
+  go run ./cmd/demo/firebase-test-reset "${reset_flags[@]}"
 )
 
 if [[ "${DRY_RUN}" -eq 1 ]]; then
@@ -186,7 +186,7 @@ else
   (
     cd "${API_DIR}"
     DEMO_TEACHER_PASSWORD="${DEMO_TEACHER_PASSWORD}" \
-      go run ./cmd/firebase-demo-teacher "${teacher_flags[@]}"
+      go run ./cmd/demo/firebase-demo-teacher "${teacher_flags[@]}"
   )
   echo "Firebase reset complete."
 fi

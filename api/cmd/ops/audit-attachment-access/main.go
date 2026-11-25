@@ -1,4 +1,4 @@
-// This legacy entrypoint audits by default. Explicit reviewed manifests may
+// Command audit-attachment-access audits by default. Explicit reviewed manifests may
 // remove public access; it never rewrites URLs or grants public storage access.
 package main
 

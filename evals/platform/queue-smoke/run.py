@@ -155,7 +155,7 @@ def main():
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_dir = ROOT / "evals/output" / (stamp + "-queue-smoke-" + secrets.token_hex(4))
     run_dir.mkdir(parents=True, exist_ok=False)
-    manifest = {"schema_version": 1, "suite": data["suite"], "dataset_version": data["version"], "dataset_sha256": hashlib.sha256(raw).hexdigest(), "bridge_sha256": hashlib.sha256((ROOT / "api/cmd/queuesmoke/main.go").read_bytes()).hexdigest(), "revision": revision, "dirty": dirty, "mode": "local-redis-synthetic", "cases": cases, "real_provider_calls": 0, "database_calls": 0}
+    manifest = {"schema_version": 1, "suite": data["suite"], "dataset_version": data["version"], "dataset_sha256": hashlib.sha256(raw).hexdigest(), "bridge_sha256": hashlib.sha256((ROOT / "api/cmd/evals/queuesmoke/main.go").read_bytes()).hexdigest(), "revision": revision, "dirty": dirty, "mode": "local-redis-synthetic", "cases": cases, "real_provider_calls": 0, "database_calls": 0}
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     try:
         with tempfile.TemporaryDirectory(prefix="classgame-queue-smoke-") as directory:
@@ -182,7 +182,7 @@ def main():
                         raise RuntimeError("temporary broker identity does not match; no jobs sent")
                     environment = dict(os.environ, QUEUE_SMOKE_REDIS_URL="redis://127.0.0.1:%s/0" % port, QUEUE_SMOKE_NAME="smoke-%s" % os.getpid())
                     executable = str(Path(directory) / "queuesmoke")
-                    subprocess.run(["go", "build", "-o", executable, "./cmd/queuesmoke"], cwd=ROOT / "api", env=environment, text=True, capture_output=True, check=True, timeout=90)
+                    subprocess.run(["go", "build", "-o", executable, "./cmd/evals/queuesmoke"], cwd=ROOT / "api", env=environment, text=True, capture_output=True, check=True, timeout=90)
                     report = invoke(executable, environment)
                     if report.get("status") != "passed" or set(report.get("checks", [])) != BASIC_CASES or report.get("real_provider_calls") != 0 or report.get("database_calls") != 0:
                         raise RuntimeError("unexpected basic queue smoke result")

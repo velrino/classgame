@@ -122,7 +122,7 @@ def invoke_bridge(data, cases):
     build_env = dict(os.environ, GOPROXY="off")
     with tempfile.TemporaryDirectory(prefix="classgame-evalbridge-") as temporary:
         binary = str(Path(temporary) / "evalbridge")
-        build = subprocess.run(["go", "build", "-o", binary, "./cmd/evalbridge"], cwd=str(ROOT / "api"),
+        build = subprocess.run(["go", "build", "-o", binary, "./cmd/evals/evalbridge"], cwd=str(ROOT / "api"),
                                env=build_env, text=True, capture_output=True, timeout=180)
         if build.returncode:
             raise RuntimeError("Go bridge build failed (preinstall the required toolchain/dependencies):\n" + build.stderr)

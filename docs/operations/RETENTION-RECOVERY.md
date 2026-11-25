@@ -27,14 +27,14 @@ The operator needs Firestore read access and Application Default Credentials (or
 
 ```sh
 scope_flags=(-project PROJECT -organization ORG -district DISTRICT -school SCHOOL -class CLASS_ID)
-go run ./cmd/classbackup "${scope_flags[@]}"
+go run ./cmd/ops/classbackup "${scope_flags[@]}"
 # Optional: add -archived-at 2026-01-01T00:00:00Z -archive-days 90 for a review date.
 ```
 
 The default prints counts and review status, with zero database writes. Review eligibility does not authorize deletion. For export, choose owner-only paths outside Git, with the key separate from backup storage. Generate a 32-byte key with `umask 077; openssl rand -out KEY_FILE 32`, then:
 
 ```sh
-go run ./cmd/classbackup "${scope_flags[@]}" -mode export \
+go run ./cmd/ops/classbackup "${scope_flags[@]}" -mode export \
   -file PRIVATE_BACKUP_FILE -key-file PRIVATE_KEY_FILE
 ```
 
@@ -57,12 +57,12 @@ The tool accepts at most 200 documents and 8 MiB per class bundle. It fails inst
 Local-only recovery commands use the same scope, encrypted artifact, and key:
 
 ```sh
-go run ./cmd/classbackup "${scope_flags[@]}" -mode delete-local -apply-local \
+go run ./cmd/ops/classbackup "${scope_flags[@]}" -mode delete-local -apply-local \
   -file PRIVATE_BACKUP_FILE -key-file PRIVATE_KEY_FILE
-go run ./cmd/classbackup "${scope_flags[@]}" -mode restore-local -apply-local \
+go run ./cmd/ops/classbackup "${scope_flags[@]}" -mode restore-local -apply-local \
   -file PRIVATE_BACKUP_FILE -key-file PRIVATE_KEY_FILE
 # Abort a held plan before any deletion, using its original bundle:
-go run ./cmd/classbackup "${scope_flags[@]}" -mode release-local -apply-local \
+go run ./cmd/ops/classbackup "${scope_flags[@]}" -mode release-local -apply-local \
   -file PRIVATE_BACKUP_FILE -key-file PRIVATE_KEY_FILE
 ```
 

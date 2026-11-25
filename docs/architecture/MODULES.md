@@ -5,7 +5,11 @@ Use business capabilities as code boundaries. Keep one Go module, one web app, a
 ## Go
 
 ```text
-api/cmd/api/                   # Composition, HTTP registration, lifecycle
+api/cmd/
+  api/                         # Server and worker entry point
+  evals/                       # Evaluation and smoke test executables
+  ops/                         # Operations and maintenance commands
+  demo/                        # Demo environment commands
 api/internal/
   app/                         # Server setup, API reference, bootstrap
   config/                      # Environment parsing and validation

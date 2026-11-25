@@ -5,7 +5,7 @@ This optional command calls the real student repository with synthetic fixtures.
 Start a Firestore emulator separately. From `api/`, run:
 
 ```sh
-FIRESTORE_EMULATOR_HOST=127.0.0.1:8787 go run ./cmd/evalfirestore -run -project demo-classgame
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8787 go run ./cmd/evals/evalfirestore -run -project demo-classgame
 ```
 
 The command requires `-run`, a numeric loopback address, and a `demo-` project ID. It uses `option.WithoutAuthentication` and connects only to that emulator endpoint. There is no hosted mode and no emulator reset. Fixtures use a new random prefix on each run; cleanup deletes only documents that this run created. The prefix is printed before execution so an interrupted run can be inspected safely. A cleanup failure fails the run.

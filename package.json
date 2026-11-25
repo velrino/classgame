@@ -7,7 +7,7 @@
     "dev:web": "pnpm --dir web run dev --hostname 127.0.0.1",
     "dev:api": "cd api && air -c .air.toml",
     "eval": "turbo run dev:web dev:api eval:ui --env-mode=loose",
-    "eval:ui": "cd evals/platform/framework-comparison && node import-demo.cjs && GENKIT_RUNTIME_ID=classgame-evals genkit --non-interactive --no-update-notification start --host 127.0.0.1 --port 4000 --experimental-reflection-v2 --experimental-auth -- go -C ../../../api run ./cmd/evalgenkit ui"
+    "eval:ui": "cd evals/platform/framework-comparison && node import-demo.cjs && GENKIT_RUNTIME_ID=classgame-evals genkit --non-interactive --no-update-notification start --host 127.0.0.1 --port 4000 --experimental-reflection-v2 --experimental-auth -- go -C ../../../api run ./cmd/evals/evalgenkit ui"
   },
   "devDependencies": {
     "@genkit-ai/tools-common": "1.45.0",

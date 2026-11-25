@@ -34,7 +34,7 @@ Review [the index file](../../firestore.indexes.json) before a hosted rollout. L
 
    ```sh
    cd api
-   go run ./cmd/rebuild-class-evidence --project YOUR_PROJECT --class CLASS_ID --limit 25
+   go run ./cmd/ops/rebuild-class-evidence --project YOUR_PROJECT --class CLASS_ID --limit 25
    ```
 
 3. After review, `--apply` writes that page. Start with no `--after`; then pass the returned `next_cursor` to each next page. Keep the same class and limit. Each page scans at most 100 source rows. `candidates` counts eligible rows, not guaranteed writes: stale rows may be skipped.
@@ -45,6 +45,6 @@ To roll back reads, restore a compatible application version and keep source att
 
 ## Local evidence
 
-The opt-in [query evaluation](../../api/cmd/evalqueries/main.go) uses 120 synthetic students and 1,440 attempts. A full fixture scan returns 1,560 rows. The default paged overview returns 51 query documents plus fixed ownership/synthesis reads. A student's 12 attempts remain reachable through 5-item pages. A 40-student evidence projection read returns 80 query documents plus class/manifest reads.
+The opt-in [query evaluation](../../api/cmd/evals/evalqueries/main.go) uses 120 synthetic students and 1,440 attempts. A full fixture scan returns 1,560 rows. The default paged overview returns 51 query documents plus fixed ownership/synthesis reads. A student's 12 attempts remain reachable through 5-item pages. A 40-student evidence projection read returns 80 query documents plus class/manifest reads.
 
 The report includes local duration, returned query documents, and point-document responses. These are controlled local measurements, not a production latency target, billing estimate, or index-entry scan count. See [evaluation commands](../../evals/README.md).
