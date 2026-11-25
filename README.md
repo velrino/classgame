@@ -106,6 +106,36 @@ Repository skills live in [.agents/skills](.agents/skills); contribution and wor
 
 See [Cloud Run operations](docs/operations/CLOUD-RUN.md). Local execution does not recreate deleted hosted resources.
 
+## Monthly costs
+
+Each column estimates one month of ClassGame usage in USD for the stated number of active students and teachers combined. Both totals include the Go API, live tutoring and Firebase. The frontend host is the only change. These are planning estimates for text-only missions. The previous deployment is offline.
+
+| Estimated monthly cost (USD) | 1 user | 100 users | 1,000 users | 10,000 users | 100,000 users |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Vertex AI · Gemini 3.7 Flash | $0.05 | $4.50 | $45.00 | $450.00 | $4,500.00 |
+| Cloud Run · Go API compute | $0.09 | $2.34 | $16.85 | $67.39 | $134.78 |
+| Go API · outbound traffic | $0.00 | $0.01 | $0.12 | $1.17 | $11.72 |
+| Firestore · reads and writes | $0.00 | $0.00 | $0.00 | $0.81 | $17.01 |
+| Firestore · storage and outbound traffic | $0.00 | $0.00 | $0.00 | $0.00 | $3.04 |
+| Redis · API quotas and shared AI limits | $0.00 | $0.08 | $0.80 | $8.00 | $80.00 |
+| Firebase Auth with Identity Platform | $0.00 | $0.00 | $0.00 | $0.00 | $275.00 |
+| Uploadcare and Cloud Storage · no attachments | $0.00 | $0.00 | $0.00 | $0.00 | $0.00 |
+| Asynq worker and dedicated Redis broker · disabled | $0.00 | $0.00 | $0.00 | $0.00 | $0.00 |
+| Frontend option 1 · Cloud Run compute, requests and traffic | $0.00 | $0.10 | $1.01 | $10.14 | $101.35 |
+| Frontend option 2 · Netlify Free or Pro | $0.00 | $0.00 | $0.00 | $20.00 | $120.00 |
+| **Total · Cloud Run frontend** | **$0.14** | **$7.03** | **$63.78** | **$537.51** | **$5,122.90** |
+| **Total · Netlify frontend** | **$0.14** | **$6.93** | **$62.77** | **$547.37** | **$5,141.55** |
+
+**What drives the estimate**
+
+- **AI usage.** Allow 10 paid calls per active user across tutoring and mission generation. Budget 1,500 uncached input tokens and 900 output tokens per call, including reasoning. The global Gemini 3.7 Flash rates through December 31, 2026 are $0.75 and $3.75 per million tokens after promotional credits. At the published January 2027 rates, the AI row doubles. [Vertex AI pricing](https://cloud.google.com/model-garden/pricing)
+- **Cloud Run and traffic.** Both services use 1 vCPU and 4 GiB in South Carolina. For the instance-billed API, assume 1, 25, 180, 720 and 1,440 total instance-hours across the five columns, including idle time. That costs $0.0936 per instance-hour. The request-billed frontend uses two active instance-seconds and 20 requests per user. Budget 8 MiB per user for the web app and classroom assets, plus 1 MiB for API responses, at $0.12/GiB to North America. These rows assume the billing account has used its Cloud Run and network free allowances. [API configuration](api/infra/cloud-run/production/cloudbuild.yaml) · [Web configuration](web/infra/cloud-run/production/cloudbuild.yaml) · [Cloud Run pricing](https://cloud.google.com/run/pricing) · [Network pricing](https://cloud.google.com/vpc/network-pricing)
+- **Database and sign-in.** Per user, budget 300 Firestore reads including listeners, 100 writes, 0.1 MiB stored and 0.25 MiB sent to browsers. Assume even traffic over 30 days and the default database's free quota. Budget overages at $0.03 per 100,000 reads, $0.09 per 100,000 writes, $0.15/GiB-month stored and $0.12/GiB sent. Sign-in assumes one Tier 1 identity per user, anonymous cleanup off and the first 50,000 monthly users free. [Firestore pricing](https://cloud.google.com/firestore/pricing) · [Identity Platform pricing](https://cloud.google.com/identity-platform/pricing)
+- **Redis and optional jobs.** Budget 400 Redis commands per user at $0.20 per 100,000 commands on Upstash Pay as You Go, with storage and transfer within its included amounts. The API runs with jobs disabled. Enabling attachment copying adds a continuous worker, a separate Redis broker, file storage and transfer. [Redis pricing](https://upstash.com/pricing/redis) · [ClassGame queue requirements](docs/operations/QUEUES.md)
+- **Netlify frontend.** The alternative hosts the Next.js app from `web/` and calls the same Go API. Budget one production deploy per month, 20 web requests, 8 MiB delivered and 0.25 GB-seconds of function compute per user. At 100,000 users this uses about 17,262 credits. The estimate uses Free through 1,000 users, then the $20 Pro plan with 3,000 credits and $10 per additional pack of 1,500. [Next.js on Netlify](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/) · [Netlify pricing](https://www.netlify.com/pricing/)
+
+Totals sum the displayed resource costs to the cent. Build and image storage, secrets, logging and optional analytics are assumed to stay within their included allowances. Taxes, backups and paid support are outside the estimate.
+
 ## Repository layout
 
 ```text

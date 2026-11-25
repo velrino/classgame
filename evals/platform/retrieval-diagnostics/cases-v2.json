@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "suite": "ai-policy",
+  "version": "1.1.0",
+  "synthetic": true,
+  "tutor_context": {
+    "mission": {
+      "id": "synthetic-mission",
+      "title": "Water cycle",
+      "subject": "Science",
+      "grade_level": "Grade 5",
+      "learning_goal": "Understand physical processes",
+      "stages": []
+    },
+    "student_memory": {},
+    "class_context": {},
+    "attempt": {
+      "status": "learning",
+      "progress": [],
+      "recent_turns": [],
+      "recent_events": []
+    },
+    "turn": {
+      "prompt": "Explain the term.",
+      "type": "question"
+    },
+    "retrieved_chunks": [
+      {
+        "id": "fraction-clue",
+        "source": "Synthetic worksheet",
+        "title": "Fractions",
+        "content": "One of two equal parts is one half.",
+        "keywords": [
+          "fractions"
+        ]
+      }
+    ]
+  },
+  "mission": {
+    "id": "synthetic-water-cycle",
+    "title": "Water cycle",
+    "subject": "Science",
+    "learning_goal": "Understand physical processes",
+    "knowledge_chunks": [
+      {
+        "id": "condensation-source",
+        "source": "Synthetic lesson",
+        "title": "Condensation",
+        "content": "Condensation changes water vapor into liquid droplets.",
+        "keywords": [
+          "condensation"
+        ]
+      },
+      {
+        "id": "evaporation-source",
+        "source": "Synthetic lesson",
+        "title": "Evaporation",
+        "content": "Evaporation changes liquid water into water vapor.",
+        "keywords": [
+          "evaporation"
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "retrieval-plain-v2",
+      "kind": "retrieval",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain condensation"
+        },
+        "limit": 1
+      },
+      "expected": {
+        "equals": {
+          "retrieved_chunk_ids": [
+            "condensation-source"
+          ],
+          "retrieved_count": 1,
+          "scripted_provider_calls": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval-curly-quotes-v2",
+      "kind": "retrieval",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain “condensation”"
+        },
+        "limit": 1
+      },
+      "expected": {
+        "equals": {
+          "retrieved_chunk_ids": [
+            "condensation-source"
+          ],
+          "retrieved_count": 1,
+          "scripted_provider_calls": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval-em-dash-v2",
+      "kind": "retrieval",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain—condensation"
+        },
+        "limit": 1
+      },
+      "expected": {
+        "equals": {
+          "retrieved_chunk_ids": [
+            "condensation-source"
+          ],
+          "retrieved_count": 1,
+          "scripted_provider_calls": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval-curly-single-quotes-v2",
+      "kind": "retrieval",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain ‘condensation’"
+        },
+        "limit": 1
+      },
+      "expected": {
+        "equals": {
+          "retrieved_chunk_ids": [
+            "condensation-source"
+          ],
+          "retrieved_count": 1,
+          "scripted_provider_calls": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval-parentheses-v2",
+      "kind": "retrieval",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain (condensation)"
+        },
+        "limit": 1
+      },
+      "expected": {
+        "equals": {
+          "retrieved_chunk_ids": [
+            "condensation-source"
+          ],
+          "retrieved_count": 1,
+          "scripted_provider_calls": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval-unrelated-v2",
+      "kind": "retrieval",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain tectonics"
+        },
+        "limit": 1
+      },
+      "expected": {
+        "equals": {
+          "retrieved_chunk_ids": [],
+          "retrieved_count": 0,
+          "scripted_provider_calls": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval-other-topic-v2",
+      "kind": "retrieval",
+      "retrieval": {
+        "turn": {
+          "Prompt": "Explain evaporation"
+        },
+        "limit": 1
+      },
+      "expected": {
+        "equals": {
+          "retrieved_chunk_ids": [
+            "evaporation-source"
+          ],
+          "retrieved_count": 1,
+          "scripted_provider_calls": 0
+        }
+      }
+    }
+  ]
+}

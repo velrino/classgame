@@ -1,0 +1,177 @@
+{
+  "scenario": "retrieval-diagnostics",
+  "dataset": "evals/platform/retrieval-diagnostics/cases-v2.json",
+  "dataset_sha256": "1e903af54217c5cb676252e059095eff387b513146dc66d8e9b5832095af2aa3",
+  "baseline_revision": "4e518536f86a75d97565b889ff3e5e34fe6e7b96",
+  "real_provider_calls": 0,
+  "scripted_provider_calls": 0,
+  "scope": "Production lexical retrieval and production tutor fallback with a disabled provider; synthetic data only.",
+  "baseline_instrumentation": "Exported the unchanged retriever and added a bridge case; baseline was a dirty instrumentation tree, not the bare historical commit.",
+  "before": [
+    {
+      "id": "retrieval-plain-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Condensation changes water vapor into liquid droplets."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-curly-quotes-v2",
+      "passed": false,
+      "retrieved_chunk_ids": [],
+      "tutor_message": "I could not find a relevant mission clue. Continue with the published question or ask your teacher for help.",
+      "explanation_steps": [],
+      "fallback_reason": "No relevant mission context was retrieved; using only the published question.",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-em-dash-v2",
+      "passed": false,
+      "retrieved_chunk_ids": [],
+      "tutor_message": "I could not find a relevant mission clue. Continue with the published question or ask your teacher for help.",
+      "explanation_steps": [],
+      "fallback_reason": "No relevant mission context was retrieved; using only the published question.",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-curly-single-quotes-v2",
+      "passed": false,
+      "retrieved_chunk_ids": [],
+      "tutor_message": "I could not find a relevant mission clue. Continue with the published question or ask your teacher for help.",
+      "explanation_steps": [],
+      "fallback_reason": "No relevant mission context was retrieved; using only the published question.",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-parentheses-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Condensation changes water vapor into liquid droplets."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-unrelated-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [],
+      "tutor_message": "I could not find a relevant mission clue. Continue with the published question or ask your teacher for help.",
+      "explanation_steps": [],
+      "fallback_reason": "No relevant mission context was retrieved; using only the published question.",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-other-topic-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Evaporation changes liquid water into water vapor."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    }
+  ],
+  "after": [
+    {
+      "id": "retrieval-plain-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Condensation changes water vapor into liquid droplets."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-curly-quotes-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Condensation changes water vapor into liquid droplets."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-em-dash-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Condensation changes water vapor into liquid droplets."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-curly-single-quotes-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Condensation changes water vapor into liquid droplets."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-parentheses-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "condensation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Condensation changes water vapor into liquid droplets."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-unrelated-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [],
+      "tutor_message": "I could not find a relevant mission clue. Continue with the published question or ask your teacher for help.",
+      "explanation_steps": [],
+      "fallback_reason": "No relevant mission context was retrieved; using only the published question.",
+      "generated_by_ai": false
+    },
+    {
+      "id": "retrieval-other-topic-v2",
+      "passed": true,
+      "retrieved_chunk_ids": [
+        "evaporation-source"
+      ],
+      "tutor_message": "Keep going — use the mission clue and explain what you notice.",
+      "explanation_steps": [
+        "Evaporation changes liquid water into water vapor."
+      ],
+      "fallback_reason": "genai is not configured",
+      "generated_by_ai": false
+    }
+  ],
+  "after_retriever_sha256": "5d6ba65764668c5fac6d190af8376bdcbcc7dfdc974615eefd5186505e79a427"
+}
