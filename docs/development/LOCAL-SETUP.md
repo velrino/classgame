@@ -109,6 +109,8 @@ pnpm run dev
 
 Turbo shows both logs. Next.js refreshes the frontend, and Air rebuilds and restarts the API when Go files change. Ctrl+C stops both. If `TASKS_ENABLED=true`, start the dedicated Redis broker in `TASKS_REDIS_URL` before running this command. [Queue setup](../operations/QUEUES.md)
 
+To start the web app, API and Genkit Developer UI together, run `pnpm run eval` from the repository root. If `pnpm run dev` is already running, use `pnpm run eval:ui` in another terminal. Open the [recorded evaluations](http://127.0.0.1:4000/evaluate) to inspect the Genkit and DeepEval results. [Comparison guide](../../evals/platform/framework-comparison/README.md)
+
 Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home). If port 3000 is busy, use the address printed by Next.js and include that origin in `api/.env` under `CORS_ALLOWED_ORIGINS`. To run just the web app, use `npm run dev` from `web/`.
 
 ## Optional services

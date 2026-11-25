@@ -4,6 +4,12 @@ Both frameworks score the same eight saved Mia answers. The source ID check is l
 
 [Measured results and cost](../../comparisons/2026-11-25-genkit-deepeval/README.md) · [Original questions and answers](../../comparisons/2026-11-25-mia-water-cycle/README.md)
 
+## View the recorded runs
+
+From the repository root, run `pnpm install` and `pnpm run eval` to start the web app, API and Genkit Developer UI. If the app and API are already running, use `pnpm run eval:ui` in a second terminal. The first launch downloads the Genkit UI assets. Viewing the saved answers requires no model calls.
+
+Open the [side-by-side comparison](http://127.0.0.1:4000/datasets/mia-water-cycle-20261125/evaluate/mia-genkit-20261125--vs--mia-deepeval-20261125). Each column shows the same eight tutor answers with the recorded scores and judge reasons from that framework. The panel reads a local copy of the dataset. The launcher also connects a local Go evaluation runtime named `classgame-evals`. It exposes the deep equality evaluator and requires no provider credentials. The scores in the two saved runs come from the original comparison.
+
 ## Run from the repository root
 
 Install uv and the Go toolchain specified in the API module. The first run downloads dependencies. The default command needs no cloud credentials and makes zero model calls.

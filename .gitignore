@@ -6,3 +6,5 @@
 
 # Finder metadata
 .DS_Store
+/.genkit/
+/evals/platform/framework-comparison/.genkit/
