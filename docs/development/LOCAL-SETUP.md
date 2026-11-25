@@ -4,7 +4,7 @@ Run the web application and API locally against your configured Firebase project
 
 ## Requirements
 
-- Go 1.27.4, Node.js 24 or a compatible newer release, npm, and Git. Keep the toolchain aligned with [go.mod](../../api/go.mod).
+- Go 1.27.4, Node.js 24 or a compatible newer release, pnpm 10.29.3, npm, and Git. Keep the toolchain aligned with [go.mod](../../api/go.mod).
 - Firebase Authentication, Firestore, and Storage. Enable Anonymous and Email/Password authentication; configure Google sign-in if needed.
 - A reachable Redis instance. Firebase CLI is needed when managing the project's rules.
 
@@ -48,7 +48,7 @@ If Redis is not already running, one option is:
 docker run --name classgame-redis -p 127.0.0.1:6379:6379 -d redis:7-alpine
 ```
 
-Then start the API:
+To run only the API:
 
 ```bash
 go mod download
@@ -72,7 +72,7 @@ work around a configuration error.
 
 ## Web
 
-In a second terminal, from the repository root:
+From the repository root:
 
 ```bash
 cd web
@@ -85,14 +85,31 @@ Fill the `NEXT_PUBLIC_FIREBASE_*` values from the same Firebase Web App and set:
 NEXT_PUBLIC_CLASSGAME_API_BASE_URL=http://localhost:4004
 ```
 
-Then:
+Install the web dependencies:
 
 ```bash
 npm ci
-npm run dev
 ```
 
-Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home). Create a class and publish a mission as a teacher, then join its six-digit code as a student. Asset decoder synchronization runs during dependency installation.
+## Run the web and API together
+
+From the repository root, install Turbo and Air once. Put the Go binary directory on your PATH if you install Air with Go.
+
+```bash
+pnpm install --frozen-lockfile
+go install github.com/air-verse/air@v1.67.4
+export PATH="$(go env GOPATH)/bin:$PATH"
+```
+
+With Redis running and both environment files configured, start both services in one terminal:
+
+```bash
+pnpm run dev
+```
+
+Turbo shows both logs. Next.js refreshes the frontend, and Air rebuilds and restarts the API when Go files change. Ctrl+C stops both. If `TASKS_ENABLED=true`, start the dedicated Redis broker in `TASKS_REDIS_URL` before running this command. [Queue setup](../operations/QUEUES.md)
+
+Open [teacher login](http://localhost:3000/login) or the [student game](http://localhost:3000/home). If port 3000 is busy, use the address printed by Next.js and include that origin in `api/.env` under `CORS_ALLOWED_ORIGINS`. To run just the web app, use `npm run dev` from `web/`.
 
 ## Optional services
 

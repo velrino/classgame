@@ -1,0 +1,13 @@
+{
+  "name": "classgame",
+  "private": true,
+  "packageManager": "pnpm@10.29.3",
+  "scripts": {
+    "dev": "turbo run dev:web dev:api --env-mode=loose",
+    "dev:web": "pnpm --dir web run dev --hostname 127.0.0.1",
+    "dev:api": "cd api && air -c .air.toml"
+  },
+  "devDependencies": {
+    "turbo": "2.11.13"
+  }
+}
