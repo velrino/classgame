@@ -100,20 +100,26 @@ func Connect(ctx context.Context, input Options) (*Client, error) {
 	}
 
 	clientConfig := &googlegenai.ClientConfig{
-		APIKey:   options.APIKey,
-		Backend:  resolveBackend(options.Backend),
-		Project:  options.ProjectID,
-		Location: options.Location,
+		Backend: resolveBackend(options.Backend),
 		HTTPOptions: googlegenai.HTTPOptions{
 			Timeout: &options.RequestTimeout,
 		},
 	}
 
-	credentials, err := loadCredentials(options)
-	if err != nil {
-		return nil, err
+	if clientConfig.Backend == googlegenai.BackendGeminiAPI {
+		clientConfig.APIKey = options.APIKey
+	} else {
+		credentials, err := loadCredentials(options)
+		if err != nil {
+			return nil, err
+		}
+		clientConfig.Project = options.ProjectID
+		clientConfig.Location = options.Location
+		clientConfig.Credentials = credentials
+		if credentials == nil {
+			clientConfig.APIKey = options.APIKey
+		}
 	}
-	clientConfig.Credentials = credentials
 
 	client, err := googlegenai.NewClient(ctx, clientConfig)
 	if err != nil {
@@ -300,12 +306,14 @@ func (client *Client) generate(ctx context.Context, request StructuredRequest) (
 		ResponseSchema:     responseSchema,
 		ResponseJsonSchema: responseJSONSchema,
 		Temperature:        &temperature,
-		Labels:             request.Labels,
 		HTTPOptions: &googlegenai.HTTPOptions{
 			Timeout: &client.options.RequestTimeout,
 		},
 		SystemInstruction: googlegenai.NewContentFromText(request.SystemInstruction, googlegenai.RoleUser),
 		ThinkingConfig:    thinkingConfigForModel(model),
+	}
+	if client.Provider() == ProviderVertexAI {
+		config.Labels = request.Labels
 	}
 
 	var response *googlegenai.GenerateContentResponse
