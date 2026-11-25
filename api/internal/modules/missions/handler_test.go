@@ -13,7 +13,7 @@ import (
 	"classgame-api/internal/auth"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/pagination"
-	"classgame-api/internal/platform/ratelimit"
+	"classgame-api/internal/shared/ratelimit"
 )
 
 func TestCreateMissionRequestAllowsEveryoneAudience(t *testing.T) {

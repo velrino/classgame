@@ -1,9 +1,9 @@
 # Rate limiting
 
-Rate limiting has one technical home: `api/internal/platform/ratelimit`. Business modules choose which limits apply. API composition supplies the current values and provider connections.
+Rate limiting has one technical home: `api/internal/shared/ratelimit`. Business modules choose which limits apply. API composition supplies the current values and provider connections.
 
 ```text
-internal/platform/ratelimit/
+internal/shared/ratelimit/
   decision.go              # Decision and Limiter contract
   policy.go                # Run rules in order; stop on denial or failure
   policy_test.go           # Existing policy checks

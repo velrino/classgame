@@ -9,7 +9,7 @@ import (
 
 	"classgame-api/internal/modules/attachments"
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/platform/redisqueue"
+	"classgame-api/internal/shared/redisqueue"
 	"classgame-api/internal/taskqueue"
 )
 

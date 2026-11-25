@@ -8,7 +8,7 @@ import (
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
-	"classgame-api/internal/platform/firebase/emulator"
+	"classgame-api/internal/shared/firebase/emulator"
 )
 
 func (config Config) Validate() error {

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"classgame-api/internal/config"
-	"classgame-api/internal/platform/genai/redisbudget"
-	"classgame-api/internal/platform/redis"
+	"classgame-api/internal/shared/genai/redisbudget"
+	"classgame-api/internal/shared/redis"
 )
 
 func main() {

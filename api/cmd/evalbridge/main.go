@@ -20,8 +20,8 @@ import (
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/platform/genai"
-	"classgame-api/internal/platform/objectstorage"
+	"classgame-api/internal/shared/genai"
+	"classgame-api/internal/shared/objectstorage"
 )
 
 type batch struct {

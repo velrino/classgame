@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"classgame-api/internal/platform/ratelimit"
+	"classgame-api/internal/shared/ratelimit"
 )
 
 func TestSetRateLimitHeadersIncludesRoundedRetryAfter(t *testing.T) {

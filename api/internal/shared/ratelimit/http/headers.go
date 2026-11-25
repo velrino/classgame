@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"classgame-api/internal/platform/ratelimit"
+	"classgame-api/internal/shared/ratelimit"
 )
 
 func SetRateLimitHeaders(header nethttp.Header, decision ratelimit.Decision) {

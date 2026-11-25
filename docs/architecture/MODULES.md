@@ -16,7 +16,7 @@ api/internal/
       firestore/               # Documents, mappings, queries, transactions
       genai/                   # Capability-specific generation
       tasks/                   # Enqueue and worker integration
-  platform/                    # Provider clients and connection lifecycle
+  shared/                      # Shared infrastructure and provider clients
 ```
 
 The tree shows optional layers, not folders to create now. Current capabilities use focused files in one package. Create a subpackage when it gives a useful boundary.
@@ -32,7 +32,7 @@ The tree shows optional layers, not folders to create now. Current capabilities 
 
 Share a package only when consumers share its meaning and an owner is clear. Prefer focused names such as `ratelimit`, `contentpolicy`, or `timeutil`; keep provider packages separate from business policy. Technical shared packages must not import business modules.
 
-The technical [rate-limit capability](RATE-LIMITING.md) lives under `internal/platform/ratelimit`, with standard-library core policy and separate `redis/` and `http/` adapters. Business quota rules stay outside that technical package.
+The technical [rate-limit capability](RATE-LIMITING.md) lives under `internal/shared/ratelimit`, with standard-library core policy and separate `redis/` and `http/` adapters. Business quota rules stay outside that technical package.
 
 Keep application-only packages under `internal/`; `pkg/` has no special export behavior. Do not create extra `go.mod` files, universal repositories, service locators, or wrappers around every standard-library call. Map distinct domain models rather than forcing them into a large shared object.
 

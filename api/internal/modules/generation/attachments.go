@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 	"classgame-api/internal/uploadcare"
 )
 

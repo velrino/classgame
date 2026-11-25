@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"classgame-api/internal/platform/objectstorage"
+	"classgame-api/internal/shared/objectstorage"
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/googleapi"
 )

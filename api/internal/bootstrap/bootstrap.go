@@ -10,7 +10,7 @@ import (
 	firebaseauth "firebase.google.com/go/v4/auth"
 
 	"classgame-api/internal/modules/tenancy"
-	"classgame-api/internal/platform/firebase"
+	"classgame-api/internal/shared/firebase"
 )
 
 type Options struct {

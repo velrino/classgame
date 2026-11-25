@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"classgame-api/internal/auth"
-	"classgame-api/internal/platform/ratelimit"
+	"classgame-api/internal/shared/ratelimit"
 )
 
 func TestStudentSessionRequestAcceptsNumericClassCode(t *testing.T) {

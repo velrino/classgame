@@ -20,8 +20,8 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 
-	"classgame-api/internal/platform/redisqueue"
-	"classgame-api/internal/platform/requestmeta"
+	"classgame-api/internal/shared/redisqueue"
+	"classgame-api/internal/shared/requestmeta"
 	"classgame-api/internal/taskqueue"
 )
 

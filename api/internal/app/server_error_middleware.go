@@ -7,7 +7,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"classgame-api/internal/platform/analytics"
+	"classgame-api/internal/shared/analytics"
 )
 
 func serverErrorCaptureMiddleware(tracker analytics.Tracker) echo.MiddlewareFunc {

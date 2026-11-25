@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"classgame-api/internal/platform/redisqueue"
+	"classgame-api/internal/shared/redisqueue"
 )
 
 func main() {

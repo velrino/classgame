@@ -15,8 +15,8 @@ import (
 	"classgame-api/internal/modules/insights"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/platform/analytics"
-	"classgame-api/internal/platform/requestmeta"
+	"classgame-api/internal/shared/analytics"
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const defaultRequestBodyLimitBytes int64 = 256 * 1024

@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 )
 
 const tutorTurnSystemInstruction = `You are Mia (Multimodal Intelligence Agent), ClassGame's live educational tutor.
