@@ -23,7 +23,7 @@ import (
 	"google.golang.org/api/option"
 
 	"classgame-api/internal/demoaccount"
-	"classgame-api/internal/platform/firebase"
+	"classgame-api/internal/shared/firebase"
 )
 
 const (

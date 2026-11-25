@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 )
 
 const classLearningSystemInstruction = `You are Mia (Multimodal Intelligence Agent), ClassGame's teacher-only class learning analyst.

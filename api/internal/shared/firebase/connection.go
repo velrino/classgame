@@ -14,7 +14,7 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
-	"classgame-api/internal/platform/firebase/emulator"
+	"classgame-api/internal/shared/firebase/emulator"
 )
 
 var (

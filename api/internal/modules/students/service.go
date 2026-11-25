@@ -8,7 +8,7 @@ import (
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
-	"classgame-api/internal/platform/ratelimit"
+	"classgame-api/internal/shared/ratelimit"
 )
 
 var ErrStudentRequiresAnonymousAuth = errors.New("student session requires anonymous auth")

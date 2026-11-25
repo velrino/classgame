@@ -15,7 +15,7 @@ import (
 
 	"classgame-api/internal/auth"
 	"classgame-api/internal/pagination"
-	analyticsmodule "classgame-api/internal/platform/analytics"
+	analyticsmodule "classgame-api/internal/shared/analytics"
 	"classgame-api/internal/transport/httpx"
 )
 

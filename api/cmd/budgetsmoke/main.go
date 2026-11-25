@@ -16,8 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"classgame-api/internal/platform/genai"
-	"classgame-api/internal/platform/genai/redisbudget"
+	"classgame-api/internal/shared/genai"
+	"classgame-api/internal/shared/genai/redisbudget"
 	"github.com/redis/go-redis/v9"
 )
 

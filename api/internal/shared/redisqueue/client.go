@@ -15,7 +15,7 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	"classgame-api/internal/platform/requestmeta"
+	"classgame-api/internal/shared/requestmeta"
 	"classgame-api/internal/taskqueue"
 )
 

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 )
 
 const maxLearningFlowNodes = 12

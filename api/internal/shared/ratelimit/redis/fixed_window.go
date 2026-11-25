@@ -11,7 +11,7 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 
-	"classgame-api/internal/platform/ratelimit"
+	"classgame-api/internal/shared/ratelimit"
 )
 
 var (

@@ -12,7 +12,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 )
 
 // TIME is authoritative; host clock skew cannot free another process's capacity.

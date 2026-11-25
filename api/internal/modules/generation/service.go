@@ -3,7 +3,7 @@ package generation
 import (
 	"context"
 
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 )
 
 type GenAIClient interface {

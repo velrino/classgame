@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 )
 
 const missionSystemInstruction = `You are Mia (Multimodal Intelligence Agent), ClassGame's teacher partner.

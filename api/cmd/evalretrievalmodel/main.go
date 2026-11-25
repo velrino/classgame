@@ -17,7 +17,7 @@ import (
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/platform/genai"
+	"classgame-api/internal/shared/genai"
 	sdk "google.golang.org/genai"
 )
 

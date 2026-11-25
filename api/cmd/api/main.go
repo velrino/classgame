@@ -25,14 +25,14 @@ import (
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
-	"classgame-api/internal/platform/analytics"
-	"classgame-api/internal/platform/firebase"
-	"classgame-api/internal/platform/genai"
-	"classgame-api/internal/platform/genai/redisbudget"
-	"classgame-api/internal/platform/objectstorage"
-	rateredis "classgame-api/internal/platform/ratelimit/redis"
-	"classgame-api/internal/platform/redis"
-	"classgame-api/internal/platform/redisqueue"
+	"classgame-api/internal/shared/analytics"
+	"classgame-api/internal/shared/firebase"
+	"classgame-api/internal/shared/genai"
+	"classgame-api/internal/shared/genai/redisbudget"
+	"classgame-api/internal/shared/objectstorage"
+	rateredis "classgame-api/internal/shared/ratelimit/redis"
+	"classgame-api/internal/shared/redis"
+	"classgame-api/internal/shared/redisqueue"
 )
 
 const (

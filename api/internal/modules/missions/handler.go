@@ -21,9 +21,9 @@ import (
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/generation"
 	"classgame-api/internal/pagination"
-	analyticsmodule "classgame-api/internal/platform/analytics"
-	"classgame-api/internal/platform/ratelimit"
-	ratehttp "classgame-api/internal/platform/ratelimit/http"
+	analyticsmodule "classgame-api/internal/shared/analytics"
+	"classgame-api/internal/shared/ratelimit"
+	ratehttp "classgame-api/internal/shared/ratelimit/http"
 	"classgame-api/internal/transport/httpx"
 	"classgame-api/internal/uploadcare"
 )

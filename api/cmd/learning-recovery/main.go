@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"classgame-api/internal/modules/students"
-	"classgame-api/internal/platform/firebase"
-	"classgame-api/internal/platform/redisqueue"
+	"classgame-api/internal/shared/firebase"
+	"classgame-api/internal/shared/redisqueue"
 	"github.com/joho/godotenv"
 )
 

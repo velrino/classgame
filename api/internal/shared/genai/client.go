@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sync/singleflight"
 	googlegenai "google.golang.org/genai"
 
-	"classgame-api/internal/platform/requestmeta"
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const (

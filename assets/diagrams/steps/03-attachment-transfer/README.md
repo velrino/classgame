@@ -41,7 +41,7 @@ This flow has **no separate attachment owner token**. The transaction checks ful
 
 There is no automatic attachment recovery scan. After broker loss or archived work, follow the [queue recovery guide](../../../../docs/operations/QUEUES.md). Private-access setup is covered in [private uploads](../../../../docs/operations/PRIVATE-UPLOADS.md).
 
-Sources: [processor](../../../../api/internal/modules/attachments/processor.go), [revision transactions](../../../../api/internal/modules/missions/attachment_transfer.go), [storage copier](../../../../api/internal/modules/attachments/storage.go), [queue settings](../../../../api/internal/platform/redisqueue/client.go), and [job outcomes](../../../../api/internal/app/background.go).
+Sources: [processor](../../../../api/internal/modules/attachments/processor.go), [revision transactions](../../../../api/internal/modules/missions/attachment_transfer.go), [storage copier](../../../../api/internal/modules/attachments/storage.go), [queue settings](../../../../api/internal/shared/redisqueue/client.go), and [job outcomes](../../../../api/internal/app/background.go).
 
 ## Regenerate
 
