@@ -46,14 +46,10 @@ The Excalidraw version below shows the same architecture as editable boxes and c
 
 ## Architecture decisions and trade-offs
 
-These choices fit the current code. The alternatives below are comparison options, not a record of benchmark wins or a plan to rewrite the stack. Each row compares at most three options, including the current choice.
+See the [technology trade-offs](#technology-trade-offs) for the API, database, evals, and frontend. The choices below cover job delivery and application structure.
 
 | Decision and current choice | Relevant alternatives | Why it fits ClassGame | Trade-off / when to reconsider |
 | --- | --- | --- | --- |
-| **API: Go** | Node.js/TypeScript; Python | One typed module shares domain policies between HTTP handlers and workers. Request cancellation and bounded model calls are explicit. The [API container](api/infra/cloud-run/Dockerfile) runs one static binary. | Go and frontend TypeScript contracts still need to stay aligned. Node.js would share more language/tooling with the web; Python would fit Python-native ML libraries. No comparative latency or memory benchmark is claimed; provider response time still needs measurement. |
-| **Evals: Python with small Go/Node bridges** | TypeScript runner; Go runner | Python's standard library handles JSON cases, selection, assertions and reports. Bridges call actual production Go/TypeScript policies instead of rewriting business rules in Python. See [evaluation scope](docs/ai/EVALUATIONS.md). | This adds a third language/toolchain. A Go or TypeScript runner could reduce one part of the setup, but still needs access to the other language's policies. Default synthetic checks verify contracts and fallbacks, not live teaching quality; local integration and human/model assessment are separate. |
-| **Web: Next.js + React** | [React + Vite](https://vite.dev/guide/) | One app provides teacher routes, shared layouts and React UI around the browser-based Three.js classroom. The [standalone build](web/next.config.ts) can run in a Node container rather than requiring one hosting provider. | The current deployment includes a Node server and needs clear server/client boundaries; Three.js still runs in the browser. A Vite SPA could simplify static hosting, with a routing/layout setup and migration cost. Next.js is useful structure here, not a requirement for 3D or proof of better game performance. |
-| **Durable data: Firestore, alongside Firebase Auth** | PostgreSQL; MongoDB | Document state and transactions fit mission revisions and learning attempts. Selected projections use realtime browser reads; Firebase Auth handles identity separately. Browser Firestore writes are denied; mutations use the API. See [data model](docs/reference/DATA-MODEL.md) and [access rules](firestore.rules). | Firestore needs planned indexes and denormalized projections, and keeps a Google-specific data/access model. PostgreSQL fits relational constraints and join-heavy reporting; MongoDB keeps a document model with different query/hosting choices. Either migration must replace the current realtime/read-rule integration and preserve transactions and access checks; it is not just a new connection URL. |
 | **Background delivery: Redis + Asynq** | Google Cloud Tasks | A dedicated Redis broker and Go workers run locally or on another cloud without Cloud Tasks delivery endpoints or Google OIDC setup. Module-owned messages keep job meaning outside the transport. See [task portability](docs/architecture/TASK-PORTABILITY.md). | Cloud Tasks manages the queue service; Redis moves broker persistence, capacity, backups and worker operation to us. Delivery can repeat: stable IDs and domain checks remain necessary. The current adapter needs standalone-compatible Redis, not an assumed Redis Cluster deployment. Prefer managed delivery if lower operating effort matters more than queue portability. |
 | **Application shape: modular monolith with API/worker roles** | Separate microservices | One Go module reuses the same policies and processors, with narrow module contracts. API and worker processes can have separate roles without splitting business logic into network services. See [system boundaries](docs/architecture/SYSTEM.md). | Releases must keep producers, workers and stored contracts compatible. Separate services become useful when independent ownership, isolation or scaling needs justify extra network calls, deployments and recovery work. A small project does not need that cost by default. |
 
@@ -164,3 +160,57 @@ firestore.indexes.json  Firestore query indexes
 ## Credits
 
 [Classroom model](https://sketchfab.com/3d-models/low-poly-classroom-8b1bf103c90349d981c9c2ae1c0596e5) by Mumladze28; [avatar credits and generation notes](assets/3d/avatars/chibi-band/README.md); [worksheet sources](assets/grade/README.md). Asset licenses stay beside their files. The dashboard uses shadcn/ui and a shell adapted from shadcn-admin.
+
+
+## Technology trade-offs
+
+These tables compare the choices I would make if I built ClassGame from scratch as a solo developer.
+
+### API runtime
+
+ClassGame needs a synchronous tutor API, Firestore transactions, and background workers for jobs such as copying attachments.
+
+| Option | What it gives ClassGame from day one | Trade-off |
+| --- | --- | --- |
+| **Go + Echo (chosen)** | Echo handles HTTP routing and middleware. One Go binary can run as the HTTP server or as a worker, with both roles sharing typed domain rules. Go contexts carry deadlines and cancellation through storage and model calls. | I maintain Go on the API and TypeScript on the web, along with the contract, HTTP validation, and OpenAPI definitions that connect them. |
+| **Node.js + TypeScript** | The API and web can share a language, tooling, and contract types. Async I/O fits requests that spend time waiting for Firestore, Redis, or Gemini. | HTTP input still needs runtime validation. CPU-heavy document processing can block the event loop and needs a separate worker thread or process when it would delay requests. |
+| **Python + FastAPI** | FastAPI gives the API runtime request validation and OpenAPI from typed models. Python also gives me direct access to Python-based evaluation and ML tools. | I would need to coordinate async I/O with any blocking SDK calls, choose a job runner, and operate a Python runtime. The frontend still needs its own TypeScript client contract. |
+
+I chose Go because one binary can serve the tutor API and run background workers with the same domain rules and explicit cancellation. Echo gives me routing and middleware for the HTTP role. Node.js becomes more attractive if sharing language and tooling across the stack matters most. Python becomes more attractive if the API needs to run Python-native ML code directly. Comparative latency and memory use would need a benchmark. [HTTP server](api/internal/app/server.go) · [API entry point](api/cmd/api/main.go) · [Container build](api/infra/cloud-run/Dockerfile) · [Worker roles](docs/operations/QUEUES.md) · [Node.js event loop](https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop) · [FastAPI features](https://fastapi.tiangolo.com/features/)
+
+### Database
+
+ClassGame needs to store mission revisions and student attempts, update related records in transactions, and show teachers class progress as it changes.
+
+| Option | What it gives ClassGame from day one | Trade-off |
+| --- | --- | --- |
+| **Cloud Firestore + Firebase Auth (chosen)** | Documents fit mission revisions and student attempts. The browser can listen to selected class progress views in real time. Firebase Auth provides identity, Firestore rules control what each user can read, and the Go API handles writes. | I model documents around known queries, add indexes for combined filters, and keep some views up to date for the dashboard. Cross-class reporting takes more planning, and the app depends on Firebase SDKs and rules. |
+| **MongoDB** | Documents fit variable mission content, and aggregation pipelines can support more flexible reports. Change streams let a backend watch relevant database changes. | I would build the path from change streams to authorized browser updates, including reconnect handling. I would also wire identity and access checks into the API and plan which records to embed or update in a transaction. |
+| **PostgreSQL** | Foreign keys and constraints can enforce relationships between classes, enrollments, missions, and attempts. SQL joins and aggregates suit reporting across those records. | I would design tables and schema migrations. Live dashboard updates would need a delivery layer, such as an API that authorizes users and relays changes to browsers over SSE. |
+
+I chose Firestore because I can deliver a live teacher dashboard with managed browser listeners and access rules while keeping writes in the Go API. That reduces the amount of realtime infrastructure I maintain on my own. MongoDB is attractive if document queries and aggregation are the priority. PostgreSQL is attractive if relational constraints and cross-class reporting drive the design. [ClassGame data model](docs/reference/DATA-MODEL.md) · [Access rules](firestore.rules) · [Firestore listeners](https://firebase.google.com/docs/firestore/query-data/listen) · [MongoDB change streams](https://www.mongodb.com/docs/manual/changestreams/) · [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)
+
+### Evaluation tooling
+
+ClassGame needs repeatable checks for tutor policies and browser recovery, plus a way to judge whether Mia's answers stay within the lesson.
+
+| Option | What it gives ClassGame from day one | Trade-off |
+| --- | --- | --- |
+| **Python runner + Go and Node bridges (chosen for policy checks)** | One runner can read JSON cases, call production Go and TypeScript policies through small bridges, and write reports. Synthetic cases can check source IDs, tutor fallbacks, and client recovery without calling a model. | I maintain the case format, report, and bridges. Each suite needs the toolchain for the bridge it calls. Semantic evaluation requires its own rubric and tooling. |
+| **Genkit Go** | Evaluators can call Go code directly. I can use the local Developer UI to inspect the evidence and compare evaluation runs in a browser. | A Go-first suite still needs a bridge to call frontend TypeScript policies. The Dev UI also needs a local Genkit runtime to run registered evaluators. |
+| **DeepEval (Python)** | Built-in and custom metrics give me a starting point for judging saved tutor answers. Reports can be shared as local HTML. | To test real app policy, Python needs a bridge or a running service. Model-based grading also needs a rubric, reviewed examples, and a budget. |
+
+I chose the Python runner with bridges for routine checks because one suite can exercise both languages' policies with predictable results and zero model calls. Genkit and DeepEval are useful for a separate question about answer quality. On eight saved Mia answers, their shared Gemini judge produced the same eight source-support verdicts. Each framework agreed with the earlier review on four. [Evaluation scope](docs/ai/EVALUATIONS.md) · [Genkit and DeepEval results](evals/comparisons/2026-11-25-genkit-deepeval/README.md)
+
+### Frontend framework
+
+ClassGame needs a teacher dashboard with nested routes and mission forms, plus an interactive 3D classroom for students. Both experiences use the Go API.
+
+| Option | What it gives ClassGame from day one | Trade-off |
+| --- | --- | --- |
+| **Next.js + React (chosen)** | File-based routing and nested layouts give teacher pages a common shell and let the student classroom have its own layout. React provides a wide choice of UI components for tables, dialogs, and mission forms. | The standalone deployment runs a Node server. I manage server and client boundaries for code that uses WebGL or browser storage. |
+| **React + Vite (SPA)** | It offers the same React component ecosystem and a static build. A browser-only app can call the Go API directly and keeps hosting simple. | Vite handles the build. I would choose a router, define how layouts nest, and configure the host so that direct links to app routes open correctly. |
+| **Vue + Vite** | Vue's single-file components keep templates and component logic together. Vue Router supports nested routes, and a static build can serve both teacher and student pages. | I would choose and connect the routing, layout, and UI libraries. Dashboard components come from the Vue ecosystem, with a separate choice for features such as data tables and mission editors. |
+| **Angular** | Angular includes routing, dependency injection, and reactive forms. Those conventions help structure mission forms and share services across teacher pages. | I would need to learn Angular templates, dependency injection, and form APIs. Those conventions help on form-heavy screens, while the 3D classroom mainly needs a canvas and a clear lifecycle for the Three.js engine. |
+
+I chose Next.js + React for built-in routing and layouts and a broad choice of dashboard components. For ClassGame, those benefits justify managing server and client boundaries. Three.js runs in the browser under any of the four options, so the framework decision comes down to how the app organizes its routes, layouts, and forms. [Web app](web/README.md) · [Standalone build](web/next.config.ts) · [Next.js component boundaries](https://nextjs.org/docs/app/getting-started/server-and-client-components) · [Vite static deployment](https://vite.dev/guide/static-deploy.html) · [Vue Router](https://router.vuejs.org/) · [Angular routing](https://angular.dev/guide/routing) · [Angular forms](https://angular.dev/guide/forms)
