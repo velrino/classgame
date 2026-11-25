@@ -26,6 +26,7 @@ The previous hosted deployment is offline. See [hosting history](docs/operations
   - [API runtime](#api-runtime)
   - [Database](#database)
     - [Monthly database cost](#monthly-database-cost)
+  - [Authentication](#authentication)
   - [Evaluation tooling](#evaluation-tooling)
   - [Frontend framework](#frontend-framework)
 
@@ -67,7 +68,7 @@ The Excalidraw version below shows the same architecture as editable boxes and c
 
 ## Architecture decisions and trade-offs
 
-See the [technology trade-offs](#technology-trade-offs) for the API, database, evals, and frontend. The choices below cover job delivery and application structure.
+See the [technology trade-offs](#technology-trade-offs) for the API, database, authentication, evals, and frontend. The choices below cover job delivery and application structure.
 
 | Decision and current choice | Relevant alternatives | Why it fits ClassGame | Trade-off / when to reconsider |
 | --- | --- | --- | --- |
@@ -185,23 +186,26 @@ firestore.indexes.json  Firestore query indexes
 
 ## Technology trade-offs
 
-[API runtime](#api-runtime) · [Database](#database) · [Monthly database cost](#monthly-database-cost) · [Evaluation tooling](#evaluation-tooling) · [Frontend framework](#frontend-framework)
+[API runtime](#api-runtime) · [Database](#database) · [Monthly database cost](#monthly-database-cost) · [Authentication](#authentication) · [Evaluation tooling](#evaluation-tooling) · [Frontend framework](#frontend-framework)
 
 These tables compare the choices I would make if I built ClassGame from scratch as a solo developer.
 
 ### API runtime
 
-ClassGame needs a synchronous tutor API, Firestore transactions, and background workers for jobs such as copying attachments.
+ClassGame needs a synchronous tutor API, Firestore transactions, and background workers for jobs such as copying attachments. Runtime overhead is the CPU time and memory needed to run the program in addition to the work it does for each request.
 
 | Criterion | Go + Echo **(chosen)** | Node.js + TypeScript | Python + FastAPI |
 | --- | --- | --- | --- |
+| How code runs | Go compiles to machine code before deployment. | V8 can compile frequently used JavaScript to machine code as it runs. | Standard CPython runs Python bytecode. Libraries can run heavy work in native code. |
 | HTTP routing and validation | Echo handles routes and middleware. I maintain validation and OpenAPI definitions. | I choose a framework and add runtime validation for incoming data. | Typed request models provide runtime validation and generate OpenAPI. |
-| I/O concurrency | Goroutines handle concurrent requests. Contexts carry deadlines and cancellation to SDK calls. | The event loop handles async I/O with services such as Firestore and Gemini. | Async handlers work well with async SDKs. Blocking calls need care. |
-| CPU-heavy tasks | Bounded workers can run CPU work in parallel. | Worker threads or separate processes keep CPU work off the event loop. | Separate worker processes are an option for CPU-heavy Python code. |
+| Waiting on Firestore or Gemini | Lightweight goroutines let many requests wait at once. Contexts carry deadlines and cancellation to SDK calls. | The event loop lets other requests continue while an I/O operation is waiting. | Async handlers can serve other requests while waiting on an async SDK. Blocking calls can hold up the event loop. |
+| CPU-heavy tasks | Goroutines can run CPU work across multiple cores within one process. | Worker threads or processes keep heavy computation off the main event loop. | With the standard GIL enabled, only one thread at a time runs Python code in a process. Worker processes can use multiple cores. |
+| Memory as load grows | Goroutines start with small stacks and share process memory. The garbage collector frees unused objects. | V8 manages a JavaScript heap. Worker threads have their own JavaScript environments. | Each worker process has its own interpreter and app state. CPython mainly frees objects through reference counting and also collects cycles. |
+| Startup and container size | The container ships a native binary. Startup still includes loading configuration and opening connections. | The container ships Node.js and app dependencies. Startup includes loading the JavaScript modules. | The container ships Python and installed packages. Startup includes importing modules. |
 | Shared code | The HTTP and worker roles share Go domain rules. The web uses a separate TypeScript contract. | The API and web can share TypeScript types and tooling. | The API can use Python-native ML tools. The web needs a TypeScript contract. |
 | Deployment | One binary can run either the HTTP or worker role. | I ship the Node runtime and choose a job runner. | I ship the Python runtime and choose a job runner. |
 
-I chose Go because one binary can serve the tutor API and run background workers with the same domain rules and explicit cancellation. Echo gives me routing and middleware for the HTTP role. Node.js becomes more attractive if sharing language and tooling across the stack matters most. Python becomes more attractive if the API needs to run Python-native ML code directly. Comparative latency and memory use would need a benchmark. [HTTP server](api/internal/app/server.go) · [API entry point](api/cmd/api/main.go) · [Container build](api/infra/cloud-run/Dockerfile) · [Worker roles](docs/operations/QUEUES.md) · [Node.js event loop](https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop) · [FastAPI features](https://fastapi.tiangolo.com/features/)
+I chose Go because one binary can serve the tutor API and run workers with the same domain rules and explicit cancellation. For a Mia request, time spent waiting on Firestore or Gemini can matter more than the time the API spends executing code. For CPU-heavy work, such as processing a large document, runtime and worker setup matter more. To compare costs, I would measure memory, CPU, startup time, image size, and p95 latency under the same ClassGame workload. [HTTP server](api/internal/app/server.go) · [Container build](api/infra/cloud-run/Dockerfile) · [Worker roles](docs/operations/QUEUES.md) · [Go runtime FAQ](https://go.dev/doc/faq) · [Node.js V8 engine](https://nodejs.org/en/learn/getting-started/the-v8-javascript-engine) · [Node.js event loop](https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop) · [Python glossary](https://docs.python.org/3/glossary.html) · [Python free threading](https://docs.python.org/3/howto/free-threading-python.html) · [FastAPI features](https://fastapi.tiangolo.com/features/)
 
 ### Database
 
@@ -235,6 +239,19 @@ I use the same workload assumptions as the [project cost estimate](#monthly-cost
 - **Supabase PostgreSQL** uses Free up to 500 MB of database size and 5 GB of egress. Pro starts at $25/month, includes 8 GB of disk and 250 GB of egress, and provides compute credits for one Micro instance. I model 12 GB of provisioned disk in the largest scenario, adding about $0.50 for 4 GB above the included disk at $0.125/GB-month. The estimate assumes Micro can handle the workload. A larger instance or disk would raise the bill. [Supabase pricing](https://supabase.com/pricing) · [Disk size billing](https://supabase.com/docs/guides/platform/manage-your-usage/disk-size)
 
 The table covers database charges and the required plan fee. Auth, backup add-ons, and additional realtime delivery charges are outside this estimate.
+
+### Authentication
+
+Teachers sign in with Google or email and password. Students join a class with a code and get an anonymous identity, so they can start without creating a login. The Go API checks identity and class access.
+
+| Criterion | Firebase Auth **(chosen)** | Custom auth | Clerk |
+| --- | --- | --- | --- |
+| Teacher sign-in | Google and email/password through Firebase. I build the ClassGame sign-in screen. | I integrate Google sign-in and build the email/password flow. | Prebuilt sign-in and account components fit the Next.js dashboard. |
+| Student entry | Anonymous sign-in creates a user ID without asking for email or a password. The API handles enrollment. | I can design a guest session around the class code and decide how it expires or resumes. | I would design a guest session around the class code alongside the managed teacher sign-in. |
+| API and browser access | The Go API verifies Firebase ID tokens. Firestore rules can use the same identity for live browser reads. | The Go API would verify my sessions. Direct Firestore reads would also need a Firebase identity, or live updates could go through the API. | The Go API would verify Clerk sessions. I would need my own bridge for direct Firestore reads or deliver live updates through the API. |
+| What I maintain | I configure providers and maintain teacher eligibility, class membership, and Firestore rules. | I own session expiry and revocation, credential storage and recovery, and sign-in abuse controls. | Clerk manages teacher sign-in UI and sessions. I maintain the classroom access rules, guest flow, and Firestore integration. |
+
+I chose Firebase Auth because teacher sign-in, anonymous student entry, and live Firestore reads can use the same identity. Clerk is attractive if prebuilt teacher sign-in screens matter most. Custom auth gives me control over the guest flow and adds day-to-day work around credentials and sessions. [ClassGame API access](docs/reference/API.md) · [Firestore rules](firestore.rules) · [Firebase anonymous sign-in](https://firebase.google.com/docs/auth/web/anonymous-auth) · [Firebase token verification](https://firebase.google.com/docs/auth/admin/verify-id-tokens) · [Clerk sign-in](https://clerk.com/docs/nextjs/reference/components/authentication/sign-in) · [Clerk Firebase integration status](https://clerk.com/docs/guides/development/integrations/databases/firebase)
 
 ### Evaluation tooling
 
