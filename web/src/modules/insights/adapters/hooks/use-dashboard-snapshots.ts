@@ -11,7 +11,6 @@ import { insightsApi } from "@/modules/insights/adapters/http";
 import { observeDashboardChanges } from "@/modules/insights/adapters/realtime";
 import type {
   DashboardOverviewResponse,
-  DashboardStudentDto,
 } from "@/modules/insights/adapters/types/contracts";
 import type { TeacherClassMissionDto } from "@/modules/missions";
 import { missionsApi } from "@/modules/missions";
@@ -44,8 +43,6 @@ export function useDashboardSnapshots(
 
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedStudent, setSelectedStudent] =
-    useState<DashboardStudentDto | null>(null);
 
   useEffect(() => {
     if (auth.status !== "signed_in" || !auth.user) {
@@ -115,7 +112,6 @@ export function useDashboardSnapshots(
         if (cancelled) return;
         setOverviewLoading(true);
         setOverview(null);
-        setSelectedStudent(null);
         setError(null);
 
         const token = await user.getIdToken();
@@ -233,12 +229,6 @@ export function useDashboardSnapshots(
         }
 
         setOverview(response);
-        setSelectedStudent((current) =>
-          current
-            ? (response.students.find((student) => student.id === current.id) ??
-              null)
-            : null,
-        );
         const teacherClass = response.teacher_class;
         if (teacherClass) {
           setTeacherClasses((current) =>
@@ -315,8 +305,6 @@ export function useDashboardSnapshots(
     setMissionsLoading,
     error,
     setError,
-    selectedStudent,
-    setSelectedStudent,
     selectedClass,
     loadOverview,
     canGoBack: rosterPage.classId === selectedClassId && rosterPage.trail.length > 0,

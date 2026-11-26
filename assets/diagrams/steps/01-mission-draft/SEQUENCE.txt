@@ -67,18 +67,16 @@ sequenceDiagram
     activate API
     Note over Teacher,API: Teacher identity and class access are checked.
 
-    loop Each readable, supported attachment
-        API->>Uploadcare: HTTPS GET: validated CDN URL
-        Uploadcare-->>API: Binary response: file bytes
-        create participant LLM
-        API->>LLM: Summary request: prompt + inlineData<br/>MIME + Base64 file bytes
-        activate LLM
-        LLM-->>API: JSON response: short summary
-        deactivate LLM
+    opt Files attached
+        API->>Uploadcare: Download validated attachments
+        Uploadcare-->>API: File bytes
     end
-    Note over API,LLM: Why this format<br/>Base64 carries file bytes inside JSON.<br/>Summaries avoid sending it again.<br/>Unreadable files use metadata fallback.
-
-    API->>LLM: JSON context in prompt: goal + summaries
+    participant LLM as Gemini
+    opt Other supported files (a single PDF skips this step)
+        API->>LLM: LangChainGo material workflow per readable file
+        LLM-->>API: Short summary
+    end
+    API->>LLM: LangChainGo mission workflow<br/>Goal plus one PDF, summaries or available context
     activate LLM
     LLM-->>API: JSON response: mission + questions
     deactivate LLM

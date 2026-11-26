@@ -4,6 +4,7 @@ import {
   ArrowDown,
   BrainCircuit,
   CheckCircle2,
+  Activity,
   History,
   LoaderCircle,
   MessageCircleMore,
@@ -22,7 +23,7 @@ import {
   getAvatarPreset,
   type AvatarPresetId,
 } from "@/modules/game";
-import type { DashboardStudentDto } from "@/modules/insights/adapters/types/contracts";
+import { TechnicalDetails } from "./technical-details";
 import type {
   StudentLearningAttemptDto,
   StudentLearningEventDto,
@@ -31,7 +32,7 @@ import type {
 
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { useStudentHistory } from "../adapters/hooks/use-student-history";
+import { useStudentHistory, type HistoryStudent } from "../adapters/hooks/use-student-history";
 import {
   MissionFlowPreview,
   getMissionFlowKindStyle,
@@ -40,19 +41,23 @@ import {
 type StudentLearningDetailProps = {
   readonly open: boolean;
   readonly completeHistory?: boolean;
-  readonly student: DashboardStudentDto | null;
+  readonly student: HistoryStudent | null;
+  readonly activeTab: string;
+  readonly onTabChange: (tab: string) => void;
   readonly onOpenChange: (open: boolean) => void;
 };
 
 export function StudentLearningDetail({
   open,
   completeHistory = false,
+  activeTab: requestedTab,
+  onTabChange,
   student,
   onOpenChange,
 }: StudentLearningDetailProps) {
   const history = useStudentHistory(student, open, completeHistory);
   const [selectedAttemptId, setSelectedAttemptId] = useState("");
-  const [activeTab, setActiveTab] = useState("conversation");
+  const activeTab = ["flow", "memory", "summary", "technical"].includes(requestedTab) ? requestedTab : "conversation";
   const attempts = history.page.attempts;
   const attempt = useMemo(
     () =>
@@ -66,7 +71,7 @@ export function StudentLearningDetail({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title={student?.student_name ?? "Student learning path"}
+      title={student?.student_name || attempt?.student_name || "Student learning path"}
       description="Observable answers, explicit explanations, feedback, and tutor adaptations. This view never invents or exposes private chain-of-thought."
       size="xl"
       layout="fill"
@@ -84,7 +89,7 @@ export function StudentLearningDetail({
       {attempt ? (
         <Tabs
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={onTabChange}
           className="min-h-0 flex-1 gap-0"
         >
           <div className="shrink-0 border-b border-border bg-muted/20 px-4 py-3 sm:px-6">
@@ -97,7 +102,7 @@ export function StudentLearningDetail({
             ) : null}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <TabsList className="grid w-full grid-cols-4 sm:inline-flex sm:w-fit">
+              <TabsList className="grid w-full grid-cols-5 sm:inline-flex sm:w-fit">
                 <TabsTrigger value="conversation" aria-label="Conversation">
                   <MessageCircleMore aria-hidden />
                   <span className="hidden sm:inline">Conversation</span>
@@ -113,6 +118,10 @@ export function StudentLearningDetail({
                 <TabsTrigger value="summary" aria-label="Summary">
                   <BrainCircuit aria-hidden />
                   <span className="hidden sm:inline">Summary</span>
+                </TabsTrigger>
+                <TabsTrigger value="technical" aria-label="Technical">
+                  <Activity aria-hidden />
+                  <span className="hidden sm:inline">Technical</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -134,6 +143,10 @@ export function StudentLearningDetail({
                 student?.student_name || attempt.student_name || "Student"
               }
             />
+          </TabsContent>
+
+          <TabsContent value="technical" className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+            <TechnicalDetails attempt={attempt} />
           </TabsContent>
 
           <TabsContent

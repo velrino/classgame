@@ -53,4 +53,6 @@ Use `GET /dashboard/overview/page?class_id=...&limit=25&cursor=...`. The respons
 
 Use `GET /dashboard/students/{student_id}/attempts?class_id=...&limit=5&cursor=...` for full history. Ownership is checked before reading. The default is 5 attempts, maximum 10, newest activity first with document ID as a tie break. Cursors are scoped to the route, class, and student.
 
+Teachers can link to `/dashboard/class/{class_id}?student={student_id}&tab=technical#students`. Opening a student and switching tabs updates the URL. New tutor turns record passage lookup, tutor workflow and service time before saving, with request and trace IDs. These times overlap. Provider time and token counts come from model generation. Cost appears when a supported estimate is available. Older records may lack measurements.
+
 The old `/dashboard/overview` route preserves full-result meaning for up to 100 student rows and 100 attempts. Larger classes get `409 pagination_required` and must use pages. There is no silent history truncation. See [query limits and rollout](../operations/QUERY-SCALE.md).

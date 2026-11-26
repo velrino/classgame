@@ -2,6 +2,8 @@
 
 [Open the full PNG](diagram.png) · [Mermaid source](SEQUENCE.txt)
 
+The learning trace workflow runs in the Go process through the shared LangChainGo chain.
+
 ## Request and response
 
 | Request | Response | Why |

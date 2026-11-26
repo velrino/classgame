@@ -189,7 +189,17 @@ export interface StudentLearningAttemptDto {
   updated_at: string;
 }
 
+interface GenerationUsage {
+  prompt_token_count: number;
+  candidates_token_count: number;
+  thoughts_token_count: number;
+  total_token_count: number;
+  provider_duration_ms?: number;
+  estimated_cost_usd?: string;
+}
+
 export interface StudentTutorTurnDto {
+  timing?: { request_id: string; trace_id: string; retrieval_ms: number; workflow_ms?: number; before_save_ms: number };
   id: string;
   sequence: number;
   type: string;
@@ -208,6 +218,7 @@ export interface StudentTutorTurnDto {
     explanation_style: string;
     difficulty_bias: number;
     next_action: string;
+    usage?: GenerationUsage;
     teacher_observation: string;
     retrieved_chunk_ids: string[];
     evidence_event_ids: string[];
@@ -234,10 +245,5 @@ export interface StudentLearningTraceDto {
   model: string;
   model_version: string;
   fallback_reason: string;
-  usage: {
-    prompt_token_count: number;
-    candidates_token_count: number;
-    thoughts_token_count: number;
-    total_token_count: number;
-  };
+  usage: GenerationUsage;
 }

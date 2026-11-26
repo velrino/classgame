@@ -43,6 +43,8 @@ func (service *Service) BuildTutorTurn(
 	blueprint.Model = result.Model
 	blueprint.ModelVersion = result.ModelVersion
 	blueprint.Usage = ai.GenAIUsage{
+		ProviderDurationMS:   result.ProviderDurationMS,
+		EstimatedCostUSD:     result.EstimatedCostUSD,
 		PromptTokenCount:     result.PromptTokenCount,
 		CandidatesTokenCount: result.CandidatesTokenCount,
 		ThoughtsTokenCount:   result.ThoughtsTokenCount,

@@ -18,8 +18,11 @@ Outputs beside this file:
 - architecture.png — 4K PNG image, also copied to the web app.
 """
 
+from io import BytesIO
 from pathlib import Path
+import subprocess
 
+from ai_scene import AIScene
 from diagrams import Cluster, Diagram, Edge, Node
 from diagrams.gcp.database import Firestore
 from diagrams.gcp.ml import AIPlatform, VertexAI
@@ -181,7 +184,7 @@ with Diagram(
         mission = card(AIPlatform, "Mission workflow", "draft · publish · attachments")
         tutor = card(AIPlatform, "Mia tutor", "synchronous · grounded context")
         learning = card(AIPlatform, "Learning + insights", "evidence · traces · summaries")
-        policy = card(Decision, "AI policy + ports", "validation · bounded fallback")
+        policy = card(Decision, "LangChainGo workflows", "validation · bounded fallback")
 
         api >> flow(label="preview SSE · publish") >> mission
         api >> flow(label="answer · feedback") >> tutor
@@ -275,3 +278,87 @@ WEB_PNG_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 WEB_PNG_OUTPUT.write_bytes(OUTPUT.read_bytes())
 print(f"Wrote {OUTPUT} ({CANVAS_SIZE[0]}x{CANVAS_SIZE[1]})")
 print(f"Synced {WEB_PNG_OUTPUT}")
+
+
+def write_ai_system():
+    """Render runtime ownership and data flow using the architecture palette."""
+    canvas = Image.new("RGB", CANVAS_SIZE, "white")
+    draw = ImageDraw.Draw(canvas)
+
+    scene = AIScene(*LOGICAL_SIZE)
+
+    def label(x, y, text, size, color=INK, bold=False):
+        scene.text(x, y, text, size, font(2*size, bold).getlength(text)/2, color, bold)
+        draw.text((2*x, 2*y), text, fill=color, font=font(2*size, bold))
+
+    def panel(x, y, w, h, color, title, lines, icon=None):
+        scene.group = f"panel-{x}-{y}"
+        scene.rect(x, y, w, h, PANEL_FILL, PANEL_LINE, 12)
+        scene.rect(x+1, y+10, 5, h-20, color, color, 2)
+        draw.rounded_rectangle((2*x, 2*y, 2*(x+w), 2*(y+h)), radius=24,
+                               fill=PANEL_FILL, outline=PANEL_LINE, width=3)
+        draw.rounded_rectangle((2*x+2, 2*y+20, 2*x+12, 2*(y+h)-20), radius=4, fill=color)
+        title_x = x + 24
+        if icon:
+            scene.icon(ROOT / "icons" / f"{icon}.svg", title_x, y+14, 38)
+            pixels = 38 * PNG_SCALE
+            png = subprocess.check_output([
+                "rsvg-convert", "--keep-aspect-ratio", "--width", str(pixels),
+                "--height", str(pixels), str(ROOT / "icons" / f"{icon}.svg"),
+            ])
+            with Image.open(BytesIO(png)) as image:
+                mark = image.convert("RGBA")
+                canvas.paste(mark, (title_x * PNG_SCALE, (y + 14) * PNG_SCALE), mark)
+            title_x += 50
+        label(title_x, y+18, title, 26, color, True)
+        for index, line in enumerate(lines):
+            label(x+24, y+60+34*index, line, 22)
+
+        scene.group = None
+
+    def arrow(y):
+        x = 675
+        scene.arrow(x, y, MUTED)
+        draw.line((2*x, 2*y, 2*x, 2*(y+23)), fill=MUTED, width=4)
+        draw.polygon([(2*x-9, 2*y+34), (2*x+9, 2*y+34), (2*x, 2*y+48)], fill=MUTED)
+
+    label(48, 30, "ClassGame · AI system design", 39, bold=True)
+    label(48, 87, "From a teacher request to grounded feedback and private learning evidence", 24, MUTED)
+    panel(48, 150, 1250, 104, BLUE, "Teacher dashboard and student game",
+          ["Teachers review mission drafts. Students answer questions and ask Mia for help."], icon="nextjs")
+    arrow(254)
+    panel(48, 284, 1250, 104, BLUE, "Go API",
+          ["Check identity and class access. Load the evidence needed for this request."], icon="go")
+    arrow(388)
+    panel(48, 418, 1250, 136, PURPLE, "LangChainGo workflows",
+          ["Mission · Material summary · Tutor turn · Learning trace · Class synthesis",
+           "Bind task inputs to a fixed prompt and request a typed JSON result."], icon="langchain")
+    arrow(554)
+    for x, color, title, lines, icon in [
+        (48, PURPLE, "Model", ["Gemini API or Vertex AI", "Shared budget and usage logs"], "gemini"),
+        (472, ORANGE, "Teacher approval", ["Review and publish a revision", "through the authorized API"], None),
+        (896, GREEN, "Knowledge", ["Published lesson passages", "Scoped memory in Firestore"], "firebase"),
+    ]:
+        panel(x, 584, 402, 148, color, title, lines, icon)
+    panel(48, 774, 1250, 146, TEAL, "Background work",
+          ["A dedicated Redis broker delivers jobs to Asynq workers when enabled.",
+           "Workers copy files, finalize attempts and refresh class evidence. Mia replies synchronously."], icon="redis")
+    panel(1330, 150, 542, 770, PURPLE, "Trust boundaries", [])
+    for index, (title, detail) in enumerate([
+        ("Access", "Firebase identity and class ownership"),
+        ("Grounding", "Bounded lesson and evidence context"),
+        ("Output", "Schema and content checks"),
+        ("Fallbacks", "Workflow-specific safe responses"),
+        ("Privacy", "Teacher-only observations and traces"),
+        ("Operations", "Request IDs, token counts and cost"),
+    ]):
+        y = 248 + index*104
+        label(1358, y, title, 24, PURPLE, True)
+        label(1358, y+38, detail, 20)
+    panel(48, 948, 1824, 106, BLUE, "Pull request validation",
+          ["GitHub Actions runs Go checks, offline evaluations, web checks and dependency scans."], icon="githubactions")
+    scene.save(ROOT.parents[2] / "docs/ai")
+    canvas.save(ROOT / "ai-system.png")
+
+
+write_ai_system()

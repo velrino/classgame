@@ -13,10 +13,10 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"classgame-api/internal/shared/auth"
-	"classgame-api/internal/shared/pagination"
 	analyticsmodule "classgame-api/internal/shared/analytics"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/httpx"
+	"classgame-api/internal/shared/pagination"
 )
 
 const (

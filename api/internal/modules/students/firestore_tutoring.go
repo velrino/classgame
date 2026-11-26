@@ -129,6 +129,7 @@ func (repository *FirestoreRepository) AppendStudentTutorTurn(
 		attempt.EvidenceRevision++
 
 		result = StudentTutorTurn{
+			Timing:            input.Timing,
 			ID:                turnID,
 			Sequence:          int(attempt.TutorEventSequence),
 			Type:              input.Type,

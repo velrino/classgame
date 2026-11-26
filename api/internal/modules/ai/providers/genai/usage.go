@@ -10,7 +10,7 @@ import (
 	sdk "google.golang.org/genai"
 )
 
-func (client *Client) logUsage(ctx context.Context, request StructuredRequest, usage *sdk.GenerateContentResponseUsageMetadata, elapsed time.Duration) {
+func (client *Client) logUsage(ctx context.Context, request StructuredRequest, usage *sdk.GenerateContentResponseUsageMetadata, elapsed time.Duration) string {
 	fields := []any{
 		"provider", client.Provider(), "model", request.Model, "workflow", request.Labels["workflow"],
 		"duration_ms", elapsed.Milliseconds(), "input_tokens", usage.PromptTokenCount,
@@ -39,4 +39,8 @@ func (client *Client) logUsage(ctx context.Context, request StructuredRequest, u
 		estimate = fmt.Sprintf("%.8f", cost/1_000_000)
 	}
 	slog.InfoContext(ctx, "genai usage", append(fields, "estimated_standard_cost_usd", estimate)...)
+	if estimate == "unavailable" {
+		return ""
+	}
+	return estimate
 }

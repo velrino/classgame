@@ -3,8 +3,8 @@ package classrooms
 import (
 	"time"
 
-	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/tenancy"
+	"classgame-api/internal/shared/auth"
 )
 
 const CollectionName = "teacher_classes"
