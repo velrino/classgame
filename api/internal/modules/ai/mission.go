@@ -97,10 +97,12 @@ type AttachmentInput struct {
 }
 
 type GenAIUsage struct {
-	PromptTokenCount     int32 `firestore:"prompt_token_count" json:"prompt_token_count"`
-	CandidatesTokenCount int32 `firestore:"candidates_token_count" json:"candidates_token_count"`
-	ThoughtsTokenCount   int32 `firestore:"thoughts_token_count" json:"thoughts_token_count"`
-	TotalTokenCount      int32 `firestore:"total_token_count" json:"total_token_count"`
+	ProviderDurationMS   int64  `firestore:"provider_duration_ms,omitempty" json:"provider_duration_ms,omitempty"`
+	EstimatedCostUSD     string `firestore:"estimated_cost_usd,omitempty" json:"estimated_cost_usd,omitempty"`
+	PromptTokenCount     int32  `firestore:"prompt_token_count" json:"prompt_token_count"`
+	CandidatesTokenCount int32  `firestore:"candidates_token_count" json:"candidates_token_count"`
+	ThoughtsTokenCount   int32  `firestore:"thoughts_token_count" json:"thoughts_token_count"`
+	TotalTokenCount      int32  `firestore:"total_token_count" json:"total_token_count"`
 }
 
 type EducationGuardrail struct {

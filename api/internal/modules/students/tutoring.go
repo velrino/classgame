@@ -12,6 +12,7 @@ import (
 	"classgame-api/internal/modules/ai/orchestrator"
 	"classgame-api/internal/modules/missions"
 	"classgame-api/internal/shared/auth"
+	"classgame-api/internal/shared/requestmeta"
 )
 
 const maxGeneratedTutorTurnsPerAttempt = 36
@@ -28,6 +29,7 @@ func (service *Service) SaveStudentTutorTurn(
 		return StudentTutorTurn{}, errors.New("student tutor dependencies are not configured")
 	}
 
+	started := time.Now()
 	input = normalizeStudentTutorTurnInput(input)
 	input.Identity = identity
 	input.Timestamp = time.Now()
@@ -102,7 +104,9 @@ func (service *Service) SaveStudentTutorTurn(
 	}
 	safeSnapshot, _ := AssessLearningSnapshotWithEvidence(missionDocument, attempt.Snapshot, attempt.TutorTurns, attempt.AcceptedAnswers, attempt.Status)
 
+	retrievalStart := time.Now()
 	retrievedChunks := RetrieveMissionKnowledge(missionDocument, input, 5)
+	input.Timing = &TutorTurnTiming{RequestID: requestmeta.RequestID(ctx), TraceID: requestmeta.TraceID(ctx), RetrievalMS: time.Since(retrievalStart).Milliseconds()}
 	classContext := ai.TutorClassContext{}
 	if input.Type != "feedback" {
 		classContext, err = service.classTutorContext(ctx, user.Student.ClassID)
@@ -165,13 +169,17 @@ func (service *Service) SaveStudentTutorTurn(
 		if reservation.Completed {
 			return reservation.Turn, nil
 		}
+		workflowStart := time.Now()
 		tutor, err = service.tutorTurnGenerator.BuildTutorTurn(ctx, turnInput)
+		workflowMS := time.Since(workflowStart).Milliseconds()
+		input.Timing.WorkflowMS = &workflowMS
 		if err != nil {
 			_ = service.learning.FailTutorGeneration(ctx, input, time.Now())
 			return StudentTutorTurn{}, err
 		}
 	}
 	input.Timestamp = time.Now()
+	input.Timing.BeforeSaveMS = time.Since(started).Milliseconds()
 	return service.learning.AppendStudentTutorTurn(ctx, input, tutor)
 }
 

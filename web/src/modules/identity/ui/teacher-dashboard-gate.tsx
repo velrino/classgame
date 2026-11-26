@@ -19,7 +19,7 @@ export function TeacherDashboardGate({
   useEffect(() => {
     if (auth.status === "signed_out") {
       const nextPath = pathname.startsWith("/dashboard")
-        ? pathname
+        ? `${pathname}${window.location.search}${window.location.hash}`
         : "/dashboard";
       router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
     }

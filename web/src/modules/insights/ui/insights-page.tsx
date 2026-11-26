@@ -34,6 +34,7 @@ import { StudentsTableSection } from "@/modules/insights/ui/student-panel";
 import { ClassMissionsTable, MissionBuilder } from "@/modules/missions";
 import { Gamepad2 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export function DashboardPage({
   initialClassId,
@@ -61,8 +62,6 @@ export function DashboardPage({
     draftPrompt,
     draftVersion,
     shareCodeLabel,
-    selectedStudent,
-    setSelectedStudent,
     selectedClass,
     activeMission,
     suggestions,
@@ -90,6 +89,20 @@ export function DashboardPage({
     handleShareCode,
     setActiveDashboardTab,
   } = useDashboardController(initialClassId);
+
+  const search = useSearchParams();
+  const studentId = search.get("student");
+  const selectedStudent = students.find(student => student.id === studentId);
+  const selectedTab = search.get("tab") ?? "conversation";
+
+  function updateStudentLink(id: string | null, tab: string, push = false) {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("student", id);
+    else url.searchParams.delete("student");
+    if (id && tab !== "conversation") url.searchParams.set("tab", tab);
+    else url.searchParams.delete("tab");
+    window.history[push ? "pushState" : "replaceState"](null, "", url);
+  }
 
   return (
     <DashboardShell
@@ -180,7 +193,7 @@ export function DashboardPage({
             <StudentsTableSection
               classLearning={overview?.class_learning}
               students={students}
-              onStudentClick={setSelectedStudent}
+              onStudentClick={(student) => updateStudentLink(student.id, "conversation", true)}
             />
           </TabsContent>
 
@@ -365,13 +378,15 @@ export function DashboardPage({
         ) : null}
 
         <StudentLearningDetail
-          key={selectedStudent ? `${selectedStudent.class_id}:${selectedStudent.id}` : "no-student"}
-          open={selectedStudent !== null}
-          completeHistory={overview?.page === undefined}
-          student={selectedStudent}
+          key={`${initialClassId}:${studentId}`}
+          open={Boolean(studentId && initialClassId && overview)}
+          activeTab={selectedTab}
+          onTabChange={(tab) => updateStudentLink(studentId, tab)}
+          completeHistory={Boolean(selectedStudent && overview?.page === undefined)}
+          student={selectedStudent ?? (studentId && initialClassId ? { id: studentId, class_id: initialClassId } : null)}
           onOpenChange={(open) => {
             if (!open) {
-              setSelectedStudent(null);
+              updateStudentLink(null, "conversation");
             }
           }}
         />

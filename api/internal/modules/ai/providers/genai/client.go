@@ -85,6 +85,8 @@ type FilePart struct {
 }
 
 type StructuredResult struct {
+	ProviderDurationMS   int64
+	EstimatedCostUSD     string
 	Model                string
 	ModelVersion         string
 	Provider             string
@@ -325,13 +327,16 @@ func (client *Client) generate(ctx context.Context, request StructuredRequest) (
 		config.Labels = request.Labels
 	}
 
+	var elapsed time.Duration
+	var estimatedCost string
 	var response *googlegenai.GenerateContentResponse
 	err = RunAdmitted(ctx, client.options.Admission, request.MaxOutputTokens, func() error {
 		var providerErr error
 		started := time.Now()
 		response, providerErr = client.client.Models.GenerateContent(ctx, model, buildUserContents(request), config)
+		elapsed = time.Since(started)
 		if response != nil && response.UsageMetadata != nil {
-			client.logUsage(ctx, request, response.UsageMetadata, time.Since(started))
+			estimatedCost = client.logUsage(ctx, request, response.UsageMetadata, elapsed)
 		}
 		return providerErr
 	})
@@ -347,7 +352,10 @@ func (client *Client) generate(ctx context.Context, request StructuredRequest) (
 		return StructuredResult{}, ErrOutputBudget
 	}
 
-	return buildStructuredResult(model, client.Provider(), text, response), nil
+	result = buildStructuredResult(model, client.Provider(), text, response)
+	result.ProviderDurationMS = elapsed.Milliseconds()
+	result.EstimatedCostUSD = estimatedCost
+	return result, nil
 }
 
 func thinkingConfigForModel(model string) *googlegenai.ThinkingConfig {

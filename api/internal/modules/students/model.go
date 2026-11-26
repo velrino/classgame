@@ -280,7 +280,16 @@ type StudentSessionClass struct {
 	GradeLevel string `json:"grade_level"`
 }
 
+type TutorTurnTiming struct {
+	RequestID    string `firestore:"request_id" json:"request_id"`
+	TraceID      string `firestore:"trace_id" json:"trace_id"`
+	RetrievalMS  int64  `firestore:"retrieval_ms" json:"retrieval_ms"`
+	WorkflowMS   *int64 `firestore:"workflow_ms,omitempty" json:"workflow_ms,omitempty"`
+	BeforeSaveMS int64  `firestore:"before_save_ms" json:"before_save_ms"`
+}
+
 type StudentTutorTurn struct {
+	Timing            *TutorTurnTiming      `firestore:"timing,omitempty" json:"timing,omitempty"`
 	ID                string                `firestore:"id" json:"id"`
 	Sequence          int                   `firestore:"sequence" json:"sequence"`
 	Type              string                `firestore:"type" json:"type"`
@@ -297,6 +306,7 @@ type StudentTutorTurn struct {
 }
 
 type SaveStudentTutorTurnInput struct {
+	Timing                    *TutorTurnTiming
 	ReservationOwner          string
 	BeforeGeneration          func(context.Context) error
 	RequestScope              AttemptScope

@@ -5,7 +5,9 @@ import { observeDashboardChanges } from "../realtime";
 import { insightsApi } from "../http";
 import type { DashboardStudentDto, StudentHistoryResponse } from "../types/contracts";
 
-export function useStudentHistory(student: DashboardStudentDto | null, open: boolean, completeHistory = false) {
+export type HistoryStudent = Pick<DashboardStudentDto, "id" | "class_id"> & Partial<Pick<DashboardStudentDto, "student_name" | "attempts">>;
+
+export function useStudentHistory(student: HistoryStudent | null, open: boolean, completeHistory = false) {
   const auth = useTeacherAuth();
   const generation = useRef(0);
   const busy = useRef(false);

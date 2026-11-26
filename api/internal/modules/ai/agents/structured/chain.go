@@ -5,6 +5,10 @@ package structured
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
+	"time"
+
+	"classgame-api/internal/shared/requestmeta"
 
 	"classgame-api/internal/modules/ai/providers/genai"
 	"github.com/tmc/langchaingo/chains"
@@ -31,7 +35,9 @@ func Run(ctx context.Context, client genai.StructuredGenerator, prompt prompts.P
 		return map[string]any{"result": usage}, err
 	}, prompt.InputVariables, []string{"result"})
 
+	start := time.Now()
 	outputs, err := chains.Call(ctx, chain, values)
 	result, _ := outputs["result"].(genai.StructuredResult)
+	slog.InfoContext(ctx, "langchain workflow", "workflow", request.Labels["workflow"], "request_id", requestmeta.RequestID(ctx), "trace_id", requestmeta.TraceID(ctx), "duration_ms", time.Since(start).Milliseconds(), "success", err == nil)
 	return result, err
 }
