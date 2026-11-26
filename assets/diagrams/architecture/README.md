@@ -17,7 +17,7 @@ From the repository root:
 uv run assets/diagrams/architecture/architecture.py
 ```
 
-Graphviz must be installed. The script writes only PNG and syncs `web/public/assets/diagrams/architecture/architecture.png`. Keep the 16:9 frame and review the render after changes. The old manual renderer and duplicate images are removed so they cannot overwrite the current diagram.
+Install Graphviz and librsvg (`rsvg-convert`) before rendering. The AI map uses the [local SVG icons and credits](icons/README.md). The script writes only PNG and syncs `web/public/assets/diagrams/architecture/architecture.png`. Keep the 16:9 frame and review the render after changes. The old manual renderer and duplicate images are removed so they cannot overwrite the current diagram.
 
 ## Current boundaries
 
