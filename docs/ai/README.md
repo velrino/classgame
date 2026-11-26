@@ -11,6 +11,8 @@ Coding-agent work and application AI quality. Repository assistance and Mia's ru
 
 The [root router](../../AGENTS.md) and package guides select context. This index does not register agents, configure tools, deploy workers, or grant external write permissions.
 
+[Edit in Excalidraw](AI-SYSTEM.excalidraw) · [Open the vector drawing](AI-SYSTEM.svg)
+
 ## Runtime workflows
 
 | Entry point | LangChainGo workflow | Result |

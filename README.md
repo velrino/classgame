@@ -75,6 +75,8 @@ The Go API uses five fixed workflows. Each one binds task data to a prompt, asks
 
 [![ClassGame AI workflows, storage and trust boundaries](assets/diagrams/architecture/ai-system.png)](assets/diagrams/architecture/ai-system.png)
 
+[Edit in Excalidraw](docs/ai/AI-SYSTEM.excalidraw) · [Open the vector drawing](docs/ai/AI-SYSTEM.svg)
+
 Read the [AI guide](docs/ai/README.md) for the workflow map.
 
 ## Architecture decisions and trade-offs

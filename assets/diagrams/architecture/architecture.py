@@ -22,6 +22,7 @@ from io import BytesIO
 from pathlib import Path
 import subprocess
 
+from ai_scene import AIScene
 from diagrams import Cluster, Diagram, Edge, Node
 from diagrams.gcp.database import Firestore
 from diagrams.gcp.ml import AIPlatform, VertexAI
@@ -284,15 +285,22 @@ def write_ai_system():
     canvas = Image.new("RGB", CANVAS_SIZE, "white")
     draw = ImageDraw.Draw(canvas)
 
+    scene = AIScene(*LOGICAL_SIZE)
+
     def label(x, y, text, size, color=INK, bold=False):
+        scene.text(x, y, text, size, font(2*size, bold).getlength(text)/2, color, bold)
         draw.text((2*x, 2*y), text, fill=color, font=font(2*size, bold))
 
     def panel(x, y, w, h, color, title, lines, icon=None):
+        scene.group = f"panel-{x}-{y}"
+        scene.rect(x, y, w, h, PANEL_FILL, PANEL_LINE, 12)
+        scene.rect(x+1, y+10, 5, h-20, color, color, 2)
         draw.rounded_rectangle((2*x, 2*y, 2*(x+w), 2*(y+h)), radius=24,
                                fill=PANEL_FILL, outline=PANEL_LINE, width=3)
         draw.rounded_rectangle((2*x+2, 2*y+20, 2*x+12, 2*(y+h)-20), radius=4, fill=color)
         title_x = x + 24
         if icon:
+            scene.icon(ROOT / "icons" / f"{icon}.svg", title_x, y+14, 38)
             pixels = 38 * PNG_SCALE
             png = subprocess.check_output([
                 "rsvg-convert", "--keep-aspect-ratio", "--width", str(pixels),
@@ -306,8 +314,11 @@ def write_ai_system():
         for index, line in enumerate(lines):
             label(x+24, y+60+34*index, line, 22)
 
+        scene.group = None
+
     def arrow(y):
         x = 675
+        scene.arrow(x, y, MUTED)
         draw.line((2*x, 2*y, 2*x, 2*(y+23)), fill=MUTED, width=4)
         draw.polygon([(2*x-9, 2*y+34), (2*x+9, 2*y+34), (2*x, 2*y+48)], fill=MUTED)
 
@@ -346,6 +357,7 @@ def write_ai_system():
         label(1358, y+38, detail, 20)
     panel(48, 948, 1824, 106, BLUE, "Pull request validation",
           ["GitHub Actions runs Go checks, offline evaluations, web checks and dependency scans."], icon="githubactions")
+    scene.save(ROOT.parents[2] / "docs/ai")
     canvas.save(ROOT / "ai-system.png")
 
 
