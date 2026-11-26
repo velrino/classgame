@@ -2,23 +2,16 @@ package tutor
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"classgame-api/internal/modules/ai"
+	"classgame-api/internal/modules/ai/agents/structured"
 	"classgame-api/internal/modules/ai/providers/genai"
 )
 
 func Run(ctx context.Context, client genai.StructuredGenerator, input ai.BuildTutorTurnInput) (ai.TutorTurnBlueprint, genai.StructuredResult, error) {
-	payload, _ := json.MarshalIndent(input, "", "  ")
 	var blueprint ai.TutorTurnBlueprint
-	result, err := client.GenerateStructured(ctx, genai.StructuredRequest{
-		SystemInstruction: instruction,
-		Prompt: fmt.Sprintf(`Respond to this live student turn:
-
-%s
-
-The API will return only student-safe fields to the learner. teacher_observation is persisted for the teacher.`, payload),
+	result, err := structured.RunJSON(ctx, client, taskPrompt, input, genai.StructuredRequest{
+		SystemInstruction:  instruction,
 		ResponseJSONSchema: schema(),
 		Temperature:        0.25,
 		Labels: map[string]string{
@@ -28,3 +21,9 @@ The API will return only student-safe fields to the learner. teacher_observation
 	}, &blueprint)
 	return blueprint, result, err
 }
+
+const taskPrompt = `Respond to this live student turn:
+
+{{.input}}
+
+The API will return only student-safe fields to the learner. teacher_observation is persisted for the teacher.`

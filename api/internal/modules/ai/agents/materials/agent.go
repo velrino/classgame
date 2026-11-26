@@ -2,21 +2,16 @@ package materials
 
 import (
 	"context"
-	"fmt"
+	"github.com/tmc/langchaingo/prompts"
 
+	"classgame-api/internal/modules/ai/agents/structured"
 	"classgame-api/internal/modules/ai/providers/genai"
 )
 
 func Run(ctx context.Context, client genai.StructuredGenerator, fileName, mimeType string, data []byte) (Summary, genai.StructuredResult, error) {
 	var summary Summary
-	result, err := client.GenerateStructured(ctx, genai.StructuredRequest{
+	result, err := structured.Run(ctx, client, materialPrompt, map[string]any{"name": fileName, "mime": mimeType}, genai.StructuredRequest{
 		SystemInstruction: instruction,
-		Prompt: fmt.Sprintf(`Summarize this attachment for a short ClassGame mission.
-
-File name: %s
-MIME type: %s
-
-Return concise JSON. Focus on facts, rules, examples, vocabulary, and likely student misconceptions that are useful for generating 3 multiple-choice questions.`, fileName, mimeType),
 		FileParts: []genai.FilePart{
 			{Data: data, MIMEType: mimeType},
 		},
@@ -38,3 +33,10 @@ type Summary struct {
 	SuggestedQuestion []string `json:"suggested_questions"`
 	Cautions          []string `json:"cautions"`
 }
+
+var materialPrompt = prompts.NewPromptTemplate(`Summarize this attachment for a short ClassGame mission.
+
+File name: {{.name}}
+MIME type: {{.mime}}
+
+Return concise JSON. Focus on facts, rules, examples, vocabulary, and likely student misconceptions that are useful for generating 3 multiple-choice questions.`, []string{"name", "mime"})

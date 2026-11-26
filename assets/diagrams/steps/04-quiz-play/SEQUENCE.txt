@@ -77,7 +77,7 @@ sequenceDiagram
                 API->>DB: Reserve the tutor event<br/>Owner token and 2-minute lease
                 DB-->>API: Generation ownership granted
                 create participant LLM
-                API->>LLM: JSON context in prompt<br/>Question, response + bounded memory/chunks
+                API->>LLM: LangChainGo tutor workflow<br/>Question, response + bounded memory/chunks
                 activate LLM
                 LLM-->>API: JSON response: tutor feedback
                 deactivate LLM

@@ -7,6 +7,8 @@ The current diagram shows the modular code and optional services. It does not cl
 - `architecture.py` — source for the current icon-led diagram.
 - `architecture.png` — 3840×2160 PNG used by the root README and dashboard.
 
+- `ai-system.png` — workflow and trust boundaries used by the root README.
+
 ## Regenerate
 
 From the repository root:

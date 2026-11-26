@@ -74,7 +74,7 @@ sequenceDiagram
     Note over Worker,DB: Pending work survives failures.<br/>Old or completed jobs do no work.<br/>Busy claims retry. Recovery scans pending intents.
 
     create participant LLM
-    Worker->>LLM: JSON context in prompt<br/>Up to 100 finalized student evidence records
+    Worker->>LLM: LangChainGo class synthesis workflow<br/>Up to 100 finalized student evidence records
     activate LLM
     LLM-->>Worker: JSON response: clusters + adaptation
     deactivate LLM

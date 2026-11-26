@@ -69,6 +69,14 @@ The Excalidraw version below shows the same architecture as editable boxes and c
   <a href="assets/diagrams/architecture/excalidraw/architecture.png"><img src="assets/diagrams/architecture/excalidraw/architecture.png" alt="ClassGame architecture drawn in Excalidraw" width="100%" /></a>
 </p>
 
+### How ClassGame uses LangChainGo
+
+The Go API uses five fixed workflows. Each one binds task data to a prompt, asks the configured Gemini client for a typed result, and returns usage to the caller. The teacher approves publication. Firestore holds learning memory across requests.
+
+[![ClassGame AI workflows, storage and trust boundaries](assets/diagrams/architecture/ai-system.png)](assets/diagrams/architecture/ai-system.png)
+
+Read the [AI guide](docs/ai/README.md) for the workflow map.
+
 ## Architecture decisions and trade-offs
 
 See the [technology trade-offs](#technology-trade-offs) for the API, database, authentication, LLMs, evals, and frontend. The choices below cover job delivery and application structure.
@@ -91,7 +99,7 @@ Read the steps in order. **Starts with** shows who begins each flow. Select a di
 
 | Step | Starts with | Flow | Diagram |
 |:---:|---|---|:---:|
-| 01 | **Teacher** | **Upload material and prepare a mission draft**<br>Upload optional files, generate questions, and save a draft for teacher review.<br>[Guide](assets/diagrams/steps/01-mission-draft/README.md) · [Mermaid source](assets/diagrams/steps/01-mission-draft/SEQUENCE.txt) | <a href="assets/diagrams/steps/01-mission-draft/diagram.png"><img src="assets/diagrams/steps/01-mission-draft/diagram.png" alt="Sequence diagram for uploading material and preparing a mission draft" width="480" /></a> |
+| 01 | **Teacher** | **Upload material and prepare a mission draft**<br>Send one readable PDF directly or summarize other supported files, generate questions, and save a draft for teacher review.<br>[Guide](assets/diagrams/steps/01-mission-draft/README.md) · [Mermaid source](assets/diagrams/steps/01-mission-draft/SEQUENCE.txt) | <a href="assets/diagrams/steps/01-mission-draft/diagram.png"><img src="assets/diagrams/steps/01-mission-draft/diagram.png" alt="Sequence diagram for uploading material and preparing a mission draft" width="480" /></a> |
 | 02 | **Teacher** | **Review and publish the mission**<br>Check the reviewed revision, prepare file-copy jobs, and publish through a DB transaction.<br>[Guide](assets/diagrams/steps/02-mission-publication/README.md) · [Mermaid source](assets/diagrams/steps/02-mission-publication/SEQUENCE.txt) | <a href="assets/diagrams/steps/02-mission-publication/diagram.png"><img src="assets/diagrams/steps/02-mission-publication/diagram.png" alt="Sequence diagram for reviewing and publishing a mission" width="480" /></a> |
 | 03 | **Redis** | **Copy mission files to private storage**<br>Workers load the published revision, copy files with retry checks, and save each result.<br>[Guide](assets/diagrams/steps/03-attachment-transfer/README.md) · [Mermaid source](assets/diagrams/steps/03-attachment-transfer/SEQUENCE.txt) | <a href="assets/diagrams/steps/03-attachment-transfer/diagram.png"><img src="assets/diagrams/steps/03-attachment-transfer/diagram.png" alt="Sequence diagram for copying mission attachments to private storage" width="480" /></a> |
 | 04 | **Student** | **Answer a quiz question with Mia**<br>Save the answer locally, get grounded feedback with bounded context, and save progress.<br>[Guide](assets/diagrams/steps/04-quiz-play/README.md) · [Mermaid source](assets/diagrams/steps/04-quiz-play/SEQUENCE.txt) | <a href="assets/diagrams/steps/04-quiz-play/diagram.png"><img src="assets/diagrams/steps/04-quiz-play/diagram.png" alt="Sequence diagram for a quiz turn, Mia feedback, and checkpoint saving" width="480" /></a> |

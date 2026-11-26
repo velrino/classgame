@@ -86,7 +86,7 @@ sequenceDiagram
     Note over DB,Worker: Superseded or finalized work is skipped.<br/>Busy claims retry. Recovery scans pending work.
 
     create participant LLM
-    Worker->>LLM: JSON context in prompt<br/>Bounded evidence + previous memory
+    Worker->>LLM: LangChainGo learning trace workflow<br/>Bounded evidence + previous memory
     activate LLM
     LLM-->>Worker: JSON response: private trace + memory
     deactivate LLM
