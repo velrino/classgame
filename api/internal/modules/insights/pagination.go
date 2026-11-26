@@ -13,10 +13,10 @@ import (
 	"cloud.google.com/go/firestore"
 	"golang.org/x/sync/errgroup"
 
-	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/modules/classrooms"
 	"classgame-api/internal/modules/students"
 	"classgame-api/internal/modules/tenancy"
+	"classgame-api/internal/shared/auth"
 	"classgame-api/internal/shared/pagination"
 )
 
